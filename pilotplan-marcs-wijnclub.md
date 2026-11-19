@@ -53,7 +53,7 @@ De pilot heeft drie tabs voor leden en één beheerscherm voor Marc. Alles wat h
 | Mijn flessen | De bestelling van de lopende lijst, flessen in bewaring, eerder gekocht met oordeel en opnieuw bestellen | Zelf flessen van elders toevoegen |
 | Levering | Afhaalpunten per regio met een datum, door Marc per lijst ingesteld. Bewaren bij Marc alleen voor flessen uit een bieding | Pakketverzending, bezorgen aan huis |
 | Contact | Knop "Vraag Marc" en knop "Open aan tafel", beide naar WhatsApp met de wijn ingevuld | Chat in de app, een bot, een boekingssysteem voor diners |
-| Meldingen | Nieuwe lijst, één herinnering "nog beschikbaar" voor het sluiten, betaalverzoek bij het sluiten, nieuwe bieding, overboden, gewonnen | Marketingberichten |
+| Meldingen | Nieuwe lijst, één herinnering "nog beschikbaar" voor het sluiten, betaalverzoek bij het sluiten, nieuwe bieding, overboden, gewonnen. Bij elke melding legt de app vast wanneer hij verstuurd is en hoeveel leden erop tikten | Marketingberichten en geplande campagnes. Die staan op de roadmap |
 | Toegang | Alleen op uitnodiging van Marc | Open aanmelding |
 | Beheer | Lijst met inleiding en afhaalpunten instellen, WhatsApp-bericht plakken en laten herkennen, wijn op de lijst zetten of bieding starten, bestelling namens een lid invoeren met letters en aantallen, overzicht "nog beschikbaar" delen in WhatsApp, paklijst per afhaalpunt | Boekhouding, facturen |
 
@@ -213,7 +213,7 @@ Alle tests draaien in pytest, ook de browsertests via Playwright voor Python. Zo
 
 | Laag | Wat het controleert | Wanneer | Waartegen |
 | --- | --- | --- | --- |
-| Unit-tests | Regels voor bieden (minimale verhoging, verlenging in de laatste twee minuten, eindtijd), bestelling en voorraad, het verwerken van een Mollie-melding, en het herkennen van een WhatsApp-bericht met een nagebootst taalmodel | Elke pull request | Alleen de code, geen AWS |
+| Unit-tests | Regels voor bieden (minimale verhoging, verlenging in de laatste twee minuten, eindtijd), bestelling en voorraad, het verwerken van een Mollie-melding, en het herkennen van een WhatsApp-bericht met een nagebootst taalmodel, en het tellen van een tik op een melding: één keer per lid | Elke pull request | Alleen de code, geen AWS |
 | Integratietests | Twintig gelijktijdige biedingen: precies één winnaar per bedrag. Gelijktijdige bestellingen: de voorraad komt nooit onder nul. Een bieding sluit op de eindtijd. Dezelfde Mollie-melding twee keer: één betaling | Elke merge | Teststack, met echte DynamoDB en Mollie in testmodus |
 | End-to-end-tests | Drie stromen op een telefoonscherm: van de lijst bestellen, de lijst sluiten en betalen, bieden en winnen, en Marc die een wijn op de lijst zet | Elke merge | Teststack, via de browser |
 | Smoke-test | De site laadt, de lijst is op te vragen, inloggen werkt. Er worden geen bestellingen geplaatst | Elke release | Productie |
@@ -239,7 +239,7 @@ Komen er meer leden of andere verkopers bij, dan is een eigen AWS-account voor p
 
 ## Gegevensmodel
 
-Zeven soorten gegevens volstaan, elk in een eigen DynamoDB-tabel met betalen naar gebruik. Mijn flessen heeft geen eigen tabel: dat scherm leest de bestellingen en oordelen van het lid.
+Tien soorten gegevens volstaan, elk in een eigen DynamoDB-tabel met betalen naar gebruik. Mijn flessen heeft geen eigen tabel: dat scherm leest de bestellingen en oordelen van het lid.
 
 | Tabel | Sleutel | Belangrijkste velden |
 | --- | --- | --- |
@@ -250,12 +250,17 @@ Zeven soorten gegevens volstaan, elk in een eigen DynamoDB-tabel met betalen naa
 | `bestelling` | bestellingId | lidId, lijstId, regels (wijnId, aantal, prijs), totaal, status (open, betaald, verlopen, terugbetaald), betalen vóór, afhaalpunt of bewaren, afgeleverd, ingevoerd door (lid of Marc) |
 | `betaling` | nummer van de Mollie-betaling | de bestellingen die erin zitten |
 | `oordeel` | lidId + wijnId | lekker of niet voor mij |
+| `weergave` | wijnId + lidId | reden (uitverkocht of bieding), eerste keer. Vervalt na 180 dagen |
+| `bericht` | berichtId | soort (nieuwe lijst, nog beschikbaar, betaalverzoek, nieuwe bieding, overboden, gewonnen), kanaal (melding, e-mail, groep), de lijst of wijn waar het over gaat, verzonden op, aantal ontvangers |
+| `tik` | berichtId + lidId | het eerste moment waarop het lid op de melding tikte. Verdwijnt vanzelf na 180 dagen |
 
 Drie regels houden de gegevens kloppend:
 
 - **Een bod** wordt alleen opgeslagen als het hoger is dan het hoogste bod plus de minimale verhoging, de eindtijd niet voorbij is en de bieding open staat. DynamoDB controleert dat in dezelfde schrijfactie, zodat twee gelijktijdige biedingen elkaar niet overschrijven.
 - **Voorraad** gaat omlaag op het moment van bestellen, voor alle wijnen in de bestelling tegelijk. Is één wijn net op, dan gaat de hele bestelling niet door en ziet het lid welke wijn het is. Is een bestelling 48 uur na het sluiten niet betaald, dan komt de voorraad terug.
 - **Eén betaling per lid per lijst.** Alle open bestellingen van een lid op dezelfde lijst gaan in één betaling, ook wat het bijbestelde en wat Marc namens hem invoerde.
+
+`bericht` en `tik` dienen alleen om te meten welk moment werkt. Wie na een bericht bestelde of bood, leidt de app af uit de bestellingen en biedingen; dat wordt niet apart opgeslagen. `weergave` dient alleen de tellingen voor de roadmap.
 
 ## Betaling
 
@@ -284,13 +289,15 @@ Zes punten moeten door een jurist bekeken worden voordat de pilot start. De midd
 | Bedenktijd | Bij verkoop op afstand aan consumenten geldt in principe 14 dagen bedenktijd, waarschijnlijk ook bij online bieden | Laten uitzoeken, ook wanneer de termijn ingaat als Marc de fles bewaart |
 | Bindend bod | Een bod is alleen afdwingbaar als de voorwaarden dat zeggen | Korte clubvoorwaarden opstellen die het lid bij de eerste login accepteert |
 | Bewaren bij Marc | Er moet vastliggen van wie de fles is en wie opdraait voor breuk, diefstal of een slechte kurk | Bewaarvoorwaarden opstellen en Marcs verzekering nakijken |
-| WhatsApp | Het handelsbeleid van WhatsApp beperkt alcoholverkoop via zakelijke accounts | Bestellen en betalen blijven in de app; in de groep staat alleen de link |
+| WhatsApp | Nagezocht: het [beleid van WhatsApp voor zakelijke accounts](https://whatsappbusiness.com/policy/) (versie 23 september 2026) staat berichten die alcohol promoten alleen toe in een lijst met landen. Nederland staat daar niet op. Verkopen via een catalogus of betaling in WhatsApp mag nergens | Bestellen en betalen blijven in de app; in de groep staat alleen de link. Laat toetsen of Marcs huidige berichten in de groep onder dit beleid vallen |
 | Btw en accijns | Voor Marcs eigen inkoop verandert er niets | Marcs boekhouder laten bevestigen |
 
 **Privacy (AVG)**
 
 - Marc is verantwoordelijk voor de gegevens van zijn leden. Wie de app bouwt en beheert is verwerker; daar hoort een verwerkersovereenkomst bij.
 - De app bewaart alleen wat nodig is: naam, e-mail, telefoon, afhaalpunt van voorkeur, biedingen en aankopen. Geen adres, geen geboortedatum, geen kopie van een identiteitsbewijs.
+- Voor de tellingen van de pilot legt de app 180 dagen vast welk lid een uitverkochte wijn of een bieding opende. Marc en de bouwer zien daarvan alleen aantallen. Dit staat in de privacyverklaring, en de grondslag hoort bij de juridische check.
+- De app legt vast op welke melding een lid tikte, om te meten welk moment werkt. Dat staat in de privacyverklaring. Na 180 dagen verdwijnt dat gegeven vanzelf. Laat toetsen of hiervoor toestemming nodig is.
 - Alle gegevens staan in een AWS-regio binnen de EU.
 - Er komt een korte privacyverklaring in de app, en een lid kan zijn gegevens laten verwijderen. Betaalgegevens blijven bij Mollie en in Marcs boekhouding zolang de fiscale bewaarplicht dat vraagt.
 - Namen, adressen en bedragen per persoon komen niet in de logbestanden.
@@ -307,10 +314,10 @@ Elke ruit is een voorwaarde om door te gaan. Zonder akkoord van Marc en de juris
 | --- | --- |
 | 1 en 2 | Open beslissingen rond, nulmeting gedaan, Mollie-account en AWS-account aangemaakt |
 | 3 | Omgeving als code met AWS CDK, pipeline met teststack, inloggen op uitnodiging, lege web-app online op het eigen domein |
-| 4 | Beheer: WhatsApp-bericht plakken en herkennen, lijst met inleiding en afhaalpunten, wijn op de lijst zetten. De lijst en de wijnpagina voor leden |
+| 4 | Beheer: WhatsApp-bericht plakken en herkennen, lijst met inleiding en afhaalpunten, wijn op de lijst zetten. De lijst en de wijnpagina voor leden, die vastlegt wie een uitverkochte wijn opent |
 | 5 | Bestellen met afhaalpunt, bijbestellen, voorraad. De lijst sluiten met een betaalverzoek, betalen via Mollie in testmodus. Mijn flessen |
-| 6 | Bieding: bieden, sluiten op de eindtijd, betaallink voor de winnaar, bewaren bij Marc |
-| 7 | Meldingen en herinneringen, bestelling namens een lid, overzicht "nog beschikbaar" en paklijst per afhaalpunt, knoppen naar WhatsApp, voorwaarden en privacyverklaring, alarmen |
+| 6 | Bieding: bieden, sluiten op de eindtijd, betaallink voor de winnaar, bewaren bij Marc. Vastleggen wie een bieding opent en welk bod de eindtijd verlengt |
+| 7 | Meldingen en herinneringen, met een meting per melding. Bestelling namens een lid, overzicht "nog beschikbaar" en paklijst per afhaalpunt, knoppen naar WhatsApp, voorwaarden en privacyverklaring, alarmen. De vier tellingen voor de roadmap opvraagbaar |
 | 8 | Eerste release naar productie. Proefdraaien met Marc en vijf leden, met één echte lijst en echte betalingen |
 | 9 tot en met 16 | Pilot. Marc plaatst zijn lijsten in de app en start minstens twee biedingen. Alleen fouten worden hersteld; er komen geen nieuwe functies bij |
 
@@ -349,7 +356,9 @@ De pilot is geslaagd als leden liever via de app bestellen dan via WhatsApp en M
 | Tijd van Marc per lijst | Lager dan de nulmeting | Marc noteert het per lijst |
 | Fouten in voorraad, betaling of paklijst | Geen | Marcs telling tegenover de app |
 | Biedingen: aantal bieders per fles en eindprijs tegenover Marcs verwachting | Geen streefwaarde, wel volgen | Telling in de app |
+| Leden die op een tweede en derde lijst bestellen | Geen streefwaarde, wel volgen | Telling in de app |
 | Oordeel van leden | Vijf gesprekken na afloop | Bellen of aan tafel |
+| Beste moment: per melding het tijdstip, het aantal leden dat tikte en de bestellingen binnen 24 uur | Geen streefwaarde, wel volgen | Vastgelegd bij elke melding; één overzicht aan het eind van de pilot |
 
 Na acht weken valt het besluit:
 
@@ -359,14 +368,79 @@ Na acht weken valt het besluit:
 
 De bieding wordt apart beoordeeld: trekt een bijzondere fles meerdere bieders en een prijs waar Marc tevreden over is, dan blijft hij. Zo niet, dan gaat alleen de lijst door.
 
+## Markt en concurrentie
+
+Er is geen app gevonden die doet wat de wijnclub doet, maar het model zelf is niet nieuw: minstens drie Nederlandse wijnverkopers verkopen op dezelfde manier via een WhatsApp-groep, zonder app. De echte concurrent van de app is daarmee WhatsApp zelf. Voor de bieding bestaan grote veilinghuizen, die de koper ongeveer een kwart bovenop het bod rekenen.
+
+Nagezocht op 19 november 2026, op openbare websites. Drie beperkingen:
+
+- Geen van de aanbieders noemt het aantal leden of de omzet.
+- Er is geen aanbieder in Roermond of Limburg gevonden. Besloten groepen zijn van buitenaf niet te vinden, dus dat bewijst niet dat ze er niet zijn. Marc weet dit beter dan een zoekmachine.
+- De websites van Catawiki, Sylvie's, Boeren & Buren en Rechtstreex waren niet te lezen. Wat daarover staat, is als onbevestigd gemarkeerd of weggelaten.
+
+**Verkopers met hetzelfde model**
+
+| Aanbieder | Kanaal | Bestellen | Betalen | Ophalen of bezorgen | Wat opvalt |
+| --- | --- | --- | --- | --- | --- |
+| [SLOQ](https://sites.google.com/smarterwinebuyers.com/sloq/english), Hilversum | WhatsApp-groep, toegang via een bericht of via een lid dat je voorstelt | Antwoord in de groep of privébericht. De resterende voorraad wordt na elke bestelling in de groep bijgewerkt | Factuur met betaallink na het bestellen, binnen 7 dagen | Ophalen bij het magazijn, bezorgen of pakketpost | Wachtlijst: onbetaalde of geannuleerde flessen gaan op volgorde naar de wachtenden. Proeverijen |
+| [MÈZON](https://mezonwine.nl/), Haarlem en Amsterdam | Eén WhatsApp-groep, elke donderdag een aanbod | Antwoord in de groep met fles en aantal | Betaalverzoek aan het eind van de dag | Ophalen op afspraak op drie plekken, of verzenden | Flessen blijven staan tot het totaal €350 is; daarna is verzending gratis. Geen webshop, geen abonnement |
+| [Wine Drops](https://wijntripje.nl/wine-drops/) van Wijntripje | WhatsApp-community, open via een link | Antwoord in de groep of privébericht | Betaalgegevens na bevestiging | Verzenden €9,95 tot zes flessen, ophalen gratis | Werft met "geen webshop, geen account". Enkele berichten per maand, geen vast ritme |
+| [Slimmer Wijn Kopen](https://slimmerwijnkopen.nl/hoewerkthet) | Website en nieuwsbrief, ongeveer 30 deals per jaar | Op de website | Bij het bestellen | Gratis thuisbezorgd binnen twee weken na de deal | Een deal gaat alleen door als de minimale afname gehaald is, anders volgt terugbetaling. Punten: 3% per bestelling, 10% van de eerste bestelling van een vriend |
+
+Geen van de vier heeft een bieding, en geen van de vier heeft een app.
+
+**Veilingen**
+
+| Aanbieder | Kosten | Werking | Wat opvalt |
+| --- | --- | --- | --- |
+| [Winefield's](https://www.winefields.com/conditions-of-sale/), Amsterdam | Koper: 24% opgeld. Verkoper: 10 commissie en 1,5 verzekering volgens de [verkooppagina](https://www.winefields.com/sell/); de eenheid staat er niet bij, vermoedelijk procenten | Zaalveilingen en online veilingen met een eindtijd, bijvoorbeeld 48 uur | App met volgen van kavels, meldingen en bieden bij afwezigheid. De tweede bieder blijft aan zijn bod gebonden als de winnaar niet betaalt |
+| [iDealwine](https://www.idealwine.com/en/corporate/conditions_generales), Frankrijk | Koper: 25,8% inclusief btw sinds 27 maart 2026. Wie niet betaalt: 10% van het bedrag plus €75 | Veilingen van ongeveer tien dagen, vier tot vijf per maand. Maximaal bod. Een bod in de laatste vijf minuten verlengt de kavel | Richtprijs per kavel, minimumprijs standaard op de onderkant daarvan. Beoordeling van vulniveau, etiket en kurk. Ook verkoop tegen vaste prijs |
+| Catawiki | Koper 9%, verkoper 12,5% volgens een [artikel van Emerce](https://www.emerce.nl/nieuws/catawiki-verzuimt-klanten-vooraf-toestemming-vragen-commissiekosten) zonder duidelijke datum. Niet bevestigd bij Catawiki zelf | Wekelijkse online veilingen, ook van particulieren | Het grootste bereik. Kavels verschijnen ook op Marktplaats |
+| [Crurated](https://crurated.com/what-membership-means) | Lidmaatschap €300 per jaar exclusief btw, kwijtgescholden bij €5.000 aan aankopen | Geen veiling: toewijzingen rechtstreeks van producenten | Gratis opslag in Beaune, diners en proeverijen met producenten |
+
+**Software waarmee een verkoper het zelf inricht**
+
+| Aanbieder | Wat het is | Dekt van de pilot | Dekt niet |
+| --- | --- | --- | --- |
+| [Table22](https://www.table22.com/), Verenigde Staten | Platform waarmee restaurants en winkels een club, abonnement of losse actie aanbieden. Meer dan 1.000 aangesloten zaken volgens eigen opgave | Leden, betalen, ophalen of bezorgen, herinneringen | Niet in Nederland gevonden. Geen bieding |
+| [Commerce7](https://documentation.commerce7.com/allocations), Noord-Amerika | Verkoopsoftware voor ruim 3.000 wijnhuizen volgens eigen opgave | Toewijzingen met begin- en einddatum, een maximum per klant, wensen die na afloop worden toegekend | Gericht op wijnhuizen met verzending. Geen afhaalpunten per regio, geen bieding |
+| [Take App](https://www.take.app/features/whatsapp) | Winkel met bestellen via WhatsApp. Gratis tot 50 bestellingen per maand volgens een eigen pagina; betaald rond 40 tot 50 dollar per maand, de pagina's spreken elkaar tegen | Catalogus, bestelling, betaallink | Betalen na het sluiten met één betaling per lid, paklijst per afhaalpunt, bieding, toegang op uitnodiging. Of iDEAL werkt, is niet nagezocht |
+| [Reorder](https://bird.com/en/blog/reorder-using-whatsapp-to-power-a-more-profitable-and-efficient-food-ordering-experience) | Bestellen in een privégesprek in WhatsApp, met betaallink en bevestiging | Laat zien dat het handwerk van een groep, zoals bestellingen ordenen en betalingen bevestigen, een erkend probleem is | Loopt via de zakelijke WhatsApp-koppeling. Die mag voor wijn in Nederland niet, zie de roadmap |
+
+**Wat dit betekent**
+
+- **Het model is bewezen, de app niet.** Drie verkopers draaien dit in WhatsApp en één werft uitdrukkelijk met "geen webshop, geen account". De pilot moet dus aantonen dat een app sneller is dan een antwoord in de groep. Het succescriterium van een halve minuut en het invoeren namens een lid zijn daarvoor de juiste keuzes.
+- **Niemand combineert een lijst met een bieding.** De verkopers in WhatsApp bieden niet, de veilinghuizen hebben geen lijst van één verkoper die je kent.
+- **De bieding kost het lid geen opgeld.** Bij de veilinghuizen komt er ongeveer een kwart bovenop het bod. In de club is het bod de prijs. Dat staat nu nergens in de app en hoort op het scherm van de bijzondere fles.
+- **Marc is het onderscheid.** Geen van de gevonden aanbieders kookt. Het advies wat je erbij eet, de fles die aan tafel opengaat en ophalen in de eigen regio kan een landelijke verkoper niet namaken.
+- **Wat anderen hebben en de pilot niet:** een wachtlijst, een vast ritme, flessen laten staan tot er een doos is, een lid dat een nieuw lid voorstelt, proeverijen, en bij veilingen een maximaal bod, een richtprijs en volgen. Die staan nu als onderwerp 4 tot en met 12 op de roadmap.
+- **Terugkomen is de zwakke plek van online wijnverkoop.** Volgens [gegevens van Commerce7](https://wineindustryadvisor.com/2026/10/07/more-than-8-in-10-first-time-winery-web-buyers-dont-order-again-within-a-year-new-commerce7-data-shows/) bestelt meer dan acht op de tien nieuwe webklanten van wijnhuizen in de Verenigde Staten en Canada binnen een jaar niet opnieuw; wie terugkomt, doet dat meestal binnen twee maanden. Dat zijn webwinkels, geen besloten groep, dus het is een vraag en geen maatstaf. De pilot volgt daarom welk deel van de leden op een tweede en derde lijst bestelt; dat staat bij de succescriteria, zonder streefwaarde.
+
+**Wat er in de omgeving verandert**
+
+- **iDEAL wordt Wero.** Sinds eind januari 2026 staat het gezamenlijke logo bij webwinkels. De technische overstap loopt sinds oktober 2026 via de betaaldienstverlener, en iDEAL blijft naar verwachting tot eind 2027 beschikbaar, volgens [ABN AMRO](https://www.abnamro.nl/nl/zakelijk/producten/betalen/winkels-en-webshops/ideal-wordt-wero.html) en [Emerce](https://www.emerce.nl/nieuws/overgang-ideal-wero-begint-januari-2026). In 2027 komen er volgens ABN AMRO betaalvormen bij voor abonnementen en online bestellingen. Wat Mollie precies doet en wanneer, is niet nagezocht. Schermteksten zeggen beter "betalen" dan "iDEAL", en vraag Mollie of Wero een bedrag kan reserveren: dat zou het risico van de niet-betalende winnaar wegnemen.
+- **Leeftijdscontrole bij online verkoop.** In januari 2026 is een [wetsvoorstel tot wijziging van de Alcoholwet](https://www.njb.nl/wetgeving/wetsvoorstellen/wijziging-alcoholwet/) ingediend over de naleving van de leeftijdsgrens bij online verkoop. Of het is aangenomen, is niet gevonden. Het [Ondernemersplein](https://ondernemersplein.overheid.nl/bedrijfsvoering/juridische-zaken/doe-een-leeftijdscontrole-bij-alcohol-verkopen-op-afstand/) schrijft nu al een controle voor bij de aankoop en bij de aflevering, met een vastgelegde werkwijze. Neem dit mee in de juridische check bij het punt Leeftijd.
+
 ## Roadmap
 
-Na een geslaagde pilot volgen twee uitbreidingen met een taalmodel: eerst de omschrijving van een fles, daarna een assistent die vragen van leden beantwoordt. Die volgorde is bewust: de omschrijving bouwt voort op wat de pilot al doet en Marc keurt elke tekst goed. De assistent praat rechtstreeks met leden en vraagt meer waarborgen.
+Na een geslaagde pilot volgen twee uitbreidingen met een taalmodel: eerst de omschrijving van een fles, daarna een assistent die vragen van leden beantwoordt. Die volgorde is bewust: de omschrijving bouwt voort op wat de pilot al doet en Marc keurt elke tekst goed. De assistent praat rechtstreeks met leden en vraagt meer waarborgen. Een derde uitbreiding staat los van het taalmodel: geplande campagnes, met een meting van het beste moment om leden te benaderen.
+
+Onderwerp 4 tot en met 12 komen uit het marktonderzoek van 19 november 2026. Het zijn ideeën: ze zijn nog niet met Marc besproken en staan in volgorde van verwachte opbrengst tegenover bouwtijd. Geen ervan hoort in de pilot.
 
 | Onderwerp | Wat het oplevert | Start als |
 | --- | --- | --- |
 | 1. Omschrijving via een taalmodel | Marc zet een fles in enkele minuten online, in zijn eigen woorden | De pilot geslaagd is en het herkennen van Marcs berichten in de pilot goed werkt |
 | 2. Assistent voor vragen van leden | Leden krijgen direct antwoord op veelgestelde vragen; Marc krijgt alleen de vragen die hem nodig hebben | Er minstens 20 flessen met goedgekeurde tekst zijn en Marc dezelfde vragen steeds terug ziet komen |
+| 3. Campagnes en het beste moment | Marc plant een reeks berichten rond een lijst of bieding en ziet welk moment de meeste bestellingen oplevert | De pilot geslaagd is en de app per melding heeft vastgelegd wanneer hij verstuurd is en wat hij opleverde |
+| 4. Wachtlijst bij uitverkocht | Flessen die vrijkomen gaan vanzelf naar wie ze wilde, en Marc ziet hoeveel vraag hij miste | Wijnen in de pilot geregeld uitverkopen voordat de lijst sluit |
+| 5. Terug op de lijst en op dronk | Leden komen terug voor een wijn die ze lekker vonden, en openen een fles op het goede moment | Er drie maanden aan aankopen en oordelen ligt |
+| 6. Inkoopoverzicht voor Marc | Marc ziet per wijn hoe snel hij verkocht, wat er bleef staan en wat leden ervan vonden | De pilot geslaagd is. De gegevens liggen er dan al |
+| 7. De bieding uitbreiden: maximaal bod, volgen, richtprijs | Een lid hoeft de eindtijd niet te bewaken, en weet vooraf wat een fles ongeveer doet | De bieding na de pilot blijft en leden afhaken omdat ze het einde missen |
+| 8. Wijn aan tafel: proeverijen en diners | De club wordt meer dan een bestellijst, met iets wat alleen een chef kan bieden | Marc het wil en er een eerste avond te vullen is |
+| 9. Een lid stelt een lid voor | De club groeit voorbij de huidige groep en blijft besloten | Alle huidige leden zijn uitgenodigd en Marc wil groeien |
+| 10. Bewaren en bundelen | Een lid bestelt ook als de ophaaldatum niet past | Leden lijsten overslaan vanwege het ophalen |
+| 11. Voorinschrijving met een drempel | Marc koopt alleen in wat al verkocht is | Marc wijnen kan krijgen met een minimale afname |
+| 12. De vaste doos van Marc | Voorspelbare omzet, en leden die niet elke lijst hoeven te volgen | Een vaste groep op bijna elke lijst bestelt |
 
 **1. Omschrijving via een taalmodel**
 
@@ -408,3 +482,188 @@ De risico's en wat ertegen helpt:
 Technisch is dit één extra Lambda-functie die het taalmodel via Bedrock aanroept. Bij enkele tientallen flessen passen alle teksten in de vraag aan het model, dus een aparte zoekdatabase is niet nodig. Een limiet per lid per dag voorkomt onverwachte kosten.
 
 De assistent is geslaagd als hij meer dan de helft van de vragen afhandelt zonder Marc, en Marc in zijn wekelijkse steekproef geen antwoorden vindt die hij zelf anders had gegeven.
+
+**3. Campagnes en het beste moment**
+
+Een campagne is een reeks geplande berichten rond één lijst of bieding: een vooraankondiging, de opening, een herinnering, een laatste oproep en de uitslag. Marc plant de reeks één keer. De app verstuurt de berichten of zet ze voor hem klaar, en meet per bericht wat het opleverde.
+
+Eén beperking bepaalt de vorm: **automatisch berichten sturen via WhatsApp kan voor wijn in Nederland niet binnen de regels van WhatsApp.** Dit is nagezocht op 19 november 2026.
+
+| Route | Kan het | Waarom |
+| --- | --- | --- |
+| Zakelijke WhatsApp-koppeling, een bericht per lid | Nee | Het [beleid van WhatsApp](https://whatsappbusiness.com/policy/) staat berichten die alcohol promoten alleen toe in een lijst met landen. Nederland en de rest van Europa staan daar niet op |
+| Automatisch plaatsen in Marcs bestaande groep | Nee | De [groepsfunctie van de koppeling](https://developers.facebook.com/documentation/business-messaging/whatsapp/groups/get-started/) werkt met groepen die via de koppeling zijn aangemaakt en vraagt een geverifieerd zakelijk account. Voor een bestaande groep is geen route beschreven |
+| Marcs eigen account laten aansturen door software | Niet doen | Dat is tegen de voorwaarden van WhatsApp. Een blokkade raakt het nummer waar zijn zaak op draait |
+| Marc plaatst zelf in de groep, de app zet het bericht klaar | Ja | Dit is de bestaande werkwijze. De app plant, herinnert hem en meet. Of de werkwijze zelf binnen het beleid past, hoort bij de juridische check |
+| Melding van de app en e-mail | Ja | Dit zijn kanalen van de club zelf. Ze zijn volledig te plannen en te meten |
+
+De campagne loopt daarom over drie kanalen:
+
+1. **Melding van de app.** Automatisch, op het geplande moment.
+2. **E-mail.** Automatisch, voor leden die geen meldingen aan hebben.
+3. **De WhatsApp-groep.** Half automatisch. Op het geplande moment krijgt Marc een melding met het bericht kant-en-klaar. Eén tik opent WhatsApp, hij kiest de groep en verstuurt.
+
+Zo blijft het bereik van de groep behouden zonder dat Marcs nummer gevaar loopt.
+
+**Een reeks rond een bieding**
+
+De tabel beschrijft de inhoud per bericht. De tekst zelf is van Marc.
+
+| Moment | Bericht | Kanaal |
+| --- | --- | --- |
+| Ochtend | Vooraankondiging: vanavond komt er een bijzondere fles, nog zonder te zeggen welke | Groep, melding |
+| Een uur vooraf | Een hint: de streek of de jaargang | Melding |
+| Opening | De fles, Marcs spraakbericht en het startbod | Groep, melding, e-mail |
+| Halverwege | De stand: het hoogste bod | Melding, alleen aan wie de fles bekeek |
+| Laatste kwartier | Laatste oproep | Melding, alleen aan wie bood of bekeek |
+| Na afloop | De uitslag: verkocht voor dit bedrag | Groep |
+
+Voor een lijst is de reeks korter: aankondiging, opening, "nog beschikbaar" en de sluiting.
+
+**Het beste moment meten**
+
+- Elk bericht krijgt een eigen link. De app legt vast wanneer het verstuurd is, via welk kanaal, wie erop tikte, en wie daarna binnen 24 uur bestelde of bood.
+- De maat is bestellingen en biedingen per bereikt lid. Geopende berichten tellen niet, want die zeggen niets over verkoop.
+- Bij meldingen en e-mail kan de app eerlijk vergelijken: de leden worden willekeurig in twee helften verdeeld, en elke helft krijgt hetzelfde bericht op een ander moment. In de groep kan dat niet; daar vergelijk je lijsten onderling.
+- Het overzicht toont per dag en dagdeel het aantal berichten, het bereik en de bestellingen, met de onzekerheid erbij. Het doet pas een aanbeveling als er genoeg metingen zijn.
+- Met 30 leden en één lijst per week duurt het maanden voordat een verschil tussen twee momenten meer is dan toeval. Met 120 leden gaat dat vier keer zo snel.
+
+**Sneller antwoord, zonder te bouwen**
+
+De groepschat bevat al een deel van het antwoord. Marc kan de chat exporteren. Uit de tijdstippen van zijn aanbiedingen en de bestellingen daarna volgt op welke dagen en uren de groep het snelst en het meest bestelt. Dat kost een middag en kan vóór de pilot.
+
+De export bevat namen en telefoonnummers van leden. Verwerk hem lokaal, bewaar alleen de tellingen en zet hem nooit in de repository.
+
+**Regels**
+
+- **Toestemming.** Volgens de [ACM](https://www.acm.nl/nl/verkoop-aan-consumenten/reclame-en-verleiden/spam-voorkomen-uw-reclame) mag reclame via e-mail, WhatsApp en andere elektronische berichten alleen naar mensen die vooraf toestemming gaven. Bestaande klanten mogen berichten krijgen over producten die met eerdere aankopen te maken hebben. Een lid geeft per kanaal toestemming bij de eerste login.
+- **Afmelden.** In elk bericht staat hoe je je afmeldt, en de afzender is herkenbaar. In de app zet een lid elk kanaal apart uit.
+- **Rust.** Geen campagneberichten tussen 21:30 en 9:00, en een maximum per lid per week. De grenzen stelt Marc vast.
+- **Echte schaarste.** "Nog 3 flessen" komt uit de voorraad. Er zijn geen verzonnen aantallen en geen kunstmatige aftelklok.
+- **Marc keurt elke tekst goed.** Een taalmodel mag een concept maken; er gaat niets uit zonder zijn akkoord.
+- **Alcoholreclame.** Alleen aan leden die 18 jaar of ouder zijn, en zonder aan te zetten tot meer drinken. Laat de regels voor alcoholreclame meenemen in de juridische check.
+
+**Techniek en kosten**
+
+- EventBridge Scheduler plant elk bericht, zoals het ook het sluiten van een bieding plant. Een Lambda-functie verstuurt de melding of de e-mail, of stuurt Marc de herinnering met het klaargezette groepsbericht.
+- Er komt één tabel bij: `campagne` (de lijst of bieding, de reeks, de status). `bericht` en `tik` bestaan sinds de pilot; `bericht` krijgt er de velden gepland op en tekst bij. De toestemming per kanaal staat bij het `lid`.
+- Er komen geen nieuwe externe diensten of sleutels bij. Meldingen zijn gratis en e-mail via SES kost een fractie van een cent per bericht.
+- Ter vergelijking: via de zakelijke WhatsApp-koppeling zou een marketingbericht naar een Nederlands nummer ongeveer €0,13 kosten, ruim €15 per bericht aan 120 leden. Dat bedrag komt uit tariefoverzichten van leveranciers; de tarieflijst van Meta zelf is niet geraadpleegd.
+
+**Als het beleid van WhatsApp verandert**
+
+Controleer het beleid elk kwartaal. Komt Nederland op de lijst, dan wordt WhatsApp een vierde kanaal in dezelfde planner. Er is dan toestemming per lid nodig, elk bericht gebruikt een goedgekeurd sjabloon en elk bericht kost geld.
+
+**Wat de pilot hiervoor al vastlegt**
+
+Meten kan alleen over berichten waarvan het tijdstip en de link bewaard zijn. De pilot legt daarom bij elke melding vast wanneer hij verstuurd is, en geeft elke melding een eigen link. Hetzelfde gebeurt als Marc de link of het overzicht "nog beschikbaar" in de groep deelt. Na acht weken ligt er zo een eerste meting, nog zonder dat er iets gepland of vergeleken wordt.
+
+Campagnes zijn geslaagd als een lijst met campagne meer bestellingen per lid oplevert dan een lijst zonder, weinig leden zich afmelden, en Marc na een kwartaal een voorkeursmoment heeft dat op metingen berust.
+
+**4. Wachtlijst bij uitverkocht**
+
+Staat een wijn op uitverkocht, dan tikt een lid op "Zet me op de wachtlijst" met een aantal. Komt er een fles vrij, doordat een bestelling na 48 uur vervalt of doordat Marc voorraad bijzet, dan krijgt de eerste op de wachtlijst een aanbod dat een dag geldig is. SLOQ doet dit met de hand in de groep; Commerce7 kent het als wensen die na afloop worden toegekend.
+
+- Het sluit aan op wat de pilot al doet: een vervallen bestelling geeft de voorraad nu terug aan Marc. Met een wachtlijst gaat die eerst naar een lid.
+- Marc ziet per wijn hoeveel flessen er meer gevraagd waren. Dat is de enige meting van gemiste verkoop.
+- Er komt één tabel bij, `wachtlijst` (wijn, tijdstip, lid, aantal). De volgorde is het tijdstip van aanmelden, en dat staat in de voorwaarden.
+- De pilot telt al hoeveel leden een uitverkochte wijn openen.
+
+**5. Terug op de lijst en op dronk**
+
+Twee meldingen die uit Mijn flessen volgen. Zet Marc een wijn op de lijst die een lid eerder "Lekker" gaf, dan krijgt dat lid een melding. En valt een gekochte fles binnen de periode die Marc bij "wanneer drinken" invulde, dan krijgt het lid één bericht dat hij op dronk is.
+
+- De velden bestaan al: het oordeel per lid en "drinken van en tot" per wijn. Er komt geen tabel bij.
+- De melding "op dronk" verschijnt alleen als Marc de periode zelf heeft ingevuld. De app schat niets.
+- Dit is het antwoord op de zwakke plek uit het marktonderzoek: terugkomen. Meet welk deel van de meldingen tot een bestelling leidt.
+- De regels van de campagnes gelden ook hier: toestemming per kanaal, een maximum per week, niets na 21:30.
+
+**6. Inkoopoverzicht voor Marc**
+
+Een scherm in beheer met per wijn: verkocht van de voorraad, tijd tot uitverkocht, flessen die bleven staan, de wachtlijst, en hoeveel leden hem lekker vonden of niet. Daarnaast per lijst het aantal bestellers en het bedrag per bestelling.
+
+- Alles komt uit gegevens die de pilot al vastlegt. Het is alleen lezen.
+- Het overzicht toont tellingen per wijn, geen ranglijst van leden.
+- Het helpt bij de vraag die geen concurrent voor Marc beantwoordt: wat hij de volgende keer inkoopt, en hoeveel.
+
+**7. De bieding uitbreiden: maximaal bod, volgen, richtprijs**
+
+De pilot heeft de kern: een bindend bod, een minimale verhoging en verlenging in de laatste twee minuten. Veilinghuizen bieden daarbovenop vier dingen die een lid verwacht dat ze kent.
+
+| Onderdeel | Wat het doet | Waar het vandaan komt |
+| --- | --- | --- |
+| Maximaal bod | Het lid geeft één keer zijn hoogste bedrag op. De app biedt namens hem telkens de minimale verhoging, tot dat bedrag | iDealwine, en bieden bij afwezigheid bij Winefield's |
+| Volgen | Eén tik op "Volg deze fles" geeft een melding bij een nieuw bod en een kwartier voor de eindtijd | De app van Winefield's, iDealwine |
+| Richtprijs | Marc vult een bedrag van en tot in. Het veld mag leeg blijven | Beide veilinghuizen tonen een bandbreedte per kavel |
+| Staat van de fles | Vulniveau, etiket en capsule, door Marc aangevinkt, bij de herkomst en bewaring | iDealwine beoordeelt vulniveau, etiket en kurk |
+
+- Het maximum is geheim. Leden zien alleen het hoogste bod, zoals nu.
+- Een maximaal bod is bindend tot het hele bedrag. Dat moet in de voorwaarden en op het scherm staan voordat het lid bevestigt.
+- Bij twee gelijke maxima wint wie het eerst opgaf. De regel hoort in `domein/` met tests, en de schrijfactie in DynamoDB moet het verborgen maximum in dezelfde stap controleren als het bod.
+- De richtprijs en de staat komen alleen van Marc en worden nooit gegenereerd, net als herkomst en bewaring.
+- Zet op het scherm van de bijzondere fles dat er geen opgeld is. Dat kost één zin en geen bouwtijd.
+
+**8. Wijn aan tafel: proeverijen en diners**
+
+Een avond bij Marc staat als regel op de lijst: een proeverij rond de wijnen van die lijst, of een diner waar een bijzondere fles opengaat. Het aantal plaatsen is de voorraad. Het lid bestelt en betaalt zoals het een fles bestelt.
+
+- Dit is het onderdeel dat een landelijke verkoper niet kan namaken. SLOQ en The Online Sommelier houden proeverijen, Crurated diners met producenten, en in de Verenigde Staten draaien meer dan duizend restaurants en winkels een club via Table22. Een [stuk over het verloop bij wijnclubs](https://wineindustryadvisor.com/2026/04/21/the-wine-club-retention-crisis/) noemt clubs die alleen een levering zijn als de eerste die leden opzeggen.
+- Het blijft buiten wat de scope uitsluit: geen boekingssysteem voor diners. Het is één datum met een vast aantal plaatsen, geen agenda.
+- Technisch is het een derde soort regel naast vaste prijs en bieding, zonder afhaalpunt en met een datum. Bestellen, voorraad en betalen blijven gelijk.
+- Wat Marc aanbiedt, voor welke prijs en hoe vaak, bepaalt hij. Hier staat alleen de vorm.
+- Schenken op een eigen avond kan andere regels kennen dan verkoop van gesloten flessen. Laat dit meenemen in de juridische check.
+
+**9. Een lid stelt een lid voor**
+
+Een lid deelt een persoonlijke link met iemand die het kent. Die persoon vult zelf naam en e-mail in, en Marc keurt de aanvraag goed of af. De club blijft op uitnodiging; alleen de eerste stap komt van een lid. Bij SLOQ kom je zo de groep in, en Slimmer Wijn Kopen geeft er punten voor.
+
+- Het lid voert geen gegevens van een ander in. De nieuwe persoon doet dat zelf, zodat er toestemming is.
+- Marc ziet wie wie voorstelde. Dat is ook zijn waarborg bij een bod dat niet betaald wordt.
+- Begin zonder beloning. Punten passen niet bij de regel "rustig", en een beloning voor het werven van wijnkopers raakt de regels voor alcoholreclame.
+- Stel een grens aan het aantal leden, zodat de schaarste van een lijst echt blijft.
+
+**10. Bewaren en bundelen**
+
+Een lid kiest bij het bestellen "Bewaar bij Marc" in plaats van een afhaalpunt, en haalt later alles in één keer op. MÈZON laat flessen staan tot het totaal €350 is. In de pilot kan bewaren alleen voor flessen uit een bieding.
+
+- Dit neemt de reden weg om een lijst over te slaan omdat de ophaaldatum niet past.
+- Het vraagt ruimte en aansprakelijkheid van Marc. De bewaarvoorwaarden en de verzekering uit de juridische check moeten er eerst zijn, met een maximale duur en een maximaal aantal flessen per lid.
+- Mijn flessen toont al wat in bewaring ligt. Er komt een knop "Zet alles klaar bij een afhaalpunt" bij, voor de eerstvolgende datum.
+- Een goedkoper alternatief zonder opslag: een lid laat een ander lid voor hem ophalen, en dat staat op de paklijst.
+
+**11. Voorinschrijving met een drempel**
+
+Marc biedt een wijn aan die hij nog niet heeft ingekocht, met een minimum aantal flessen. Wordt het minimum gehaald als de lijst sluit, dan koopt hij in en volgt het betaalverzoek. Wordt het niet gehaald, dan vervalt de regel en betaalt niemand. Slimmer Wijn Kopen werkt zo, met terugbetaling als de minimale afname niet gehaald wordt.
+
+- Het past bij betalen na het sluiten: er hoeft niets terugbetaald te worden, omdat er nog niet betaald is.
+- Het lid ziet de stand: nog zoveel flessen tot de wijn doorgaat. Dat is echte schaarste, geen aftelklok.
+- De levertijd is langer dan bij een gewone lijst en moet bij het bestellen vermeld staan.
+- Een wijn per doos, zoals MÈZON soms doet, is dezelfde regel met een veelvoud van zes.
+- De bedenktijd bij een fles die nog besteld moet worden, hoort bij de juridische check.
+
+**12. De vaste doos van Marc**
+
+Een lid dat dat wil, krijgt elke maand of elk kwartaal een doos die Marc samenstelt, voor een vast bedrag, bij zijn afhaalpunt. Het is het model waarmee Table22 restaurants een club laat draaien. De scope sluit een abonnement nu uit, en dat blijft zo tot de lijst bewezen is.
+
+- Overslaan en pauzeren moeten met één tik kunnen. Bij Commerce7 zijn overslaan, wisselen en pauzeren standaard.
+- De cijfers manen tot voorzichtigheid: volgens hetzelfde stuk over het verloop zegt bijna 40% van de leden van Amerikaanse wijnclubs binnen een jaar op. De bron van dat cijfer wordt niet genoemd.
+- Het vraagt terugkerende betalingen. Hoe dat bij Mollie werkt, is niet nagezocht, en met de overgang naar Wero komen er in 2027 volgens ABN AMRO betaalvormen voor abonnementen bij. Wacht daarop.
+- Een lichtere eerste stap: "Marcs keuze" als één regel op een gewone lijst, een doos van zes die hij samenstelt. Dat meet de belangstelling zonder abonnement.
+
+**Bewust niet**
+
+| Idee | Waarom niet |
+| --- | --- |
+| Verkoop tussen leden | Catawiki en Winefield's doen dit met commissie, beoordeling en echtheidscontrole. Het maakt van Marc een tussenpersoon en staat buiten het doel van de club |
+| Landelijke pakketverzending | Alle gevonden verkopers verzenden. Het vergroot het bereik, maar ruilt het onderscheid van de club in voor een markt met gratis bezorging als norm, en vraagt een leeftijdscontrole aan de deur |
+| Punten en spaarsystemen | Slimmer Wijn Kopen heeft ze. Ze botsen met de regel "rustig" en zetten aan tot meer kopen |
+| Een product voor andere chefs en restaurants | Er is in Nederland geen aanbieder zoals Table22 gevonden. Dat is een opening, maar het is een ander project dan een hulpmiddel voor Marc |
+
+**Wat de pilot hiervoor al vastlegt**
+
+Vier tellingen maken de keuze tussen deze onderwerpen na acht weken makkelijker. Ze staan in de planning bij week 4, 6 en 7, en in de bouwspecificatie onder Tellingen voor de roadmap. Er komt geen scherm bij; de bouwer vraagt ze op voor de evaluatie.
+
+- Hoeveel leden een uitverkochte wijn openden: de vraag naar een wachtlijst.
+- Welk deel van de leden op een tweede en derde lijst bestelt: of terugkomen een probleem is.
+- Bij een bieding: hoeveel leden de fles bekeken zonder te bieden, en hoeveel biedingen de eindtijd verlengden: de vraag naar volgen en een maximaal bod.
+- Per melding: wanneer hij verstuurd is, hoeveel leden erop tikten en hoeveel er binnen 24 uur bestelden of boden: het beste moment, voor de campagnes.
