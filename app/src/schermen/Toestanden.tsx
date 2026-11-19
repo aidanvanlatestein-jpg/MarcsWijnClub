@@ -35,7 +35,7 @@ export function Besteld({ bestellingId, ga }: { bestellingId: string; ga: Ga }) 
           Bijbestellen →
         </button>
       </main>
-      <Onderkant ga={ga} tab="aanbod" knop={<Hoofdknop onClick={() => ga({ scherm: 'flessen' })}>Naar mijn flessen</Hoofdknop>} />
+      <Onderkant ga={ga} tab="aanbod" knop={<Hoofdknop onClick={() => ga({ scherm: 'mijn-bestelling' })}>Naar mijn bestelling</Hoofdknop>} />
     </>
   )
 }
@@ -131,7 +131,7 @@ export function Betaling({ ga }: { ga: Ga }) {
         </div>
         {poging.gelukt ? (
           <p className="tekst">
-            Dank je. {bieding ? 'Kies nu wat er met de fles gebeurt.' : punt ? `Je flessen liggen klaar in ${punt.naam}, ${punt.wanneer.toLowerCase()}.` : ''}
+            Dank je. {bieding ? 'Kies nu een afhaalpunt.' : punt ? `Je flessen liggen klaar in ${punt.naam}, ${punt.wanneer.toLowerCase()}.` : ''}
           </p>
         ) : (
           <p className="tekst gedempt">
@@ -141,11 +141,11 @@ export function Betaling({ ga }: { ga: Ga }) {
       </main>
       <Onderkant
         ga={ga}
-        tab="flessen"
+        tab="mijn-bestelling"
         knop={
           poging.gelukt ? (
-            <Hoofdknop onClick={() => ga(bieding && eerste ? { scherm: 'gewonnen', wijnId: eerste.regels[0].wijnId } : { scherm: 'flessen' })}>
-              {bieding ? 'Kies wat er met de fles gebeurt' : 'Naar mijn flessen'}
+            <Hoofdknop onClick={() => ga(bieding && eerste ? { scherm: 'gewonnen', wijnId: eerste.regels[0].wijnId } : { scherm: 'mijn-bestelling' })}>
+              {bieding ? 'Kies een afhaalpunt' : 'Naar mijn bestelling'}
             </Hoofdknop>
           ) : nogOpen.length > 0 ? (
             <Hoofdknop goud onClick={() => setBetalen(true)}>Probeer opnieuw</Hoofdknop>

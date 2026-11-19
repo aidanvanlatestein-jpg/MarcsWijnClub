@@ -91,9 +91,6 @@ export interface Regel {
 
 export type BestelStatus = 'open' | 'betaald' | 'verlopen' | 'terugbetaald'
 
-/** Bewaren bij Marc, alleen voor een fles uit een bieding. */
-export const BEWAREN = 'bewaren'
-
 export interface Bestelling {
   bestellingId: string
   /** Het nummer op de bon, zoals 0147. */
@@ -104,24 +101,12 @@ export interface Bestelling {
   regels: Regel[]
   totaal: number
   status: BestelStatus
-  /** Een afhaalpuntId, 'bewaren', of nog niet gekozen (bij een gewonnen bieding). */
+  /** Een afhaalpuntId, of nog niet gekozen (bij een gewonnen bieding). */
   levering: string | null
   ingevoerdDoor: 'lid' | 'beheer'
   aangemaakt: string
   betaaldOp?: string
   afgeleverdOp?: string
-}
-
-export type Oordeel = 'lekker' | 'niet'
-
-/** Een wijn die het lid op een eerdere lijst kocht. */
-export interface Eerder {
-  wijnId: string
-  letter: string
-  naam: string
-  jaargang?: number
-  aantal: number
-  gekocht: string
 }
 
 /** Fase van een avond bij Marc (design-v3). Zie docs/bouwspecificatie.md, hoofdstuk 3. */

@@ -40,9 +40,9 @@ def prod(web_map):
     return sjablonen("prod", web_map)
 
 
-def test_zeven_tabellen_met_betalen_naar_gebruik_en_herstel(test):
+def test_zes_tabellen_met_betalen_naar_gebruik_en_herstel(test):
     tabellen = test["data"].find_resources("AWS::DynamoDB::Table")
-    assert len(tabellen) == 7
+    assert len(tabellen) == 6
     for tabel in tabellen.values():
         eigenschappen = tabel["Properties"]
         assert eigenschappen["BillingMode"] == "PAY_PER_REQUEST"

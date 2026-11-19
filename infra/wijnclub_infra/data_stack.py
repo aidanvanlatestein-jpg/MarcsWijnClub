@@ -1,4 +1,4 @@
-"""De zeven tabellen. Zie docs/bouwspecificatie.md, hoofdstuk 2."""
+"""De zes tabellen. Zie docs/bouwspecificatie.md, hoofdstuk 2."""
 from __future__ import annotations
 
 from typing import Dict, Optional
@@ -53,7 +53,6 @@ class DataStack(Stack):
         )
 
         self._tabel("betalingen", "mollieBetalingId")
-        self._tabel("oordelen", "lidId", "wijnId")
 
     def _tabel(self, naam: str, sleutel: str, sorteer: Optional[str] = None) -> dynamodb.Table:
         prod = self._omgeving.is_prod

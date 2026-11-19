@@ -28,9 +28,6 @@ BIEDING = "bieding"
 
 SOORTEN = (LIJST, NAMENS, BIEDING)
 
-# Levering is een afhaalpunt van de lijst, of bewaren bij Marc (alleen bij een bieding).
-BEWAREN = "bewaren"
-
 BETAALTERMIJN = timedelta(hours=48)
 LIJST_GESLOTEN = "gesloten"
 
@@ -104,17 +101,14 @@ def betaal_voor(*, soort: str, aangemaakt: datetime, lijst_sluit: Optional[datet
 
 
 def valideer_levering(*, soort: str, levering: Optional[str], afhaalpunten: Sequence[str]) -> None:
-    """Een afhaalpunt van de lijst, of bewaren bij Marc voor een fles uit een bieding.
+    """Levering is altijd een afhaalpunt van de lijst, ook voor een fles uit een bieding.
 
     Bij een bieding kiest de winnaar pas na het betalen; daar mag levering leeg zijn.
+    Bewaren bij Marc is uit de pilot gehaald en staat op de roadmap.
     """
     if levering is None:
         if soort != BIEDING:
             raise OngeldigeBestelling("geen_afhaalpunt")
-        return
-    if levering == BEWAREN:
-        if soort != BIEDING:
-            raise OngeldigeBestelling("bewaren_alleen_bij_bieding")
         return
     if levering not in afhaalpunten:
         raise OngeldigeBestelling("onbekend_afhaalpunt")

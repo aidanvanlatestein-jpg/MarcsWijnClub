@@ -14,7 +14,7 @@ export type Route =
   | { scherm: 'fles'; wijnId: string }
   | { scherm: 'veiling'; wijnId: string }
   | { scherm: 'gewonnen'; wijnId: string }
-  | { scherm: 'flessen' }
+  | { scherm: 'mijn-bestelling' }
   | { scherm: 'marc' }
   | { scherm: 'beheer'; tab?: BeheerTab }
   | { scherm: 'namens' }
@@ -24,7 +24,7 @@ export type BeheerTab = (typeof BEHEER_TABS)[number]
 
 export type Ga = (route: Route) => void
 
-const ZONDER_ID = ['welkom', 'tip', 'bestelling', 'net-op', 'betaling', 'flessen', 'marc'] as const
+const ZONDER_ID = ['welkom', 'tip', 'bestelling', 'net-op', 'betaling', 'mijn-bestelling', 'marc'] as const
 type ZonderId = (typeof ZONDER_ID)[number]
 
 function isZonderId(waarde: string): waarde is ZonderId {
@@ -46,6 +46,8 @@ export function leesRoute(hash: string): Route {
     if (c === 'gewonnen') return { scherm: 'gewonnen', wijnId: b }
     return c === 'fles' ? { scherm: 'fles', wijnId: b } : { scherm: 'veiling', wijnId: b }
   }
+  // Mijn flessen is uit de pilot; het oude adres opent wat ervan over is.
+  if (a === 'flessen') return { scherm: 'mijn-bestelling' }
   // Oude adressen uit design-v2 blijven werken.
   if (a === 'bieding' && b) return c === 'gewonnen' ? { scherm: 'gewonnen', wijnId: b } : { scherm: 'fles', wijnId: b }
   if (a === 'beheer') {

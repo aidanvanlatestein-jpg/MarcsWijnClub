@@ -7,7 +7,7 @@ import { Woordmerk } from '../onderdelen/Kop'
 import { datumLang, euro, flessen, minutenTussen, naamMetJaar, tijd, weekdag } from '../opmaak'
 import type { Ga } from '../route'
 import {
-  betaalverzoek, gesorteerd, LID, mijnBiedingBestelling, mijnLijstBestellingen, nieuwste, tellers, useNu, useStaat, veilingVanAvond,
+  betaalverzoek, gesorteerd, LID, lopendeVeiling, mijnBiedingBestelling, mijnLijstBestellingen, nieuwste, tellers, useNu, useStaat, veilingVanAvond,
   type Staat,
 } from '../staat'
 import type { FeedItem, Wijn } from '../types'
@@ -66,7 +66,7 @@ function Aankondiging({ ga }: { ga: Ga }) {
                 <button type="button" onClick={() => ga({ scherm: 'fles', wijnId: veiling.wijnId })}>
                   <span className="sam-letter goud" aria-hidden>★</span>
                   <span className="sam-naam">
-                    <span className="label goud" style={{ display: 'block', fontSize: 13 }}>Veiling</span>
+                    <span className="label goud" style={{ display: 'block', fontSize: 13 }}>{veiling.geopend ? 'Veiling · loopt nu' : 'Veiling'}</span>
                     {naamMetJaar(veiling)} · 1 fles
                   </span>
                   <span className="sam-prijs">
@@ -283,6 +283,7 @@ function NaAfloop({ ga }: { ga: Ga }) {
     <>
       <main>
         <NietsOpen />
+        <NaarLopendeVeiling ga={ga} />
         <Terugblik />
       </main>
       <Onderkant
@@ -290,11 +291,24 @@ function NaAfloop({ ga }: { ga: Ga }) {
         tab="aanbod"
         knop={
           verzoek.bedrag > 0 ? (
-            <Hoofdknop goud onClick={() => ga({ scherm: 'flessen' })}>Betaal {euro(verzoek.bedrag)} met iDEAL</Hoofdknop>
+            <Hoofdknop goud onClick={() => ga({ scherm: 'mijn-bestelling' })}>Betaal {euro(verzoek.bedrag)} met iDEAL</Hoofdknop>
           ) : undefined
         }
       />
     </>
+  )
+}
+
+/** Na afloop van de avond: loopt er (nog) een veiling, dan is die hier te bereiken. */
+function NaarLopendeVeiling({ ga }: { ga: Ga }) {
+  const [staat] = useStaat()
+  const veiling = lopendeVeiling(staat)
+  if (!veiling) return null
+  return (
+    <button type="button" className="straks" onClick={() => ga({ scherm: 'veiling', wijnId: veiling.wijnId })}>
+      <span className="straks-tekst"><strong className="goud" style={{ fontSize: 18 }}>Er loopt een veiling</strong></span>
+      <ArrowRight size={22} aria-hidden />
+    </button>
   )
 }
 
@@ -314,7 +328,8 @@ export function Terugblik() {
   const [staat] = useStaat()
   const t = tellers(staat)
   const mijn = mijnLijstBestellingen(staat).reduce((som, b) => som + b.regels.reduce((x, r) => x + r.aantal, 0), 0)
-  const veiling = veilingVanAvond(staat)
+  // De fles die het lid won; anders de veiling van de avond. Zo klopt de terugblik ook als er een nieuwe ronde loopt.
+  const veiling = staat.biedingen.find((b) => mijnBiedingBestelling(staat, b.wijnId)) ?? veilingVanAvond(staat)
   const gewonnen = veiling && mijnBiedingBestelling(staat, veiling.wijnId)
   const wijnen = gesorteerd(staat.lijst.wijnen).filter((w) => w.opTafelSinds)
   let slot = ''

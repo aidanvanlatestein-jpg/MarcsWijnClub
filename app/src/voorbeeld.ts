@@ -5,7 +5,7 @@
 // "En de laatste van vandaag". Verzonnen: wijn F en G, de Barolo en alles wat erbij staat, de
 // afhaalpunten en hun tijden, de inleiding, de aankondiging, Marcs berichten in de feed en de
 // biedlog, de snelle zinnen, het aantal leden, de leden en hun bestellingen. Dit zijn geen woorden van Marc.
-import type { Afhaalpunt, Bieding, Eerder, Lid, Lijst, Oordeel } from './types'
+import type { Afhaalpunt, Bieding, Lid, Lijst } from './types'
 
 export const voorbeeldLid: Lid = { lidId: 'lid-1', naam: 'Lid 1', email: 'lid-1@voorbeeld.nl' }
 
@@ -96,14 +96,6 @@ export const voorbeeldSnelleZinnen = ['En de laatste van vandaag 👇', 'Nog maa
 /** Hoeveel leden de avond of de veiling open hebben. In de echte app een telling van open verbindingen. */
 export const voorbeeldLedenBinnen = 14
 export const voorbeeldLedenKijken = 12
-
-export const voorbeeldEerder: Eerder[] = [
-  { wijnId: 'wijn-i', letter: 'I', naam: 'Cándido Immensum', jaargang: 2022, aantal: 3, gekocht: '2026-11-12T12:00:00Z' },
-  { wijnId: 'wijn-g', letter: 'G', naam: 'Chianti Classico', jaargang: 2021, aantal: 2, gekocht: '2026-10-29T12:00:00Z' },
-  { wijnId: 'wijn-f', letter: 'F', naam: 'Verdejo Rueda', jaargang: 2024, aantal: 6, gekocht: '2026-10-01T12:00:00Z' },
-]
-
-export const voorbeeldOordelen: Record<string, Oordeel> = { 'wijn-i': 'lekker', 'wijn-f': 'niet' }
 
 /** Het bericht dat in beheer al klaarstaat om te laten herkennen. Verzonnen. */
 export const voorbeeldBericht = `*Wijn J Soave Classico 2023*

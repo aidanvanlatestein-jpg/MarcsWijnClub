@@ -1,4 +1,4 @@
-export type Tab = 'aanbod' | 'flessen' | 'marc'
+export type Tab = 'aanbod' | 'mijn-bestelling' | 'marc'
 
 export interface TabKeuze<T extends string> {
   id: T
@@ -7,7 +7,7 @@ export interface TabKeuze<T extends string> {
 
 const LEDEN_TABS: TabKeuze<Tab>[] = [
   { id: 'aanbod', label: 'AANBOD' },
-  { id: 'flessen', label: 'FLESSEN' },
+  { id: 'mijn-bestelling', label: 'BESTELLING' },
   { id: 'marc', label: 'MARC' },
 ]
 

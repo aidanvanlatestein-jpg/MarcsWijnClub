@@ -51,7 +51,7 @@ export function Marc({ ga }: { ga: Ga }) {
             <li>De club is alleen op uitnodiging, voor leden van 18 jaar of ouder.</li>
             <li>Een bestelling van de lijst is bindend. Als de lijst sluit, betaal je alles in één keer, binnen 48 uur. Daarna vervalt je bestelling.</li>
             <li>Een bod is bindend. Win je, dan betaal je binnen 48 uur. Een bod in de laatste twee minuten verlengt de bieding met twee minuten.</li>
-            <li>Je haalt je flessen op bij een afhaalpunt. Een fles uit een bieding kan Marc ook voor je bewaren.</li>
+            <li>Je haalt je flessen op bij een afhaalpunt. Dat geldt ook voor een fles uit een bieding.</li>
           </ul>
         </Blad>
       )}
