@@ -250,7 +250,7 @@ Tien soorten gegevens volstaan, elk in een eigen DynamoDB-tabel met betalen naar
 | `bestelling` | bestellingId | lidId, lijstId, regels (wijnId, aantal, prijs), totaal, status (open, betaald, verlopen, terugbetaald), betalen vóór, afhaalpunt of bewaren, afgeleverd, ingevoerd door (lid of Marc) |
 | `betaling` | nummer van de Mollie-betaling | de bestellingen die erin zitten |
 | `oordeel` | lidId + wijnId | lekker of niet voor mij |
-| `weergave` | wijnId + lidId | reden (uitverkocht of bieding), eerste keer. Vervalt na 180 dagen |
+| `weergave` | wijnId + lidId | het eerste moment waarop het lid een bieding opende. Vervalt na 180 dagen |
 | `bericht` | berichtId | soort (nieuwe lijst, nog beschikbaar, betaalverzoek, nieuwe bieding, overboden, gewonnen), kanaal (melding, e-mail, groep), de lijst of wijn waar het over gaat, verzonden op, aantal ontvangers |
 | `tik` | berichtId + lidId | het eerste moment waarop het lid op de melding tikte. Verdwijnt vanzelf na 180 dagen |
 
@@ -296,7 +296,7 @@ Zes punten moeten door een jurist bekeken worden voordat de pilot start. De midd
 
 - Marc is verantwoordelijk voor de gegevens van zijn leden. Wie de app bouwt en beheert is verwerker; daar hoort een verwerkersovereenkomst bij.
 - De app bewaart alleen wat nodig is: naam, e-mail, telefoon, afhaalpunt van voorkeur, biedingen en aankopen. Geen adres, geen geboortedatum, geen kopie van een identiteitsbewijs.
-- Voor de tellingen van de pilot legt de app 180 dagen vast welk lid een uitverkochte wijn of een bieding opende. Marc en de bouwer zien daarvan alleen aantallen. Dit staat in de privacyverklaring, en de grondslag hoort bij de juridische check.
+- Voor de tellingen van de pilot legt de app 180 dagen vast welk lid een bieding opende. Marc en de bouwer zien daarvan alleen aantallen. Dit staat in de privacyverklaring, en de grondslag hoort bij de juridische check.
 - De app legt vast op welke melding een lid tikte, om te meten welk moment werkt. Dat staat in de privacyverklaring. Na 180 dagen verdwijnt dat gegeven vanzelf. Laat toetsen of hiervoor toestemming nodig is.
 - Alle gegevens staan in een AWS-regio binnen de EU.
 - Er komt een korte privacyverklaring in de app, en een lid kan zijn gegevens laten verwijderen. Betaalgegevens blijven bij Mollie en in Marcs boekhouding zolang de fiscale bewaarplicht dat vraagt.
@@ -314,10 +314,10 @@ Elke ruit is een voorwaarde om door te gaan. Zonder akkoord van Marc en de juris
 | --- | --- |
 | 1 en 2 | Open beslissingen rond, nulmeting gedaan, Mollie-account en AWS-account aangemaakt |
 | 3 | Omgeving als code met AWS CDK, pipeline met teststack, inloggen op uitnodiging, lege web-app online op het eigen domein |
-| 4 | Beheer: WhatsApp-bericht plakken en herkennen, lijst met inleiding en afhaalpunten, wijn op de lijst zetten. De lijst en de wijnpagina voor leden, die vastlegt wie een uitverkochte wijn opent |
+| 4 | Beheer: WhatsApp-bericht plakken en herkennen, lijst met inleiding en afhaalpunten, wijn op de lijst zetten. De lijst en de wijnpagina voor leden |
 | 5 | Bestellen met afhaalpunt, bijbestellen, voorraad. De lijst sluiten met een betaalverzoek, betalen via Mollie in testmodus. Mijn flessen |
 | 6 | Bieding: bieden, sluiten op de eindtijd, betaallink voor de winnaar, bewaren bij Marc. Vastleggen wie een bieding opent en welk bod de eindtijd verlengt |
-| 7 | Meldingen en herinneringen, met een meting per melding. Bestelling namens een lid, overzicht "nog beschikbaar" en paklijst per afhaalpunt, knoppen naar WhatsApp, voorwaarden en privacyverklaring, alarmen. De vier tellingen voor de roadmap opvraagbaar |
+| 7 | Meldingen en herinneringen, met een meting per melding. Bestelling namens een lid, overzicht "nog beschikbaar" en paklijst per afhaalpunt, knoppen naar WhatsApp, voorwaarden en privacyverklaring, alarmen. De drie tellingen voor de roadmap opvraagbaar |
 | 8 | Eerste release naar productie. Proefdraaien met Marc en vijf leden, met één echte lijst en echte betalingen |
 | 9 tot en met 16 | Pilot. Marc plaatst zijn lijsten in de app en start minstens twee biedingen. Alleen fouten worden hersteld; er komen geen nieuwe functies bij |
 
@@ -432,15 +432,15 @@ Onderwerp 4 tot en met 12 komen uit het marktonderzoek van 19 november 2026. Het
 | 1. Omschrijving via een taalmodel | Marc zet een fles in enkele minuten online, in zijn eigen woorden | De pilot geslaagd is en het herkennen van Marcs berichten in de pilot goed werkt |
 | 2. Assistent voor vragen van leden | Leden krijgen direct antwoord op veelgestelde vragen; Marc krijgt alleen de vragen die hem nodig hebben | Er minstens 20 flessen met goedgekeurde tekst zijn en Marc dezelfde vragen steeds terug ziet komen |
 | 3. Campagnes en het beste moment | Marc plant een reeks berichten rond een lijst of bieding en ziet welk moment de meeste bestellingen oplevert | De pilot geslaagd is en de app per melding heeft vastgelegd wanneer hij verstuurd is en wat hij opleverde |
-| 4. Wachtlijst bij uitverkocht | Flessen die vrijkomen gaan vanzelf naar wie ze wilde, en Marc ziet hoeveel vraag hij miste | Wijnen in de pilot geregeld uitverkopen voordat de lijst sluit |
-| 5. Terug op de lijst en op dronk | Leden komen terug voor een wijn die ze lekker vonden, en openen een fles op het goede moment | Er drie maanden aan aankopen en oordelen ligt |
-| 6. Inkoopoverzicht voor Marc | Marc ziet per wijn hoe snel hij verkocht, wat er bleef staan en wat leden ervan vonden | De pilot geslaagd is. De gegevens liggen er dan al |
-| 7. De bieding uitbreiden: maximaal bod, volgen, richtprijs | Een lid hoeft de eindtijd niet te bewaken, en weet vooraf wat een fles ongeveer doet | De bieding na de pilot blijft en leden afhaken omdat ze het einde missen |
-| 8. Wijn aan tafel: proeverijen en diners | De club wordt meer dan een bestellijst, met iets wat alleen een chef kan bieden | Marc het wil en er een eerste avond te vullen is |
-| 9. Een lid stelt een lid voor | De club groeit voorbij de huidige groep en blijft besloten | Alle huidige leden zijn uitgenodigd en Marc wil groeien |
-| 10. Bewaren en bundelen | Een lid bestelt ook als de ophaaldatum niet past | Leden lijsten overslaan vanwege het ophalen |
-| 11. Voorinschrijving met een drempel | Marc koopt alleen in wat al verkocht is | Marc wijnen kan krijgen met een minimale afname |
-| 12. De vaste doos van Marc | Voorspelbare omzet, en leden die niet elke lijst hoeven te volgen | Een vaste groep op bijna elke lijst bestelt |
+| 4. Terug op de lijst en op dronk | Leden komen terug voor een wijn die ze lekker vonden, en openen een fles op het goede moment | Er drie maanden aan aankopen en oordelen ligt |
+| 5. Inkoopoverzicht voor Marc | Marc ziet per wijn hoe snel hij verkocht, wat er bleef staan en wat leden ervan vonden | De pilot geslaagd is. De gegevens liggen er dan al |
+| 6. De bieding uitbreiden: maximaal bod, volgen, richtprijs | Een lid hoeft de eindtijd niet te bewaken, en weet vooraf wat een fles ongeveer doet | De bieding na de pilot blijft en leden afhaken omdat ze het einde missen |
+| 7. Wijn aan tafel: proeverijen en diners | De club wordt meer dan een bestellijst, met iets wat alleen een chef kan bieden | Marc het wil en er een eerste avond te vullen is |
+| 8. Een lid stelt een lid voor | De club groeit voorbij de huidige groep en blijft besloten | Alle huidige leden zijn uitgenodigd en Marc wil groeien |
+| 9. Bewaren en bundelen | Een lid bestelt ook als de ophaaldatum niet past | Leden lijsten overslaan vanwege het ophalen |
+| 10. Voorinschrijving met een drempel | Marc koopt alleen in wat al verkocht is | Marc wijnen kan krijgen met een minimale afname |
+| 11. De vaste doos van Marc | Voorspelbare omzet, en leden die niet elke lijst hoeven te volgen | Een vaste groep op bijna elke lijst bestelt |
+| 12. Wachtlijst bij uitverkocht | Een fles die vrijkomt gaat vanzelf naar wie hem wilde | Marc wijnen gaat verkopen die hij kan nabestellen, of bestellingen geregeld vervallen |
 
 **1. Omschrijving via een taalmodel**
 
@@ -560,16 +560,7 @@ Meten kan alleen over berichten waarvan het tijdstip en de link bewaard zijn. De
 
 Campagnes zijn geslaagd als een lijst met campagne meer bestellingen per lid oplevert dan een lijst zonder, weinig leden zich afmelden, en Marc na een kwartaal een voorkeursmoment heeft dat op metingen berust.
 
-**4. Wachtlijst bij uitverkocht**
-
-Staat een wijn op uitverkocht, dan tikt een lid op "Zet me op de wachtlijst" met een aantal. Komt er een fles vrij, doordat een bestelling na 48 uur vervalt of doordat Marc voorraad bijzet, dan krijgt de eerste op de wachtlijst een aanbod dat een dag geldig is. SLOQ doet dit met de hand in de groep; Commerce7 kent het als wensen die na afloop worden toegekend.
-
-- Het sluit aan op wat de pilot al doet: een vervallen bestelling geeft de voorraad nu terug aan Marc. Met een wachtlijst gaat die eerst naar een lid.
-- Marc ziet per wijn hoeveel flessen er meer gevraagd waren. Dat is de enige meting van gemiste verkoop.
-- Er komt één tabel bij, `wachtlijst` (wijn, tijdstip, lid, aantal). De volgorde is het tijdstip van aanmelden, en dat staat in de voorwaarden.
-- De pilot telt al hoeveel leden een uitverkochte wijn openen.
-
-**5. Terug op de lijst en op dronk**
+**4. Terug op de lijst en op dronk**
 
 Twee meldingen die uit Mijn flessen volgen. Zet Marc een wijn op de lijst die een lid eerder "Lekker" gaf, dan krijgt dat lid een melding. En valt een gekochte fles binnen de periode die Marc bij "wanneer drinken" invulde, dan krijgt het lid één bericht dat hij op dronk is.
 
@@ -578,15 +569,15 @@ Twee meldingen die uit Mijn flessen volgen. Zet Marc een wijn op de lijst die ee
 - Dit is het antwoord op de zwakke plek uit het marktonderzoek: terugkomen. Meet welk deel van de meldingen tot een bestelling leidt.
 - De regels van de campagnes gelden ook hier: toestemming per kanaal, een maximum per week, niets na 21:30.
 
-**6. Inkoopoverzicht voor Marc**
+**5. Inkoopoverzicht voor Marc**
 
-Een scherm in beheer met per wijn: verkocht van de voorraad, tijd tot uitverkocht, flessen die bleven staan, de wachtlijst, en hoeveel leden hem lekker vonden of niet. Daarnaast per lijst het aantal bestellers en het bedrag per bestelling.
+Een scherm in beheer met per wijn: verkocht van de voorraad, tijd tot uitverkocht, flessen die bleven staan, en hoeveel leden hem lekker vonden of niet. Daarnaast per lijst het aantal bestellers en het bedrag per bestelling.
 
 - Alles komt uit gegevens die de pilot al vastlegt. Het is alleen lezen.
 - Het overzicht toont tellingen per wijn, geen ranglijst van leden.
 - Het helpt bij de vraag die geen concurrent voor Marc beantwoordt: wat hij de volgende keer inkoopt, en hoeveel.
 
-**7. De bieding uitbreiden: maximaal bod, volgen, richtprijs**
+**6. De bieding uitbreiden: maximaal bod, volgen, richtprijs**
 
 De pilot heeft de kern: een bindend bod, een minimale verhoging en verlenging in de laatste twee minuten. Veilinghuizen bieden daarbovenop vier dingen die een lid verwacht dat ze kent.
 
@@ -603,7 +594,7 @@ De pilot heeft de kern: een bindend bod, een minimale verhoging en verlenging in
 - De richtprijs en de staat komen alleen van Marc en worden nooit gegenereerd, net als herkomst en bewaring.
 - Zet op het scherm van de bijzondere fles dat er geen opgeld is. Dat kost één zin en geen bouwtijd.
 
-**8. Wijn aan tafel: proeverijen en diners**
+**7. Wijn aan tafel: proeverijen en diners**
 
 Een avond bij Marc staat als regel op de lijst: een proeverij rond de wijnen van die lijst, of een diner waar een bijzondere fles opengaat. Het aantal plaatsen is de voorraad. Het lid bestelt en betaalt zoals het een fles bestelt.
 
@@ -613,7 +604,7 @@ Een avond bij Marc staat als regel op de lijst: een proeverij rond de wijnen van
 - Wat Marc aanbiedt, voor welke prijs en hoe vaak, bepaalt hij. Hier staat alleen de vorm.
 - Schenken op een eigen avond kan andere regels kennen dan verkoop van gesloten flessen. Laat dit meenemen in de juridische check.
 
-**9. Een lid stelt een lid voor**
+**8. Een lid stelt een lid voor**
 
 Een lid deelt een persoonlijke link met iemand die het kent. Die persoon vult zelf naam en e-mail in, en Marc keurt de aanvraag goed of af. De club blijft op uitnodiging; alleen de eerste stap komt van een lid. Bij SLOQ kom je zo de groep in, en Slimmer Wijn Kopen geeft er punten voor.
 
@@ -622,7 +613,7 @@ Een lid deelt een persoonlijke link met iemand die het kent. Die persoon vult ze
 - Begin zonder beloning. Punten passen niet bij de regel "rustig", en een beloning voor het werven van wijnkopers raakt de regels voor alcoholreclame.
 - Stel een grens aan het aantal leden, zodat de schaarste van een lijst echt blijft.
 
-**10. Bewaren en bundelen**
+**9. Bewaren en bundelen**
 
 Een lid kiest bij het bestellen "Bewaar bij Marc" in plaats van een afhaalpunt, en haalt later alles in één keer op. MÈZON laat flessen staan tot het totaal €350 is. In de pilot kan bewaren alleen voor flessen uit een bieding.
 
@@ -631,7 +622,7 @@ Een lid kiest bij het bestellen "Bewaar bij Marc" in plaats van een afhaalpunt, 
 - Mijn flessen toont al wat in bewaring ligt. Er komt een knop "Zet alles klaar bij een afhaalpunt" bij, voor de eerstvolgende datum.
 - Een goedkoper alternatief zonder opslag: een lid laat een ander lid voor hem ophalen, en dat staat op de paklijst.
 
-**11. Voorinschrijving met een drempel**
+**10. Voorinschrijving met een drempel**
 
 Marc biedt een wijn aan die hij nog niet heeft ingekocht, met een minimum aantal flessen. Wordt het minimum gehaald als de lijst sluit, dan koopt hij in en volgt het betaalverzoek. Wordt het niet gehaald, dan vervalt de regel en betaalt niemand. Slimmer Wijn Kopen werkt zo, met terugbetaling als de minimale afname niet gehaald wordt.
 
@@ -641,7 +632,7 @@ Marc biedt een wijn aan die hij nog niet heeft ingekocht, met een minimum aantal
 - Een wijn per doos, zoals MÈZON soms doet, is dezelfde regel met een veelvoud van zes.
 - De bedenktijd bij een fles die nog besteld moet worden, hoort bij de juridische check.
 
-**12. De vaste doos van Marc**
+**11. De vaste doos van Marc**
 
 Een lid dat dat wil, krijgt elke maand of elk kwartaal een doos die Marc samenstelt, voor een vast bedrag, bij zijn afhaalpunt. Het is het model waarmee Table22 restaurants een club laat draaien. De scope sluit een abonnement nu uit, en dat blijft zo tot de lijst bewezen is.
 
@@ -649,6 +640,16 @@ Een lid dat dat wil, krijgt elke maand of elk kwartaal een doos die Marc samenst
 - De cijfers manen tot voorzichtigheid: volgens hetzelfde stuk over het verloop zegt bijna 40% van de leden van Amerikaanse wijnclubs binnen een jaar op. De bron van dat cijfer wordt niet genoemd.
 - Het vraagt terugkerende betalingen. Hoe dat bij Mollie werkt, is niet nagezocht, en met de overgang naar Wero komen er in 2027 volgens ABN AMRO betaalvormen voor abonnementen bij. Wacht daarop.
 - Een lichtere eerste stap: "Marcs keuze" als één regel op een gewone lijst, een doos van zes die hij samenstelt. Dat meet de belangstelling zonder abonnement.
+
+**12. Wachtlijst bij uitverkocht**
+
+Staat een wijn op uitverkocht, dan tikt een lid op "Zet me op de wachtlijst" met een aantal. Komt er een fles vrij doordat een bestelling na 48 uur vervalt, dan krijgt de eerste op de wachtlijst een aanbod dat een dag geldig is. SLOQ doet dit met de hand in de groep; Commerce7 kent het als wensen die na afloop worden toegekend.
+
+- **Waarom dit onderaan staat.** Marc verkoopt vaak restpartijen. Is zo'n wijn op, dan komt er geen voorraad bij, en levert een wachtlijst alleen iets op als een bestelling vervalt.
+- Het sluit aan op wat de pilot al doet: een vervallen bestelling geeft de voorraad nu terug aan Marc. Met een wachtlijst gaat die eerst naar een lid.
+- Marc ziet per wijn hoeveel flessen er meer gevraagd waren. Bij een restpartij kan hij daar niets mee; bij een wijn die hij kan nabestellen wel.
+- Er komt één tabel bij, `wachtlijst` (wijn, tijdstip, lid, aantal). De volgorde is het tijdstip van aanmelden, en dat staat in de voorwaarden.
+- De pilot meet de vraag hiernaar niet.
 
 **Bewust niet**
 
@@ -661,9 +662,8 @@ Een lid dat dat wil, krijgt elke maand of elk kwartaal een doos die Marc samenst
 
 **Wat de pilot hiervoor al vastlegt**
 
-Vier tellingen maken de keuze tussen deze onderwerpen na acht weken makkelijker. Ze staan in de planning bij week 4, 6 en 7, en in de bouwspecificatie onder Tellingen voor de roadmap. Er komt geen scherm bij; de bouwer vraagt ze op voor de evaluatie.
+Drie tellingen maken de keuze tussen deze onderwerpen na acht weken makkelijker. Ze staan in de planning bij week 6 en 7, en in de bouwspecificatie onder Tellingen voor de roadmap. Er komt geen scherm bij; de bouwer vraagt ze op voor de evaluatie.
 
-- Hoeveel leden een uitverkochte wijn openden: de vraag naar een wachtlijst.
 - Welk deel van de leden op een tweede en derde lijst bestelt: of terugkomen een probleem is.
 - Bij een bieding: hoeveel leden de fles bekeken zonder te bieden, en hoeveel biedingen de eindtijd verlengden: de vraag naar volgen en een maximaal bod.
 - Per melding: wanneer hij verstuurd is, hoeveel leden erop tikten en hoeveel er binnen 24 uur bestelden of boden: het beste moment, voor de campagnes.

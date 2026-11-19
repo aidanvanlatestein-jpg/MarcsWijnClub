@@ -49,7 +49,7 @@ Tien tabellen, alle met betalen naar gebruik en herstel naar een tijdstip. `beta
 | | | `lijst-index`: `lijstId` + `aangemaakt` | Marcs overzicht per lijst |
 | `betalingen` | `mollieBetalingId` | geen | Melding van Mollie naar de bestellingen in die betaling |
 | `oordelen` | `lidId` + `wijnId` | geen | |
-| `weergaven` | `wijnId` + `lidId` | geen | Per wijn tellen hoeveel leden hem openden |
+| `weergaven` | `wijnId` + `lidId` | geen | Per bieding tellen hoeveel leden hem openden |
 | `berichten` | `berichtId` | geen | Per melding vastleggen wanneer hij verstuurd is. Bij enkele honderden berichten is alles doorlopen geen probleem |
 | `tikken` | `berichtId` + `lidId` | geen | Per melding tellen hoeveel leden erop tikten |
 
@@ -66,7 +66,7 @@ Tien tabellen, alle met betalen naar gebruik en herstel naar een tijdstip. `beta
 - **`bestellingen`**: `bestellingId`, `lidId`, `soort` (`lijst`, `bieding`, `namens`), `lijstId`, `regels` (lijst van `wijnId`, `naam`, `aantal`, `prijs`), `totaal`, `status`, `voorraadGereserveerd`, `betaalVoor`, `levering` (een `afhaalpuntId` van de lijst, of `bewaren` bij een bieding), `afgeleverdOp`, `ingevoerdDoor`, `aangemaakt`, `betaaldOp`, `controleNodig`.
 - **`betalingen`**: `mollieBetalingId`, `bestellingIds` (lijst), `lidId`, `lijstId`, `bedrag`, `aangemaakt`.
 - **`oordelen`**: `lidId`, `wijnId`, `oordeel` (`lekker`, `niet`), `gewijzigd`.
-- **`weergaven`**: `wijnId`, `lidId`, `reden` (`uitverkocht`, `bieding`), `eerst`, `vervaltOp`. Eén rij per lid per wijn, alleen voor de tellingen.
+- **`weergaven`**: `wijnId`, `lidId`, `eerst`, `vervaltOp`. Eén rij per lid per bieding, alleen voor de tellingen.
 - **`berichten`**: `berichtId`, `soort` (`nieuwe-lijst`, `nog-beschikbaar`, `betaalverzoek`, `betaalherinnering`, `nieuwe-bieding`, `overboden`, `gewonnen`), `kanaal` (`melding`, `email`, `groep`), `lijstId` of `wijnId`, `verzondenOp`, `ontvangers` (aantal). Er staat geen `lidId` in, ook niet bij een bericht aan één lid.
 - **`tikken`**: `berichtId`, `lidId`, `eerst`, `vervaltOp`. Eén rij per lid per bericht, alleen voor de tellingen.
 
@@ -165,7 +165,7 @@ Alle paden beginnen met `/api`. Elke aanroep vraagt een geldig token van Cognito
 | Aanroep | Doet | Antwoord |
 | --- | --- | --- |
 | `GET /api/aanbod` | De open lijst met wijnen, en de open biedingen | `200` |
-| `GET /api/wijnen/{wijnId}` | Eén wijn. Legt vast dat het lid een uitverkochte wijn of een bieding opende, zie Tellingen voor de roadmap | `200`, `404` |
+| `GET /api/wijnen/{wijnId}` | Eén wijn. Legt vast dat het lid een bieding opende, zie Tellingen voor de roadmap | `200`, `404` |
 | `POST /api/bestellingen` | Bestellen van de lijst: `regels`, `levering` (een afhaalpunt). Er wordt nog niet betaald | `201`, of `409` met de wijnen die op zijn |
 | `GET /api/bestellingen/{id}` | Status, na terugkomst van de betaalpagina | `200`, `404` |
 | `POST /api/mijn/betalingen` | Eén betaling starten: met `lijstId` voor alle open bestellingen op een gesloten lijst, of met `bestellingId` voor een gewonnen bieding | `201` met `betaalUrl`, `409` als er niets te betalen is of de lijst nog open staat |
@@ -204,22 +204,21 @@ Details staan in het logboek, zonder namen, adressen of bedragen per persoon.
 
 ### Tellingen voor de roadmap
 
-De pilot legt vier tellingen vast, zodat na acht weken te kiezen is tussen de onderwerpen op de roadmap van het plan. Er komt geen scherm bij: de bouwer vraagt ze op met `GET /api/beheer/tellingen` voor de evaluatie.
+De pilot legt drie tellingen vast, zodat na acht weken te kiezen is tussen de onderwerpen op de roadmap van het plan. Er komt geen scherm bij: de bouwer vraagt ze op met `GET /api/beheer/tellingen` voor de evaluatie.
 
 | Telling | Beantwoordt | Komt uit | Nieuw |
 | --- | --- | --- | --- |
-| Leden die een uitverkochte wijn openden, per wijn | Is er vraag naar een wachtlijst | `weergaven` met reden `uitverkocht` | Tabel `weergaven` |
 | Leden die op één, twee, of drie en meer lijsten bestelden | Komen leden terug | `bestellingen`, via `lijst-index` | Niets |
-| Per bieding: leden die keken, leden die boden, en biedingen die de eindtijd verlengden | Is er vraag naar volgen en een maximaal bod | `weergaven` met reden `bieding`, en `biedingen` met `verlengd` | Veld `verlengd` |
+| Per bieding: leden die keken, leden die boden, en biedingen die de eindtijd verlengden | Is er vraag naar volgen en een maximaal bod | `weergaven`, en `biedingen` met `verlengd` | Tabel `weergaven` en veld `verlengd` |
 | Per melding: wanneer hij verstuurd is, hoeveel leden erop tikten, en hoeveel er binnen 24 uur bestelden of boden | Welk moment werkt, voor de campagnes op de roadmap | `berichten`, `tikken`, `bestellingen` en `biedingen` | Tabellen `berichten` en `tikken` |
 
-**Een weergave vastleggen.** `GET /api/wijnen/{wijnId}` schrijft één rij in `weergaven` als de wijn een vaste prijs heeft en de `voorraad` 0 is, of als het een bieding is die open staat.
+**Een weergave vastleggen.** `GET /api/wijnen/{wijnId}` schrijft één rij in `weergaven` als de wijn een bieding is die open staat.
 
 - De rij wordt alleen geschreven als hij nog niet bestaat. Tien keer openen telt als één lid.
 - Het is een eigen tabel en geen veld op de wijn. Een schrijfactie op de wijn tijdens een bod of een bestelling kan die transactie laten mislukken, en een telling mag de bieding nooit raken.
 - Mislukt het schrijven, dan staat dat in het logboek en krijgt het lid gewoon de wijn te zien.
 - Een aanroep uit de groep `beheer` telt niet mee.
-- De schermen Wijn van de lijst en Bijzondere fles roepen `GET /api/wijnen/{wijnId}` altijd aan bij het openen, ook als de gegevens al uit `GET /api/aanbod` bekend zijn.
+- Het scherm Bijzondere fles roept `GET /api/wijnen/{wijnId}` altijd aan bij het openen, ook als de gegevens al uit `GET /api/aanbod` bekend zijn.
 
 **Terugkomende bestellers.** Een lid telt voor een lijst mee als het daar minstens één bestelling van soort `lijst` of `namens` heeft die niet `verlopen` is. De telling loopt over alle gesloten lijsten. De regel staat in `domein/`, met tests.
 
@@ -232,9 +231,9 @@ De pilot legt vier tellingen vast, zodat na acht weken te kiezen is tussen de on
 - Deelt Marc de link of het overzicht "nog beschikbaar" in de WhatsApp-groep, dan vraagt de web-app eerst `POST /api/beheer/berichten` aan en zet ze de link met het `berichtId` in de tekst. Het moment van delen geldt als `verzondenOp`.
 - Wie na een bericht bestelde of bood, wordt niet opgeslagen. De telling loopt over de bestellingen en biedingen op die lijst of wijn binnen 24 uur na `verzondenOp`.
 
-**Wat `GET /api/beheer/tellingen` teruggeeft.** Alleen aantallen: per wijn, per bieding, per lijst en per bericht. Er gaat geen `lidId` en geen naam in het antwoord, en ook niet in het logboek.
+**Wat `GET /api/beheer/tellingen` teruggeeft.** Alleen aantallen: per bieding, per lijst en per bericht. Er gaat geen `lidId` en geen naam in het antwoord, en ook niet in het logboek.
 
-**Privacy.** `weergaven` legt vast welk lid welke wijn opende, en `tikken` welk lid op welke melding tikte. Dat is een persoonsgegeven en hoort in de privacyverklaring. `vervaltOp` staat op 180 dagen na `eerst`, waarna DynamoDB de rij verwijdert. Dat veld is een getal in seconden sinds 1970, omdat DynamoDB dat vraagt; het is de enige tijd die niet als UTC-tekst staat.
+**Privacy.** `weergaven` legt vast welk lid welke bieding opende, en `tikken` welk lid op welke melding tikte. Dat is een persoonsgegeven en hoort in de privacyverklaring. `vervaltOp` staat op 180 dagen na `eerst`, waarna DynamoDB de rij verwijdert. Dat veld is een getal in seconden sinds 1970, omdat DynamoDB dat vraagt; het is de enige tijd die niet als UTC-tekst staat.
 
 ## 6. Inloggen en rechten
 
@@ -319,7 +318,7 @@ Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan g
 | Koppeling met Mollie | Nog niet | Week 5 |
 | Taken in EventBridge Scheduler | Nog niet | Week 5 en 6 |
 | Meldingen | Nog niet | Week 7 |
-| Tellingen voor de roadmap: tabel `weergaven`, veld `verlengd`, `GET /api/beheer/tellingen` | Nog niet | Week 4, 6 en 7 |
+| Tellingen voor de roadmap: tabel `weergaven`, veld `verlengd`, `GET /api/beheer/tellingen` | Nog niet | Week 6 en 7 |
 | Meting per melding: tabellen `berichten` en `tikken`, `POST /api/mijn/tikken`, `POST /api/beheer/berichten` | Nog niet | Week 7 |
 | Web-app: opzet, gedeelde onderdelen, de schermen Aanbod en Wijn van de lijst met voorbeeldinhoud | Gebouwd | Week 4 |
 | Web-app: inloggen, de overige schermen, koppeling met de API | Nog niet | Week 4 tot en met 7 |
@@ -333,7 +332,7 @@ Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan g
 - **Wie niet betaalt.** Na 48 uur verloopt de bestelling vanzelf. Of Marc dat wil, of liever zelf beslist per lid, moet hij aangeven.
 - **Meldingen op de iPhone.** Werken alleen als de app op het beginscherm staat. De precieze eisen moeten in week 7 nagezocht worden.
 - **Bedrock.** Welk model en of het in de gekozen regio beschikbaar is, wordt in week 4 gekozen.
-- **Rijen automatisch verwijderen.** `weergaven` en `tikken` gaan ervan uit dat DynamoDB een rij verwijdert op het tijdstip in `vervaltOp`. Dat is uit het hoofd opgeschreven en niet nagelezen. Zoek bij het bouwen in week 4 op hoe het werkt en hoe snel na het tijdstip de rij echt weg is.
-- **Grondslag voor de tellingen.** Of het vastleggen van welk lid welke wijn opende of op welke melding tikte onder het gerechtvaardigd belang van Marc valt, of toestemming vraagt, hoort bij de juridische check.
+- **Rijen automatisch verwijderen.** `weergaven` en `tikken` gaan ervan uit dat DynamoDB een rij verwijdert op het tijdstip in `vervaltOp`. Dat is uit het hoofd opgeschreven en niet nagelezen. Zoek bij het bouwen in week 6 op hoe het werkt en hoe snel na het tijdstip de rij echt weg is.
+- **Grondslag voor de tellingen.** Of het vastleggen van welk lid welke bieding opende of op welke melding tikte onder het gerechtvaardigd belang van Marc valt, of toestemming vraagt, hoort bij de juridische check.
 - **Web-app.** Gekozen: React met Vite. Het ontwerp in pen.dev is de bron voor de schermen; het prototype blijft de bron voor het gedrag.
 - **Lokale Python.** Op de machine waarop deze opzet is gemaakt staat Python 3.9, dat niet meer wordt ondersteund. De code en de tests werken ermee, maar pip installeert er oudere versies van pytest en boto3 op, met bekende kwetsbaarheden (pytest: PYSEC-2026-1845; urllib3 1.26, via boto3: meerdere). Die draaien alleen lokaal en komen niet in Lambda. Installeer Python 3.14: dan lopen de versies gelijk met Lambda en zijn de kwetsbaarheden weg. De tests zijn alleen op 3.9 gedraaid.
