@@ -77,10 +77,57 @@ cd infra && npx aws-cdk@2.1149.0 bootstrap
 De testomgeving uitrollen:
 
 ```bash
-cd infra && npx aws-cdk@2.1149.0 deploy --all -c omgeving=test
+cd infra && npx aws-cdk@2.1149.0 deploy "Wijnclub-test-*" -c omgeving=test
 ```
 
 Voor productie gebruik je `-c omgeving=prod`. Daar blijven tabellen en bestanden staan als je een stack verwijdert; in test verdwijnen ze.
+
+## Pipeline
+
+De pipeline draait in GitHub Actions. De workflows staan in `.github/workflows`. Elke Action staat vast op een commit-hash.
+
+| Workflow | Wanneer | Wat |
+| --- | --- | --- |
+| `controles.yml` | Vanuit de andere workflows | ruff, pip-audit en pytest; npm audit en het bouwen van de web-app; `cdk synth` voor test en productie. Raakt AWS niet |
+| `pull-request.yml` | Elke pull request naar `main` | De controles, en `cdk diff` tegen productie in de samenvatting. Een pull request uit een fork krijgt geen toegang tot AWS |
+| `test.yml` | Elke push naar `main` | De controles, uitrol van `Wijnclub-test-*` en de rooktest uit `tests/smoke` |
+| `productie.yml` | Elke tag die met `v` begint | De controles, jouw goedkeuring, uitrol van `Wijnclub-prod-*` en de rooktest. Bij een fout zet hij de vorige tag terug |
+| `wekelijks.yml` | Maandag 06:00 UTC | De controles, voor nieuw bekende kwetsbaarheden |
+
+GitHub logt via OIDC in op AWS met een tijdelijke rol. Er staan geen AWS-sleutels in GitHub. De rollen staan in de stack `Wijnclub-GitHub` (`infra/wijnclub_infra/github_stack.py`):
+
+| Rol | Alleen vanuit | Mag |
+| --- | --- | --- |
+| `wijnclub-github-lezen` | Een pull request | De leesrol van CDK aannemen, voor `cdk diff` |
+| `wijnclub-github-test` | De branch `main` | De uitrolrollen van CDK aannemen |
+| `wijnclub-github-prod` | De GitHub-omgeving `productie` | De uitrolrollen van CDK aannemen |
+
+Test en productie staan in hetzelfde account en delen de uitrolrollen van CDK. De scheiding zit dus in de voorwaarden van de rollen en in de beveiliging van de omgeving `productie`.
+
+### Eenmalig instellen
+
+Doe dit na de stappen onder "Voor de eerste uitrol".
+
+1. Rol de stack met de rollen zelf uit; de pipeline doet dat nooit. Controleer eerst het account met `aws sts get-caller-identity`. Staat er in het account al een OIDC-koppeling met GitHub, dan faalt deze stap; meld het dan.
+
+    ```bash
+    cd infra && npx aws-cdk@2.1149.0 deploy Wijnclub-GitHub -c afzender_email=naam@jouwdomein.nl
+    ```
+
+2. Zet in GitHub onder Settings, Secrets and variables, Actions twee geheimen: `AWS_ACCOUNT_ID` en `AFZENDER_EMAIL`. De repository is openbaar, dus ook de logs; als geheim maskeert GitHub ze. Een andere regio dan Ierland zet je als variabele `AWS_REGIO`.
+3. Maak onder Settings, Environments de omgeving `productie` aan. Zet jezelf bij Required reviewers, en beperk Deployment branches and tags tot tags met het patroon `v*`. Doe dit vóór de eerste tag: zonder die beveiliging kan elke workflow in de repository de productierol krijgen.
+
+### Een release naar productie
+
+```bash
+git tag v2026.12.1
+```
+
+```bash
+git push origin v2026.12.1
+```
+
+De workflow wacht daarna op jouw goedkeuring in GitHub.
 
 ## Afspraken
 

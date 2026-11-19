@@ -1,0 +1,25 @@
+name: Voorbereiden op uitrollen
+description: Node.js en Python klaarzetten, de afhankelijkheden installeren en de web-app bouwen.
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: "24"
+        cache: npm
+        cache-dependency-path: app/package-lock.json
+    - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: "3.14"
+        cache: pip
+        cache-dependency-path: |
+          requirements-dev.txt
+          infra/requirements.txt
+    - name: Afhankelijkheden installeren
+      shell: bash
+      run: pip install -r requirements-dev.txt
+    - name: Web-app bouwen
+      shell: bash
+      working-directory: app
+      run: npm ci && npm run build

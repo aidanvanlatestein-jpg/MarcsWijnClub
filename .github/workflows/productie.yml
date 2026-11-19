@@ -1,0 +1,83 @@
+# Bij een release-tag zoals v2026.12.1: de controles, de uitrol naar productie en de rooktest.
+# Faalt de uitrol of de rooktest, dan zet de workflow de vorige release terug.
+#
+# De job draait in de GitHub-omgeving "productie". Richt die in voordat je de eerste tag zet:
+# alleen tags die met v beginnen, en jij als verplichte goedkeurder. Alleen vanuit die
+# omgeving mag GitHub de productierol in AWS aannemen.
+name: Uitrol naar productie
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uitrol-productie
+  cancel-in-progress: false
+
+jobs:
+  controles:
+    uses: ./.github/workflows/controles.yml
+
+  uitrol:
+    name: Uitrol en rooktest
+    needs: controles
+    runs-on: ubuntu-24.04
+    environment: productie
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      AFZENDER_EMAIL: ${{ secrets.AFZENDER_EMAIL }}
+      AWS_REGIO: ${{ vars.AWS_REGIO || 'eu-west-1' }}
+    steps:
+      - name: Instellingen aanwezig?
+        run: |
+          if [ -z "$AWS_ACCOUNT_ID" ] || [ -z "$AFZENDER_EMAIL" ]; then
+            echo "::error::Zet AWS_ACCOUNT_ID en AFZENDER_EMAIL als geheim in de repository (Settings, Secrets and variables, Actions)."
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # Alle tags, om bij een fout de vorige release te kunnen vinden.
+          fetch-depth: 0
+      - uses: ./.github/actions/voorbereiden
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/wijnclub-github-prod
+          role-session-name: productie-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGIO }}
+      - name: Uitrollen naar productie
+        id: uitrol
+        working-directory: infra
+        run: |
+          npx --yes aws-cdk@2.1149.0 deploy "Wijnclub-prod-*" --require-approval never \
+            -c omgeving=prod -c regio="$AWS_REGIO" -c afzender_email="$AFZENDER_EMAIL" \
+            --outputs-file "$RUNNER_TEMP/cdk-uitvoer.json"
+      - name: Rooktest
+        id: rook
+        run: |
+          export WIJNCLUB_ADRES="$(python -c "import json, os; print(json.load(open(os.path.join(os.environ['RUNNER_TEMP'], 'cdk-uitvoer.json')))['Wijnclub-prod-Web']['Adres'])")"
+          echo "Adres van productie: $WIJNCLUB_ADRES" >> "$GITHUB_STEP_SUMMARY"
+          pytest tests/smoke
+      - name: Terug naar de vorige release
+        if: failure() && (steps.uitrol.outcome == 'failure' || steps.rook.outcome == 'failure')
+        run: |
+          vorige="$(git tag --list 'v*' --sort=-v:refname | grep -vxF "$GITHUB_REF_NAME" | head -n 1)"
+          if [ -z "$vorige" ]; then
+            echo "::error::$GITHUB_REF_NAME is mislukt en er is geen eerdere release om naar terug te gaan."
+            exit 1
+          fi
+          echo "::warning::$GITHUB_REF_NAME is mislukt. Terug naar $vorige."
+          git checkout --force "$vorige"
+          pip install -r requirements-dev.txt
+          (cd app && npm ci && npm run build)
+          cd infra
+          npx --yes aws-cdk@2.1149.0 deploy "Wijnclub-prod-*" --require-approval never \
+            -c omgeving=prod -c regio="$AWS_REGIO" -c afzender_email="$AFZENDER_EMAIL"
+          echo "Teruggezet naar $vorige omdat $GITHUB_REF_NAME mislukte." >> "$GITHUB_STEP_SUMMARY"
+          exit 1

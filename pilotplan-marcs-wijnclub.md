@@ -185,7 +185,7 @@ Elke wijziging gaat via een pull request in GitHub, wordt automatisch getest en 
 
 ![Pipeline: drie triggers en negen stappen](afbeeldingen/pipeline.png)
 
-Faalt een stap, dan stopt de pipeline en gaat er niets door naar de volgende stap.
+Faalt een stap, dan stopt de pipeline en gaat er niets door naar de volgende stap. Ingericht zijn nu de controles, de uitrol naar test en productie, de rooktest en de toegang via OIDC; de workflows staan in `.github/workflows`. mypy, cdk-nag, de integratietests en de end-to-end-tests volgen.
 
 **Opzet**
 
@@ -195,17 +195,17 @@ Faalt een stap, dan stopt de pipeline en gaat er niets door naar de volgende sta
 | Werkwijze | Korte branches en een pull request naar `main`. `main` is altijd uit te rollen | Past bij één bouwer in deeltijd |
 | Pipeline | GitHub Actions | Zit bij de code, geen extra dienst om te beheren |
 | Toegang tot AWS | GitHub logt via OIDC in met een tijdelijke rol. Er staan geen AWS-sleutels in GitHub | Niets om te lekken of te vervangen |
-| Omgevingen | Twee CDK-stacks: `Wijnclub-Test` en `Wijnclub-Prod`, elk met eigen tabellen, gebruikers, subdomein en Mollie-sleutel | Test raakt nooit productiegegevens |
-| Afhankelijkheden | Python via uv met lockbestand, de web-app via npm met lockbestand, alles op exacte versies. Elke GitHub Action vastgezet op een commit-hash | Elke build is gelijk. Een gekaapt versielabel van een Action, zoals bij tj-actions in 2025, komt er niet in |
+| Omgevingen | Per omgeving vier CDK-stacks, `Wijnclub-test-*` en `Wijnclub-prod-*`, elk met eigen tabellen, gebruikers en Mollie-sleutel. De stack `Wijnclub-GitHub` regelt de toegang van de pipeline; die rol je eenmalig zelf uit | Test raakt nooit productiegegevens |
+| Afhankelijkheden | Python via pip met exacte versies in de requirements-bestanden, de web-app via npm met lockbestand. Elke GitHub Action vastgezet op een commit-hash | Elke build is gelijk. Een gekaapt versielabel van een Action, zoals bij tj-actions in 2025, komt er niet in |
 | Uitrollen | `cdk deploy` per stack. CloudFormation draait een mislukte uitrol zelf terug | Nooit een half bijgewerkte omgeving |
 
 **Drie momenten in de pipeline**
 
-1. **Bij elke pull request:** ruff en mypy op de Python-code, unit-tests met pytest, lint en build van de web-app, `cdk synth` met cdk-nag als veiligheidscontrole op de infrastructuur, en `cdk diff` tegen productie als opmerking in de pull request. De pipeline heeft hier alleen leesrechten. Doel: klaar binnen vijf minuten.
-2. **Bij elke merge naar main:** uitrol naar de teststack, daarna de integratietests en de end-to-end-tests tegen die stack.
-3. **Bij een release-tag, zoals `v2026.12.1`:** uitrol van dezelfde commit naar productie, daarna een smoke-test. Faalt die, dan rolt de pipeline de vorige release-tag opnieuw uit en krijg jij een melding.
+1. **Bij elke pull request:** ruff, pip-audit en pytest op de Python-code, npm audit en build van de web-app, `cdk synth` voor test en productie, en `cdk diff` tegen productie in de samenvatting van de controle. Een pull request uit een fork krijgt nooit toegang tot AWS. De pipeline heeft hier alleen leesrechten. Doel: klaar binnen vijf minuten.
+2. **Bij elke merge naar main:** uitrol naar de teststack, daarna de rooktest. De integratietests en de end-to-end-tests tegen die stack komen erbij zodra er meer gebouwd is.
+3. **Bij een release-tag, zoals `v2026.12.1`:** de pipeline wacht op jouw goedkeuring in de GitHub-omgeving `productie`, rolt dezelfde commit uit naar productie en draait de rooktest. Faalt de uitrol of de rooktest, dan rolt de pipeline de vorige release-tag opnieuw uit en faalt de run, zodat jij een melding krijgt.
 
-Ik kies een release-tag in plaats van een goedkeuringsknop. Een verplichte goedkeuring voor een omgeving is in een privérepository voor zover ik weet alleen beschikbaar met GitHub Enterprise; controleer dit voor je abonnement. Een release-tag werkt overal: de rol voor productie accepteert alleen tags die met `v` beginnen.
+De repository is openbaar. Daardoor kan productie een echte goedkeuringsstap krijgen: de uitrol draait in de GitHub-omgeving `productie`, die alleen tags met `v` toelaat en op jouw goedkeuring wacht. Alleen vanuit die omgeving mag GitHub de productierol in AWS aannemen. De logs van een openbare repository zijn ook openbaar; het accountnummer en het afzenderadres staan daarom als geheim in GitHub, en GitHub maskeert ze in de logs.
 
 **Testen**
 
@@ -215,23 +215,23 @@ Alle tests draaien in pytest, ook de browsertests via Playwright voor Python. Zo
 | --- | --- | --- | --- |
 | Unit-tests | Regels voor bieden (minimale verhoging, verlenging in de laatste twee minuten, eindtijd), bestelling en voorraad, het verwerken van een Mollie-melding, en het herkennen van een WhatsApp-bericht met een nagebootst taalmodel | Elke pull request | Alleen de code, geen AWS |
 | Integratietests | Twintig gelijktijdige biedingen: precies één winnaar per bedrag. Gelijktijdige bestellingen: de voorraad komt nooit onder nul. Een bieding sluit op de eindtijd. Dezelfde Mollie-melding twee keer: één betaling | Elke merge | Teststack, met echte DynamoDB en Mollie in testmodus |
-| End-to-end-tests | Drie stromen op een telefoonscherm: van de lijst bestellen en betalen, bieden en winnen, en Marc die een wijn op de lijst zet | Elke merge | Teststack, via de browser |
+| End-to-end-tests | Drie stromen op een telefoonscherm: van de lijst bestellen, de lijst sluiten en betalen, bieden en winnen, en Marc die een wijn op de lijst zet | Elke merge | Teststack, via de browser |
 | Smoke-test | De site laadt, de lijst is op te vragen, inloggen werkt. Er worden geen bestellingen geplaatst | Elke release | Productie |
 | Berichten herkennen | Twintig echte aanbiedingen van Marc met de juiste naam, jaargang, aantal en prijs als antwoord. Minstens 95% van de velden moet kloppen | Bij een wijziging van prompt of model, en wekelijks | Teststack, met het echte taalmodel |
-| Beveiliging | pip-audit en npm audit op bekende kwetsbaarheden, cdk-nag op de infrastructuur, secret scanning op de repository | Elke pull request, en wekelijks | De code |
+| Beveiliging | pip-audit en npm audit op bekende kwetsbaarheden, secret scanning op de repository. cdk-nag op de infrastructuur volgt | Elke pull request, en wekelijks | De code |
 
 **Testgegevens en inloggen in de test**
 
 - De teststack krijgt bij elke uitrol vaste voorbeeldwijnen en testleden uit een seed-script. Productiegegevens gaan nooit naar test.
 - Inloggen met een code per e-mail is niet te automatiseren. In de teststack krijgen testleden daarom een wachtwoord dat de pipeline zelf aanmaakt en in Secrets Manager zet. In productie staat inloggen met een wachtwoord uit.
 - Betalingen op test lopen via de testsleutel van Mollie. De browsertest kiest op de testbetaalpagina van Mollie of de betaling lukt of mislukt.
-- Een bieding sluit in de test niet na dagen: de test zet de eindtijd op één minuut.
+- Een lijst of bieding sluit in de test niet na uren of dagen: de test zet de eindtijd op één minuut.
 
 **Eén account, twee stacks**
 
 Eén AWS-account met een aparte stack voor test en productie is voor de pilot werkbaar. Beide stacks delen wel de uitrolrollen van CDK, dus de scheiding zit vooral in wie de pipeline mag starten. Drie afspraken houden het veilig:
 
-- Pull requests krijgen een rol die alleen kan lezen. Alleen `main` mag naar test uitrollen, en alleen een release-tag naar productie.
+- Pull requests krijgen een rol die alleen kan lezen. Alleen `main` mag naar test uitrollen, en alleen de omgeving `productie` naar productie.
 - Elke naam begint met de stacknaam, en geen functie of rol van test heeft rechten op tabellen of sleutels van productie.
 - De productiestack heeft beëindigingsbeveiliging, en de productietabellen hebben verwijderbeveiliging en herstel tot op de seconde (point-in-time recovery).
 
@@ -331,7 +331,7 @@ De lopende kosten blijven naar verwachting onder €10 per maand; de echte inves
 | Berichten herkennen via Bedrock | Enkele centen per wijn |  |
 | Juridische check | Eenmalig, bedrag onbekend | Offerte vragen |
 | Bouw en beheer | Eigen uren | Geen licentiekosten |
-| GitHub Actions | Naar verwachting gratis | Een run duurt ongeveer tien minuten. Voor privérepositories is voor zover ik weet 2.000 minuten per maand gratis; controleer dit voor je abonnement |
+| GitHub Actions | Gratis | De repository is openbaar; voor openbare repositories zijn de standaardrunners van GitHub gratis |
 | Teststack | Enkele euro's per maand | Dezelfde diensten als productie, met weinig gebruik. De wekelijkse test van het taalmodel kost enkele centen |
 
 Zet in het AWS-account een budgetalarm op €20 per maand, zodat een fout in de opzet niet ongemerkt geld kost.

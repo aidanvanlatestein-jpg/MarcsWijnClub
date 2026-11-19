@@ -34,7 +34,7 @@ def _claims(event: Mapping[str, Any]) -> Mapping[str, Any]:
     try:
         return event["requestContext"]["authorizer"]["jwt"]["claims"]
     except (KeyError, TypeError):
-        raise NietIngelogd()
+        raise NietIngelogd() from None
 
 
 def lid_id(event: Mapping[str, Any]) -> str:

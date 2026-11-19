@@ -1,0 +1,11 @@
+# Controle van de Python-code, ook in de pipeline. Lokaal: ruff check .
+# De Lambda-functies draaien op Python 3.14; lokaal werkt de code nog op 3.9.
+target-version = "py39"
+line-length = 140
+extend-exclude = ["app", "infra/cdk.out"]
+
+[lint]
+select = ["E", "F", "W", "I", "B"]
+
+[lint.isort]
+known-first-party = ["wijnclub", "wijnclub_infra"]

@@ -8,7 +8,6 @@ from aws_cdk.assertions import Match, Template
 
 from wijnclub_infra import config, opbouw
 
-
 VLAGGEN = {
     sleutel: waarde
     for sleutel, waarde in json.loads((Path(__file__).resolve().parents[2] / "infra" / "cdk.json").read_text())["context"].items()
