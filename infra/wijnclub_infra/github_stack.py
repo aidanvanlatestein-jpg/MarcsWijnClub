@@ -12,6 +12,14 @@ ReadOnlyAccess op het hele account en kan daarmee ook de ledentabel en de gebrui
 Cognito lezen; een diff heeft alleen de sjablonen nodig. De CLI probeert de leesrol wel
 aan te nemen, meldt dat het niet lukt en gaat verder met de rechten van deze rol.
 
+De rollen kijken naar het onderwerp (sub) van het token van GitHub. De repository gebruikt
+het onveranderlijke onderwerp, met de vaste ID's van eigenaar en repository:
+`repo:eigenaar@123/naam@456:ref:refs/heads/main`. Daarom staat `github_repo` in cdk.json
+in de vorm `eigenaar@id/naam@id`. Een repository die later dezelfde naam krijgt, komt zo
+niet binnen. Het voorvoegsel zie je met:
+
+    gh api repos/<eigenaar>/<naam>/actions/oidc/customization/sub
+
 Deze stack rol je eenmalig zelf uit. De pipeline rolt hem nooit uit, omdat hij rechten regelt:
 
     cd infra && npx aws-cdk@2.1149.0 deploy Wijnclub-GitHub -c afzender_email=...
@@ -19,8 +27,8 @@ Deze stack rol je eenmalig zelf uit. De pipeline rolt hem nooit uit, omdat hij r
 Let op: test en productie staan in hetzelfde account en delen de uitrolrollen van CDK.
 De scheiding zit dus in de voorwaarden hieronder en in de beveiliging van de omgeving
 `productie` in GitHub, niet in wat de rollen in AWS mogen. Via die rollen kan de
-pipeline alles in het account. Rol deze stack daarom alleen uit in een account met
-niets anders dan de wijnclub; zie "Waarom een eigen account" in de README.
+pipeline alles in het account, ook in andere projecten als het account gedeeld is.
+Dat risico is bewust genomen; zie "Een gedeeld account" in de README.
 """
 from __future__ import annotations
 
@@ -44,7 +52,7 @@ STACKS = "Wijnclub-*"
 def repo_uit_context(app: Any) -> str:
     repo = app.node.try_get_context("github_repo") or ""
     if repo.count("/") != 1 or repo.startswith("/") or repo.endswith("/"):
-        raise ValueError("github_repo moet de vorm eigenaar/naam hebben, niet '{}'".format(repo))
+        raise ValueError("github_repo moet de vorm eigenaar@id/naam@id of eigenaar/naam hebben, niet '{}'".format(repo))
     return repo
 
 

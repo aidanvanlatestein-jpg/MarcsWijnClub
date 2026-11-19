@@ -16,7 +16,7 @@ Dit project is van Aidan persoonlijk. Het heeft niets te maken met een werkgever
 - Gebruik geen accounts, e-mailadressen, organisaties, repositories of gegevens van een werkgever. Dat geldt ook voor Jira, Confluence, gedeelde schijven en interne vaardigheden of sjablonen.
 - De code staat op Aidans persoonlijke GitHub-account, in `aidanvanlatestein-jpg/MarcsWijnClub`. De git-identiteit is alleen voor deze repository ingesteld, met een noreply-adres. Stel geen identiteit in voor de hele machine.
 - **De repository is openbaar.** Alles wat je vastlegt, is voor iedereen zichtbaar en blijft in de geschiedenis staan. Marc heeft ingestemd met het openbaar maken van het plan en het prototype.
-- AWS draait in een eigen account voor de wijnclub, niet in een account van een werkgever.
+- AWS draait in een privé-account van Aidan dat hij deelt met zijn eigen andere projecten. Test en productie staan er samen in. Raak niets aan wat niet bij de wijnclub hoort: alleen stacks en onderdelen die met `Wijnclub-` of `wijnclub-` beginnen. Laat de CDK-bootstrap en de OIDC-koppelingen van andere projecten met rust. Zie "Een gedeeld account" in de README.
 - De beveiligingsregels die op deze machine gelden, blijven van kracht. Bedrijfseigen voorzieningen zijn hier niet beschikbaar; dit project gebruikt de beheerde diensten van AWS: Cognito voor inloggen en Secrets Manager voor sleutels.
 
 ## Marc en zijn leden zijn echte mensen

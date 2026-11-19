@@ -15,7 +15,7 @@ Dit document werkt het pilotplan uit tot bouwniveau: sleutels in DynamoDB, de le
 | API | API Gateway HTTP API, bereikbaar via CloudFront onder `/api/*` |
 | Inloggen | Cognito, eenmalige code per e-mail, alleen op uitnodiging |
 | Betalen | Mollie, iDEAL |
-| Omgevingen | `test` en `prod`, elk een eigen set stacks, samen in één AWS-account dat alleen voor de wijnclub is |
+| Omgevingen | `test` en `prod`, elk een eigen set stacks, samen in één privé-AWS-account dat ook andere eigen projecten bevat; alles van de wijnclub begint met `Wijnclub-` |
 
 De API loopt via CloudFront, zodat web-app en API hetzelfde adres hebben. Daardoor is geen CORS-instelling nodig en hangen de stacks niet in een kring van elkaar af.
 

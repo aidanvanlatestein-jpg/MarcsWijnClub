@@ -68,7 +68,7 @@ Dit maakt de sjablonen in `infra/cdk.out` en verandert niets in AWS.
 
 Uitrollen maakt echte onderdelen aan in AWS en kost geld. Regel eerst dit:
 
-- [ ] Een eigen AWS-account voor de wijnclub, met niets anders erin. Test en productie staan er samen in. Zet er een budgetalarm op van € 20 per maand en tweestapsverificatie op de hoofdgebruiker.
+- [ ] Een AWS-account voor de wijnclub. Dat mag een privé-account zijn dat je deelt met je eigen andere projecten; lees dan eerst "Een gedeeld account" hieronder. Test en productie staan er samen in. Zet tweestapsverificatie op de hoofdgebruiker en een budgetalarm van € 20 per maand. In een gedeeld account filter je dat alarm op de tag `project=wijnclub`, die elke stack van de wijnclub krijgt; activeer die tag eerst als kostentag onder Billing, Cost allocation tags.
 - [ ] De AWS CLI geïnstalleerd en ingelogd op dat account, met het profiel `wijnclub`.
 - [ ] Een geverifieerd afzenderadres of domein in Amazon SES, in dezelfde regio. Vraag ook toegang buiten de proefomgeving van SES aan; daarbinnen komt de inlogcode alleen aan op adressen die je zelf hebt geverifieerd.
 - [ ] Het afzenderadres ingevuld bij `afzender_email` in `infra/cdk.json`.
@@ -94,15 +94,29 @@ cd infra && npx aws-cdk@2.1149.0 deploy "Wijnclub-test-*" -c omgeving=test
 
 Voor productie gebruik je `-c omgeving=prod`. Daar blijven tabellen en bestanden staan als je een stack verwijdert; in test verdwijnen ze.
 
-### Waarom een eigen account
+### Een gedeeld account
 
-De pipeline rolt uit met de rollen van CDK, en CloudFormation voert daarbij uit met `AdministratorAccess`. Wie de pipeline in handen krijgt, via een overgenomen GitHub-account of een gekaapt pakket, kan dus alles in het account. In een account met alleen de wijnclub blijft de schade tot de wijnclub beperkt. Deel het account daarom niet met andere projecten.
+De wijnclub draait in een privé-account dat ook andere eigen projecten bevat. Test en productie staan er samen in. Een eigen account per omgeving beschermt vooral tegen een tweede ontwikkelaar; die is er niet.
 
-Test en productie staan samen in dat ene account. Een eigen account per omgeving beschermt vooral tegen een tweede ontwikkelaar; die is er niet.
+**Het risico, bewust genomen.** De pipeline rolt uit met de rollen van CDK, en CloudFormation voert daarbij uit met `AdministratorAccess`. Wie de pipeline in handen krijgt, via een overgenomen GitHub-account of een gekaapt pakket, kan dus alles in het account, ook in je andere projecten. Wat dat beperkt:
 
-### Verhuizen vanuit een ander account
+- Tweestapsverificatie of een passkey op het GitHub-account. Dat is de sleutel tot de pipeline.
+- Elke Action staat vast op een commit-hash, en elke afhankelijkheid op een vaste versie.
+- Pull requests uit een fork krijgen geen toegang tot AWS, en de rol voor pull requests leest alleen sjablonen.
+- Alleen `main` rolt uit naar test, en alleen een tag `v*` met jouw goedkeuring naar productie.
 
-Staat de testomgeving al in een account dat je met andere projecten deelt, verhuis dan vóór de eerste uitrol naar productie. Er staan dan nog geen leden of bestellingen in, dus er hoeft niets mee.
+**Afspraken in een gedeeld account.**
+
+- Alles van de wijnclub begint met `Wijnclub-` (stacks) of `wijnclub-` (rollen en namen). Raak niets anders aan, ook niet bij opruimen.
+- De CDK-bootstrap (`CDKToolkit`) geldt per account en regio. Staat er in de regio van de wijnclub al een bootstrap van een ander project, gebruik die dan en bootstrap niet opnieuw. Verwijder `CDKToolkit` nooit zolang een ander project hem gebruikt.
+- Een account heeft maar één OIDC-koppeling met GitHub. Heeft een ander project er al een, dan faalt de uitrol van `Wijnclub-GitHub`; meld het dan, want dan moet de stack de bestaande koppeling gebruiken. Koppelingen met andere diensten staan er los van.
+- Controleer vóór elke uitrol met `aws sts get-caller-identity --profile wijnclub` dat je in het goede account en de goede regio zit.
+
+**Wanneer toch een eigen account.** Komen er een tweede ontwikkelaar, echte leden met betalingen in productie of andere mensen met toegang tot de pipeline bij, verhuis de wijnclub dan naar een eigen account. Een kleiner alternatief is een eigen bootstrap met een beperkt uitvoerbeleid (`cdk bootstrap --qualifier` met `--cloudformation-execution-policies`), zodat de pipeline alleen onderdelen van de wijnclub kan aanraken. Dat is nog niet gebouwd.
+
+### Verhuizen naar een eigen account
+
+Verhuis het liefst vóór de eerste uitrol naar productie. Er staan dan nog geen leden of bestellingen in, dus er hoeft niets mee.
 
 1. Maak het nieuwe account aan, met het budgetalarm en de tweestapsverificatie van hierboven.
 2. Laat het profiel `wijnclub` naar het nieuwe account wijzen en controleer dat met `aws sts get-caller-identity --profile wijnclub`. Geef het oude account een eigen profielnaam, zodat je ze niet verwisselt.
@@ -135,15 +149,17 @@ GitHub logt via OIDC in op AWS met een tijdelijke rol. Er staan geen AWS-sleutel
 
 De rol voor een pull request neemt de leesrol van CDK niet aan: die heeft `ReadOnlyAccess` op het hele account en kan daarmee ook de ledentabel lezen. De CLI meldt bij de diff dat hij de leesrol niet kan aannemen en gaat verder met de rol zelf. Dat is de bedoeling.
 
-**Bekende beperking.** Test en productie staan in hetzelfde account en delen de uitrolrollen van CDK. De testrol kan daardoor in AWS hetzelfde als de productierol. De goedkeuring in de omgeving `productie` beschermt tegen een uitrol per ongeluk, niet tegen een commit op `main` die de workflow voor test aanpast. Met één ontwikkelaar is dat een bewuste keuze; zie "Waarom een eigen account". De toegang tot de pipeline is het GitHub-account: zet daar tweestapsverificatie of een passkey op. Komt er een tweede ontwikkelaar bij, dan is een eigen account voor productie de volgende stap.
+**Bekende beperking.** Test en productie staan in hetzelfde account en delen de uitrolrollen van CDK. De testrol kan daardoor in AWS hetzelfde als de productierol. De goedkeuring in de omgeving `productie` beschermt tegen een uitrol per ongeluk, niet tegen een commit op `main` die de workflow voor test aanpast. Met één ontwikkelaar is dat een bewuste keuze. Omdat het account gedeeld is, kan de pipeline via die rollen ook bij je andere projecten; zie "Een gedeeld account". De toegang tot de pipeline is het GitHub-account: zet daar tweestapsverificatie of een passkey op. Komt er een tweede ontwikkelaar bij, dan is een eigen account voor productie de volgende stap.
 
-Wijzigt `github_stack.py`, dan rol je `Wijnclub-GitHub` zelf opnieuw uit; tot dan gelden de oude rechten.
+De rollen vergelijken het onderwerp (sub) van het token van GitHub. Deze repository gebruikt het onveranderlijke onderwerp, met de vaste ID's van eigenaar en repository; daarom staat `github_repo` in `infra/cdk.json` als `eigenaar@id/naam@id`. Een repository die later dezelfde naam krijgt, komt zo niet binnen. Het juiste voorvoegsel zie je met `gh api repos/<eigenaar>/<naam>/actions/oidc/customization/sub`. Klopt het niet, dan faalt de workflow met `Not authorized to perform sts:AssumeRoleWithWebIdentity`.
+
+Wijzigt `github_stack.py` of `github_repo`, dan rol je `Wijnclub-GitHub` zelf opnieuw uit; tot dan gelden de oude rechten.
 
 ### Eenmalig instellen
 
 Doe dit na de stappen onder "Voor de eerste uitrol".
 
-1. Rol de stack met de rollen zelf uit; de pipeline doet dat nooit. Controleer eerst met `aws sts get-caller-identity` dat je in het account van de wijnclub zit: de rollen uit deze stack geven GitHub toegang tot alles in dat account. Staat er in het account al een OIDC-koppeling met GitHub, dan faalt deze stap; meld het dan.
+1. Rol de stack met de rollen zelf uit; de pipeline doet dat nooit. Controleer eerst met `aws sts get-caller-identity --profile wijnclub` dat je in het goede account zit: de rollen uit deze stack geven GitHub toegang tot alles in dat account, ook tot je andere projecten. Staat er in het account al een OIDC-koppeling met GitHub, dan faalt deze stap; meld het dan.
 
     ```bash
     cd infra && npx aws-cdk@2.1149.0 deploy Wijnclub-GitHub -c afzender_email=naam@jouwdomein.nl
