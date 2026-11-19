@@ -67,6 +67,8 @@ jobs:
           role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/wijnclub-github-lezen
           role-session-name: pull-request-${{ github.event.pull_request.number }}
           aws-region: ${{ env.AWS_REGIO }}
+      # De rol mag alleen de sjablonen van de stacks lezen. De CLI meldt daarom dat hij de
+      # leesrol van CDK niet kan aannemen en gaat verder met deze rol; dat is de bedoeling.
       - name: Diff tegen productie
         if: steps.klaar.outputs.ja == 'true'
         working-directory: infra

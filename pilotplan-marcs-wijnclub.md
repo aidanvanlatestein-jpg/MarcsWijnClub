@@ -229,13 +229,14 @@ Alle tests draaien in pytest, ook de browsertests via Playwright voor Python. Zo
 
 **Eén account, twee stacks**
 
-Eén AWS-account met een aparte stack voor test en productie is voor de pilot werkbaar. Beide stacks delen wel de uitrolrollen van CDK, dus de scheiding zit vooral in wie de pipeline mag starten. Drie afspraken houden het veilig:
+Eén AWS-account met een aparte stack voor test en productie is voor de pilot werkbaar. Beide stacks delen wel de uitrolrollen van CDK, dus de scheiding zit vooral in wie de pipeline mag starten. Vier afspraken houden het veilig:
 
-- Pull requests krijgen een rol die alleen kan lezen. Alleen `main` mag naar test uitrollen, en alleen de omgeving `productie` naar productie.
+- Het account is alleen voor de wijnclub. De pipeline kan alles in het account, dus er staat niets anders in.
+- Pull requests krijgen een rol die alleen de sjablonen van de stacks kan lezen, geen gegevens. Alleen `main` mag naar test uitrollen, en alleen de omgeving `productie` naar productie.
 - Elke naam begint met de stacknaam, en geen functie of rol van test heeft rechten op tabellen of sleutels van productie.
 - De productiestack heeft beëindigingsbeveiliging, en de productietabellen hebben verwijderbeveiliging en herstel tot op de seconde (point-in-time recovery).
 
-Komen er meer leden of andere verkopers bij, dan is een eigen AWS-account voor productie de volgende stap.
+Komen er meer leden, andere verkopers of een tweede ontwikkelaar bij, dan is een eigen AWS-account voor productie de volgende stap.
 
 ## Gegevensmodel
 

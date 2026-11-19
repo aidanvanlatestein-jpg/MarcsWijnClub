@@ -60,22 +60,48 @@ def test_elke_rol_alleen_vanuit_de_juiste_plek(sjabloon, naam, onderwerp):
     assert rollen(sjabloon)[naam]["MaxSessionDuration"] == 3600
 
 
-def test_rollen_mogen_alleen_rollen_van_cdk_aannemen(sjabloon):
-    for beleid in sjabloon.find_resources("AWS::IAM::Policy").values():
-        for verklaring in beleid["Properties"]["PolicyDocument"]["Statement"]:
-            assert verklaring["Action"] == "sts:AssumeRole"
-            assert verklaring["Effect"] == "Allow"
-
-
-def test_pull_request_mag_alleen_de_leesrol_van_cdk_aannemen(sjabloon):
-    beleid = [
-        b["Properties"]["PolicyDocument"]["Statement"][0]
-        for b in sjabloon.find_resources("AWS::IAM::Policy").values()
-        if "lezen" in json.dumps(b["Properties"]["Roles"])
+def verklaringen(sjabloon, rol):
+    """Alle rechten van één rol. De naam van het beleid begint met de naam van de rol."""
+    gevonden = [
+        verklaring
+        for beleid in sjabloon.find_resources("AWS::IAM::Policy").values()
+        if rol in json.dumps(beleid["Properties"]["Roles"])
+        for verklaring in beleid["Properties"]["PolicyDocument"]["Statement"]
     ]
-    assert len(beleid) == 1
-    assert "lookup-role" in json.dumps(beleid[0]["Resource"])
-    assert "deploy-role" not in json.dumps(beleid[0]["Resource"])
+    assert gevonden, "geen rechten gevonden voor " + rol
+    return gevonden
+
+
+def test_elke_rol_heeft_precies_een_beleid_en_geen_beheerd_beleid(sjabloon):
+    assert len(sjabloon.find_resources("AWS::IAM::Policy")) == 3
+    for eigenschappen in rollen(sjabloon).values():
+        assert "ManagedPolicyArns" not in eigenschappen
+        assert "Policies" not in eigenschappen
+
+
+@pytest.mark.parametrize("logisch", ["wijnclubgithubtest", "wijnclubgithubprod"])
+def test_uitrolrollen_mogen_alleen_rollen_van_cdk_aannemen(sjabloon, logisch):
+    for verklaring in verklaringen(sjabloon, logisch):
+        assert verklaring["Action"] == "sts:AssumeRole"
+        assert verklaring["Effect"] == "Allow"
+        assert "role/cdk-hnb659fds-" in json.dumps(verklaring["Resource"])
+
+
+def test_pull_request_leest_alleen_sjablonen_van_de_wijnclub(sjabloon):
+    gevonden = verklaringen(sjabloon, "wijnclubgithublezen")
+    assert len(gevonden) == 1
+    assert gevonden[0]["Effect"] == "Allow"
+    assert sorted(gevonden[0]["Action"]) == ["cloudformation:DescribeStacks", "cloudformation:GetTemplate"]
+    doel = json.dumps(gevonden[0]["Resource"])
+    assert ":stack/Wijnclub-*/*" in doel
+    assert '"*"' not in doel
+
+
+def test_pull_request_neemt_geen_rol_van_cdk_aan(sjabloon):
+    # De leesrol van CDK heeft ReadOnlyAccess en kan de ledentabel lezen.
+    tekst = json.dumps(verklaringen(sjabloon, "wijnclubgithublezen"))
+    assert "sts:AssumeRole" not in tekst
+    assert "lookup-role" not in tekst
 
 
 @pytest.mark.parametrize("repo", ["", "wijnclub", "a/b/c"])

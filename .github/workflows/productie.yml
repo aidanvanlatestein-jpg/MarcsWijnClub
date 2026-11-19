@@ -74,8 +74,13 @@ jobs:
           fi
           echo "::warning::$GITHUB_REF_NAME is mislukt. Terug naar $vorige."
           git checkout --force "$vorige"
-          pip install -r requirements-dev.txt
-          (cd app && npm ci && npm run build)
+          # Installeren en bouwen zonder de rechten van AWS, net als bij een gewone uitrol:
+          # een script uit een pakket mag de productierol niet kunnen gebruiken.
+          (
+            unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+            pip install -r requirements-dev.txt
+            cd app && npm ci && npm run build
+          )
           cd infra
           npx --yes aws-cdk@2.1149.0 deploy "Wijnclub-prod-*" --require-approval never \
             -c omgeving=prod -c regio="$AWS_REGIO" -c afzender_email="$AFZENDER_EMAIL"

@@ -9,6 +9,8 @@ lijst. De termijn is 48 uur na het sluiten.
 """
 from __future__ import annotations
 
+import hashlib
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Mapping, Optional, Sequence
@@ -38,6 +40,9 @@ MAX_AANTAL = 24
 # Statussen waarbij een betaling bij Mollie nog kan slagen.
 MOLLIE_LOPEND = ("open", "pending", "authorized")
 
+# De sleutel die de web-app per bestelpoging meestuurt, bijvoorbeeld een UUID.
+SLEUTEL = re.compile(r"^[A-Za-z0-9-]{8,64}$")
+
 
 class OngeldigeBestelling(ValueError):
     """De aanvraag klopt niet. `code` gaat naar de web-app, de tekst niet."""
@@ -45,6 +50,19 @@ class OngeldigeBestelling(ValueError):
     def __init__(self, code: str):
         super().__init__(code)
         self.code = code
+
+
+def bestelling_id_uit_sleutel(lid_id: str, sleutel: Any) -> str:
+    """Het nummer van een bestelling van de lijst, afgeleid van het lid en de sleutel van de poging.
+
+    Stuurt de web-app dezelfde poging nog eens, bijvoorbeeld na een time-out, dan
+    komt er hetzelfde nummer uit en weigert `reserveer_transactie` de tweede keer.
+    Zo ontstaat er nooit een dubbele bestelling. Het lid zit in het nummer, zodat
+    een sleutel van een ander lid nooit hetzelfde nummer geeft.
+    """
+    if not isinstance(sleutel, str) or not SLEUTEL.match(sleutel):
+        raise OngeldigeBestelling("ongeldige_sleutel")
+    return "b-" + hashlib.sha256("{}:{}".format(lid_id, sleutel).encode("utf-8")).hexdigest()[:32]
 
 
 def valideer_regels(regels: Any) -> List[Dict[str, Any]]:
@@ -128,7 +146,8 @@ def nieuwe_bestelling(
     volledig = []
     for regel in regels:
         wijn = wijnen.get(regel["wijnId"])
-        if wijn is None:
+        # Een wijn zonder prijs is een bieding: die is niet van de lijst te bestellen.
+        if wijn is None or "prijs" not in wijn:
             raise OngeldigeBestelling("onbekende_wijn")
         volledig.append(
             {
@@ -160,7 +179,15 @@ def reserveer_transactie(
     """Alles of niets: lijst open, voorraad omlaag per wijn, bestelling geschreven.
 
     De volgorde is vast: eerst de lijst, dan één stap per regel, dan de
-    bestelling. `uitverkocht` rekent daarop.
+    bestelling. `uitverkocht` en `bestaat_al` rekenen daarop.
+
+    Mislukt de transactie, kijk dan in deze volgorde naar de CancellationReasons:
+
+    1. `dynamo.opnieuw_proberen`: een ander lid bestelde op hetzelfde moment
+       dezelfde wijn. Er is niets op; probeer het na een korte pauze opnieuw.
+    2. `bestaat_al`: dezelfde poging kwam al eerder binnen. Geef de bestaande
+       bestelling terug.
+    3. `uitverkocht`: de lijst is dicht of een wijn is op.
     """
     stappen: List[Dict[str, Any]] = [
         {
@@ -222,6 +249,17 @@ def uitverkocht(
     }
 
 
+def bestaat_al(redenen: Sequence[Mapping[str, Any]], regels: Sequence[Mapping[str, Any]]) -> bool:
+    """Of de bestelling er al stond: dezelfde poging is twee keer verstuurd.
+
+    De bestelling is de laatste stap van `reserveer_transactie`. Bij een herhaling
+    kan ook een wijn als op gemeld worden, omdat de eerste poging de voorraad al
+    verlaagde; daarom gaat deze controle vóór `uitverkocht`.
+    """
+    positie = len(regels) + 1
+    return positie < len(redenen) and redenen[positie].get("Code") == "ConditionalCheckFailed"
+
+
 @dataclass(frozen=True)
 class Besluit:
     """Wat er na een melding van Mollie met de bestelling moet gebeuren."""
@@ -230,14 +268,34 @@ class Besluit:
     controle_nodig: bool = False
 
 
-def besluit_na_melding(status: str, mollie_status: str, terugbetaald: bool = False) -> Besluit:
-    if status == OPEN and mollie_status == "paid":
+def besluit_na_melding(
+    status: str,
+    mollie_status: str,
+    *,
+    betaling_id: str,
+    betaald_met: Optional[str],
+    terugbetaald: bool = False,
+) -> Besluit:
+    """Wat een melding van Mollie voor één bestelling betekent.
+
+    `betaling_id` is de betaling waar de melding over gaat. `betaald_met` is de
+    betaling waarmee de bestelling eerder op betaald is gezet (`mollieBetalingId`
+    op de bestelling), of None als dat nog niet gebeurd is.
+    """
+    if mollie_status != "paid":
+        return Besluit()
+    if status == OPEN:
         return Besluit(nieuwe_status=BETAALD)
-    if status == VERLOPEN and mollie_status == "paid":
+    if status == VERLOPEN:
         # Betaald nadat de voorraad is teruggegeven: Marc levert alsnog of betaalt terug.
         return Besluit(controle_nodig=True)
+    if betaling_id != betaald_met:
+        # Een tweede betaling voor een bestelling die al betaald is: het lid heeft
+        # dubbel betaald en Marc betaalt die terug. Is dat gebeurd, dan is het klaar.
+        return Besluit() if terugbetaald else Besluit(controle_nodig=True)
     if status == BETAALD and terugbetaald:
         return Besluit(nieuwe_status=TERUGBETAALD)
+    # Dezelfde melding nog eens.
     return Besluit()
 
 
@@ -247,32 +305,42 @@ VERWERK_BETALING = "verwerk_betaling"
 VERLOOP = "verloop"
 
 
-def besluit_op_termijn(status: str, laatste_mollie_status: Optional[str]) -> str:
-    """Wat de taak op betaalVoor moet doen."""
+def besluit_op_termijn(status: str, mollie_statussen: Sequence[str]) -> str:
+    """Wat de taak op betaalVoor moet doen.
+
+    `mollie_statussen` zijn de statussen van alle betalingen die het lid voor deze
+    bestelling startte, niet alleen de laatste: een eerdere betaling kan nog
+    slagen nadat een latere is afgebroken.
+    """
     if status != OPEN:
         return NIETS
-    if laatste_mollie_status == "paid":
+    if "paid" in mollie_statussen:
         return VERWERK_BETALING
-    if laatste_mollie_status in MOLLIE_LOPEND:
+    if any(mollie_status in MOLLIE_LOPEND for mollie_status in mollie_statussen):
         return WACHT
     return VERLOOP
 
 
-def betaald_wijziging(*, tabellen: Mapping[str, str], bestelling_id: str, nu: datetime) -> Dict[str, Any]:
-    """Zet de bestelling op betaald, alleen als hij nog open is.
+def betaald_wijziging(
+    *, tabellen: Mapping[str, str], bestelling_id: str, betaling_id: str, nu: datetime
+) -> Dict[str, Any]:
+    """Zet de bestelling op betaald, alleen als hij nog open is, en onthoudt met welke betaling.
 
-    Komt dezelfde melding nog eens, dan faalt de voorwaarde en gebeurt er niets.
+    Faalt de voorwaarde, dan was de bestelling al betaald of verlopen. Vraag dan
+    per bestelling aan `besluit_na_melding` of het dezelfde melding was of een
+    tweede betaling.
     """
     return {
         "TableName": tabellen["bestellingen"],
         "Key": {"bestellingId": dynamo.waarde(bestelling_id)},
-        "UpdateExpression": "SET #status = :betaald, betaaldOp = :nu",
+        "UpdateExpression": "SET #status = :betaald, betaaldOp = :nu, mollieBetalingId = :betaling",
         "ConditionExpression": "#status = :open",
         "ExpressionAttributeNames": {"#status": "status"},
         "ExpressionAttributeValues": {
             ":betaald": dynamo.waarde(BETAALD),
             ":open": dynamo.waarde(OPEN),
             ":nu": dynamo.waarde(tijd.iso(nu)),
+            ":betaling": dynamo.waarde(betaling_id),
         },
     }
 
@@ -302,19 +370,21 @@ def betaalverzoek(bestellingen: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
 
 
 def betaald_transactie(
-    *, tabellen: Mapping[str, str], bestelling_ids: Sequence[str], nu: datetime
+    *, tabellen: Mapping[str, str], bestelling_ids: Sequence[str], betaling_id: str, nu: datetime
 ) -> List[Dict[str, Any]]:
     """Zet alle bestellingen van één betaling op betaald: alles of niets.
 
-    Komt dezelfde melding nog eens, dan faalt de voorwaarde op elke bestelling
-    en gebeurt er niets.
+    Faalt de transactie op een voorwaarde, dan was er al iets betaald of
+    verlopen. Lees de bestellingen dan opnieuw en vraag per bestelling aan
+    `besluit_na_melding` wat er moet gebeuren: niets bij dezelfde melding,
+    `controleNodig` bij een tweede betaling.
     """
     if not bestelling_ids:
         raise OngeldigeBestelling("geen_bestellingen")
     if len(set(bestelling_ids)) != len(bestelling_ids):
         raise OngeldigeBestelling("dubbele_bestelling")
     return [
-        {"Update": betaald_wijziging(tabellen=tabellen, bestelling_id=bestelling_id, nu=nu)}
+        {"Update": betaald_wijziging(tabellen=tabellen, bestelling_id=bestelling_id, betaling_id=betaling_id, nu=nu)}
         for bestelling_id in bestelling_ids
     ]
 

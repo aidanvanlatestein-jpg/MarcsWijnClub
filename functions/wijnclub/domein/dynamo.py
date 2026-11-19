@@ -5,7 +5,11 @@ testen zijn. De handlers voeren ze uit met transact_write_items.
 """
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Mapping, Sequence
+
+# Redenen waarom DynamoDB een transactie afbreekt zonder dat een voorwaarde faalde:
+# een andere transactie raakte hetzelfde item, of de tabel had het even te druk.
+TIJDELIJK = ("TransactionConflict", "ThrottlingError", "ProvisionedThroughputExceeded")
 
 
 def waarde(invoer: Any) -> Dict[str, Any]:
@@ -27,3 +31,14 @@ def waarde(invoer: Any) -> Dict[str, Any]:
 def item(gegevens: Dict[str, Any]) -> Dict[str, Any]:
     """Een heel item. Velden zonder waarde worden weggelaten."""
     return {sleutel: waarde(deel) for sleutel, deel in gegevens.items() if deel is not None}
+
+
+def opnieuw_proberen(redenen: Sequence[Mapping[str, Any]]) -> bool:
+    """Of een afgebroken transactie na een korte pauze opnieuw geprobeerd moet worden.
+
+    `redenen` is de lijst CancellationReasons. Bestellen twee leden op hetzelfde
+    moment dezelfde wijn, of bieden ze tegelijk, dan breekt DynamoDB één van de
+    twee af met TransactionConflict. Dat zegt niets over voorraad of bod; de
+    handler probeert het een paar keer opnieuw, met een willekeurige pauze.
+    """
+    return any(reden.get("Code") in TIJDELIJK for reden in redenen)

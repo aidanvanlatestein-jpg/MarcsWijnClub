@@ -14,7 +14,7 @@ Dit document werkt het pilotplan uit tot bouwniveau: sleutels in DynamoDB, de le
 | API | API Gateway HTTP API, bereikbaar via CloudFront onder `/api/*` |
 | Inloggen | Cognito, eenmalige code per e-mail, alleen op uitnodiging |
 | Betalen | Mollie, iDEAL |
-| Omgevingen | `test` en `prod`, elk een eigen set stacks in hetzelfde AWS-account |
+| Omgevingen | `test` en `prod`, elk een eigen set stacks, samen in één AWS-account dat alleen voor de wijnclub is |
 
 De API loopt via CloudFront, zodat web-app en API hetzelfde adres hebben. Daardoor is geen CORS-instelling nodig en hangen de stacks niet in een kring van elkaar af.
 
@@ -63,7 +63,7 @@ Tien tabellen, alle met betalen naar gebruik en herstel naar een tijdstip. `beta
   - Bij `vast`: `lijstId`, `volgorde`, `letter`, `prijs`, `voorraad`. De letter is die uit Marcs WhatsApp-bericht: A voor de eerste wijn van de lijst.
   - Bij `bieding`: `biedingStatus` (`open`, `gesloten`), `startbod`, `minimaleVerhoging`, `minimaalVolgendBod`, `eindtijd`, `herkomst`, `spraakbericht`, `hoogsteBod`, `hoogsteBieder`, `aantalBiedingen`.
 - **`biedingen`**: `wijnId`, `tijdstipLid` (`<tijdstip>#<lidId>`), `tijdstip`, `lidId`, `bedrag`, `verlengd` (waar als dit bod de eindtijd verschoof).
-- **`bestellingen`**: `bestellingId`, `lidId`, `soort` (`lijst`, `bieding`, `namens`), `lijstId`, `regels` (lijst van `wijnId`, `naam`, `aantal`, `prijs`), `totaal`, `status`, `voorraadGereserveerd`, `betaalVoor`, `levering` (een `afhaalpuntId` van de lijst, of `bewaren` bij een bieding), `afgeleverdOp`, `ingevoerdDoor`, `aangemaakt`, `betaaldOp`, `controleNodig`.
+- **`bestellingen`**: `bestellingId`, `lidId`, `soort` (`lijst`, `bieding`, `namens`), `lijstId`, `regels` (lijst van `wijnId`, `naam`, `aantal`, `prijs`), `totaal`, `status`, `voorraadGereserveerd`, `betaalVoor`, `levering` (een `afhaalpuntId` van de lijst, of `bewaren` bij een bieding), `afgeleverdOp`, `ingevoerdDoor`, `aangemaakt`, `betaaldOp`, `mollieBetalingId` (de betaling waarmee de bestelling op betaald is gezet), `controleNodig`.
 - **`betalingen`**: `mollieBetalingId`, `bestellingIds` (lijst), `lidId`, `lijstId`, `bedrag`, `aangemaakt`.
 - **`oordelen`**: `lidId`, `wijnId`, `oordeel` (`lekker`, `niet`), `gewijzigd`.
 - **`weergaven`**: `wijnId`, `lidId`, `eerst`, `vervaltOp`. Eén rij per lid per bieding, alleen voor de tellingen.
@@ -99,14 +99,18 @@ Sluit Marc de lijst eerder dan `openTot`, dan kunnen leden eerder betalen; `beta
 ### Bestellen van de lijst
 
 1. De app controleert de regels: minstens één wijn, elk aantal tussen 1 en 24, elke wijn één keer, hoogstens 25 regels. `levering` moet een afhaalpunt van deze lijst zijn.
-2. Eén transactie in DynamoDB doet alles of niets:
+2. De web-app stuurt per bestelpoging een `sleutel` mee: een willekeurige tekst van 8 tot 64 letters, cijfers en streepjes, zoals een UUID. Ze maakt die aan als het lid op Bestel tikt en stuurt dezelfde sleutel mee als ze de aanroep herhaalt. Het `bestellingId` wordt afgeleid van het lid en de sleutel, zodat dezelfde poging altijd hetzelfde nummer geeft.
+3. Eén transactie in DynamoDB doet alles of niets:
    - controleer dat de lijst `open` is en `openTot` niet voorbij;
    - verlaag per wijn de `voorraad`, op voorwaarde dat er genoeg is;
-   - schrijf de bestelling met status `open`.
-3. Mislukt de transactie op een wijn, dan krijgt het lid `409` terug met de wijnen die op zijn. Er is niets gereserveerd.
-4. Het lid krijgt `201` terug. Er wordt nog niet betaald.
-5. Bestelt het lid opnieuw van dezelfde lijst, dan ontstaat een tweede bestelling. Bestellingen worden nooit achteraf gewijzigd; ze komen samen in één betaling.
-6. Het gekozen afhaalpunt wordt als voorkeur op het lid bewaard.
+   - schrijf de bestelling met status `open`, op voorwaarde dat het `bestellingId` nog niet bestaat.
+4. Mislukt de transactie, dan kijkt de app in deze volgorde naar de reden:
+   - **Een botsing in de tijd.** Bestellen twee leden op hetzelfde moment dezelfde wijn, dan breekt DynamoDB één van de twee af zonder dat er iets op is. De app probeert het hoogstens drie keer opnieuw, met een korte willekeurige pauze. Lukt het dan nog niet, dan krijgt het lid `503` en probeert de web-app het opnieuw met dezelfde sleutel.
+   - **De bestelling stond er al.** Dezelfde poging kwam twee keer binnen, bijvoorbeeld na een time-out of een dubbele tik. Het lid krijgt de bestaande bestelling terug met `201`; er komt geen tweede.
+   - **De lijst is dicht of een wijn is op.** Het lid krijgt `409` terug met de wijnen die op zijn. Er is niets gereserveerd.
+5. Het lid krijgt `201` terug. Er wordt nog niet betaald.
+6. Bestelt het lid opnieuw van dezelfde lijst, met een nieuwe sleutel, dan ontstaat een tweede bestelling. Bestellingen worden nooit achteraf gewijzigd; ze komen samen in één betaling.
+7. Het gekozen afhaalpunt wordt als voorkeur op het lid bewaard.
 
 ### De lijst sluiten
 
@@ -124,18 +128,21 @@ Sluit Marc de lijst eerder dan `openTot`, dan kunnen leden eerder betalen; `beta
 ### Melding van Mollie
 
 1. De melding bevat alleen het nummer van de betaling. De app zoekt de bestelling op in `betalingen` en haalt de status op bij Mollie.
-2. `paid`: alle bestellingen van die betaling gaan in één transactie van `open` naar `betaald`, op voorwaarde dat ze nog `open` zijn. Komt dezelfde melding nog eens, dan faalt die voorwaarde en gebeurt er niets.
-3. `paid` terwijl de bestelling al `verlopen` is: de status blijft `verlopen`, `controleNodig` gaat aan en er gaat een alarm af. Marc levert alsnog of betaalt terug.
-4. Een terugbetaling op een betaalde bestelling: de status wordt `terugbetaald`. De voorraad komt niet vanzelf terug; dat beslist Marc.
-5. Elke andere status: geen wijziging.
+2. `paid`: alle bestellingen van die betaling gaan in één transactie van `open` naar `betaald`, op voorwaarde dat ze nog `open` zijn. Het nummer van de betaling komt als `mollieBetalingId` op elke bestelling.
+3. Faalt die voorwaarde, dan leest de app de bestellingen opnieuw en beslist per bestelling:
+   - `betaald` met hetzelfde `mollieBetalingId`: dezelfde melding kwam nog eens. Er gebeurt niets.
+   - `betaald` of `terugbetaald` met een ander `mollieBetalingId`: het lid heeft **dubbel betaald**, bijvoorbeeld door twee betalingen tegelijk te starten. De status blijft staan, `controleNodig` gaat aan en er gaat een alarm af. Marc betaalt de tweede betaling terug.
+   - `verlopen`: de status blijft `verlopen`, `controleNodig` gaat aan en er gaat een alarm af. Marc levert alsnog of betaalt terug.
+4. Een terugbetaling van de betaling waarmee de bestelling betaald is: de status wordt `terugbetaald`. De voorraad komt niet vanzelf terug; dat beslist Marc. Een terugbetaling van een andere betaling, de dubbele, verandert de status niet.
+5. Elke andere status van de betaling: geen wijziging.
 6. De app antwoordt altijd `200`, ook als het nummer onbekend is. Een onbekend nummer wordt gelogd.
 
 ### Verlopen
 
-De taak op `betaalVoor` loopt de bestellingen van de lijst na die nog `open` zijn, en vraagt per lid bij Mollie de status van de laatste betaling op.
+De taak op `betaalVoor` loopt de bestellingen van de lijst na die nog `open` zijn, en vraagt per lid bij Mollie de status op van alle betalingen die het lid voor die bestellingen startte. Alleen de laatste is niet genoeg: een eerdere betaling kan nog slagen nadat een latere is afgebroken.
 
-- Nog bezig (`open`, `pending`): vijf minuten later opnieuw kijken.
-- Betaald: verwerken als een melding.
+- Eén ervan betaald: verwerken als een melding.
+- Geen betaald, maar één nog bezig (`open`, `pending`, `authorized`): vijf minuten later opnieuw kijken.
 - Anders: één transactie zet de status op `verlopen` en geeft de voorraad terug, op voorwaarde dat de status nog `open` is. Marc krijgt bericht, zodat hij de flessen niet meeneemt naar het afhaalpunt.
 
 Bij een verlopen bestelling uit een bieding komt er geen voorraad terug. Marc krijgt bericht en beslist of de fles naar de volgende bieder gaat.
@@ -144,9 +151,9 @@ Bij een verlopen bestelling uit een bieding komt er geen voorraad terug. Marc kr
 
 ### Een bod plaatsen
 
-1. De app leest de wijn en controleert: `biedingStatus` is `open`, `eindtijd` is niet voorbij, het bod is minstens `minimaalVolgendBod`.
+1. De app leest de wijn en controleert: `biedingStatus` is `open`, `eindtijd` is niet voorbij, het lid is niet zelf de hoogste bieder, en het bod is minstens `minimaalVolgendBod` en hoogstens drie keer dat bedrag. De bovengrens vangt een tikfout op: een bod is bindend en zet het minimum voor iedereen vast.
 2. Valt het bod in de laatste twee minuten, dan wordt de nieuwe eindtijd het moment van bieden plus twee minuten.
-3. Eén transactie schrijft het bod, met `verlengd` als stap 2 de eindtijd verschoof, en werkt de wijn bij, op voorwaarde dat `minimaalVolgendBod` en `eindtijd` nog zijn zoals gelezen. Was iemand net eerder, dan faalt de transactie en krijgt het lid `409` met het nieuwe minimum.
+3. Eén transactie schrijft het bod, met `verlengd` als stap 2 de eindtijd verschoof, en werkt de wijn bij, op voorwaarde dat `minimaalVolgendBod` en `eindtijd` nog zijn zoals gelezen. Faalt de transactie, dan leest de app de wijn opnieuw en beoordeelt het bod nog eens, hoogstens drie keer. Was iemand net eerder, dan krijgt het lid `409` met het nieuwe minimum. Botsten twee biedingen alleen in de tijd, dan gaat het bod bij de volgende poging gewoon door.
 4. De vorige hoogste bieder krijgt een melding dat hij overboden is.
 
 Leden zien `hoogsteBod` en of hun eigen bod het hoogste is. Wie de hoogste bieder is, gaat nooit naar de web-app.
@@ -155,8 +162,8 @@ Leden zien `hoogsteBod` en of hun eigen bod het hoogste is. Wie de hoogste biede
 
 1. Bij het starten van een bieding komt er een eenmalige taak op `eindtijd`.
 2. De taak leest de wijn. Is de eindtijd verlengd, dan plant hij zichzelf opnieuw op de nieuwe eindtijd en stopt.
-3. Anders zet hij `biedingStatus` op `gesloten`, op voorwaarde dat die nog `open` is.
-4. Is er een hoogste bieder, dan maakt hij een bestelling van soort `bieding` met `betaalVoor` over 48 uur, en stuurt de winnaar een melding.
+3. Anders zet hij `biedingStatus` op `gesloten`, op voorwaarde dat die nog `open` is en dat `eindtijd` en `minimaalVolgendBod` nog zijn zoals gelezen. Is er een hoogste bieder, dan schrijft dezelfde transactie een bestelling van soort `bieding` met `betaalVoor` over 48 uur. Zo is er nooit een gesloten bieding met een winnaar zonder bestelling.
+4. Daarna krijgt de winnaar een melding.
 
 ## 5. API-aanroepen
 
@@ -166,11 +173,11 @@ Alle paden beginnen met `/api`. Elke aanroep vraagt een geldig token van Cognito
 | --- | --- | --- |
 | `GET /api/aanbod` | De open lijst met wijnen, en de open biedingen | `200` |
 | `GET /api/wijnen/{wijnId}` | Eén wijn. Legt vast dat het lid een bieding opende, zie Tellingen voor de roadmap | `200`, `404` |
-| `POST /api/bestellingen` | Bestellen van de lijst: `regels`, `levering` (een afhaalpunt). Er wordt nog niet betaald | `201`, of `409` met de wijnen die op zijn |
+| `POST /api/bestellingen` | Bestellen van de lijst: `regels`, `levering` (een afhaalpunt), `sleutel` (per bestelpoging). Er wordt nog niet betaald. Dezelfde sleutel nog eens geeft dezelfde bestelling terug | `201`, `409` met de wijnen die op zijn, of `503` bij aanhoudende drukte |
 | `GET /api/bestellingen/{id}` | Status, na terugkomst van de betaalpagina | `200`, `404` |
 | `POST /api/mijn/betalingen` | Eén betaling starten: met `lijstId` voor alle open bestellingen op een gesloten lijst, of met `bestellingId` voor een gewonnen bieding | `201` met `betaalUrl`, `409` als er niets te betalen is of de lijst nog open staat |
 | `PUT /api/bestellingen/{id}/levering` | Een afhaalpunt, of bewaren bij een fles uit een bieding | `200` |
-| `POST /api/wijnen/{wijnId}/biedingen` | Een bod: `bedrag` | `201`, of `409` met `minimaalVolgendBod` |
+| `POST /api/wijnen/{wijnId}/biedingen` | Een bod: `bedrag` | `201`, of `409` met `minimaalVolgendBod` en het hoogste toegestane bod. De fout zegt waarom: `bod_te_laag`, `bod_te_hoog`, `al_hoogste` of `bieding_gesloten` |
 | `GET /api/mijn/flessen` | De bestellingen van de lopende lijst met bedrag en status, in bewaring, eerder gekocht, met oordelen | `200` |
 | `PUT /api/mijn/oordelen/{wijnId}` | `lekker` of `niet` | `200` |
 | `GET` en `PUT /api/mijn/profiel` | Naam, telefoon, afhaalpunt van voorkeur, bevestiging 18 jaar | `200` |
@@ -312,6 +319,7 @@ Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan g
 | Bucket, CloudFront, uitrol van `app/dist` | Gebouwd | Week 3 |
 | Regels voor geld, bestelling en bieding, met tests | Gebouwd | Week 5 en 6 |
 | Regels voor afhaalpunt, betalen na het sluiten en één betaling per lid per lijst, met tests | Gebouwd | Week 5 |
+| Regels na de review van 19 november: dubbele betaling herkennen, alle betalingen meewegen op de termijn, een herhaalde bestelpoging herkennen, een botsing in de tijd onderscheiden van uitverkocht, bovengrens op een bod, niet jezelf overbieden, bieding sluiten en bestelling schrijven in één transactie. Met tests; de handlers die ze uitvoeren zijn er nog niet | Gebouwd | Week 5 en 6 |
 | Lijst sluiten met betaalverzoek, herinnering na 24 uur | Nog niet | Week 5 en 7 |
 | Afhaalpunten in beheer, paklijst, herinnering "nog beschikbaar" | Nog niet | Week 4 en 7 |
 | Overige API-aanroepen | Nog niet | Week 4 tot en met 7 |
@@ -329,6 +337,9 @@ Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan g
 - **Eigen gegevens bij een Mollie-betaling.** Het ontwerp gebruikt de tabel `betalingen` en is niet afhankelijk van het veld `metadata` van Mollie, omdat de werking daarvan niet letterlijk is nagelezen.
 - **Dubbele betaling voorkomen.** Of Mollie een sleutel ondersteunt om een dubbel aangemaakte betaling te voorkomen, is niet gevonden. Het ontwerp vangt dit op door per betaalpoging een rij in `betalingen` te schrijven.
 - **Betalen na het sluiten.** Dit volgt hoe het nu in de WhatsApp-groep gaat, maar hoe leden nu betalen is niet bevestigd. Wil Marc vooraf betaald krijgen, dan komt de betaling terug in `POST /api/bestellingen` en wordt `betaalVoor` weer 20 minuten na het aanmaken.
+- **Bovengrens op een bod.** Een bod mag hoogstens drie keer het minimum zijn. De factor drie is een keuze van de bouwer na de review, geen wens van Marc. Hij staat op één plek in `domein/bieding.py` en in `app/src/staat.tsx`. Vraag Marc of dit past bij hoe er nu geboden wordt.
+- **Jezelf overbieden.** De hoogste bieder kan niet opnieuw bieden tot hij overboden is. Komt er later een maximaal bod waarbij de app namens het lid meebiedt (roadmap), dan moet deze regel opnieuw bekeken worden.
+- **Een bestelling annuleren.** Bestellen is bindend en een bestelling wordt nooit gewijzigd. Vergist een lid zich, dan blijft de voorraad vast tot 48 uur na het sluiten van de lijst, en ook Marc kan dat niet terugdraaien. Vraag Marc of hij in beheer een open bestelling wil kunnen annuleren, met de voorraad terug. Dat is dan een nieuwe status `geannuleerd` en een aanroep onder `/api/beheer`.
 - **Wie niet betaalt.** Na 48 uur verloopt de bestelling vanzelf. Of Marc dat wil, of liever zelf beslist per lid, moet hij aangeven.
 - **Meldingen op de iPhone.** Werken alleen als de app op het beginscherm staat. De precieze eisen moeten in week 7 nagezocht worden.
 - **Bedrock.** Welk model en of het in de gekozen regio beschikbaar is, wordt in week 4 gekozen.

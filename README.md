@@ -56,8 +56,8 @@ Dit maakt de sjablonen in `infra/cdk.out` en verandert niets in AWS.
 
 Uitrollen maakt echte onderdelen aan in AWS en kost geld. Regel eerst dit:
 
-- [ ] Een eigen AWS-account voor de wijnclub, met een budgetalarm op € 20 per maand.
-- [ ] De AWS CLI geïnstalleerd en ingelogd op dat account.
+- [ ] Een eigen AWS-account voor de wijnclub, met niets anders erin. Test en productie staan er samen in. Zet er een budgetalarm op van € 20 per maand en tweestapsverificatie op de hoofdgebruiker.
+- [ ] De AWS CLI geïnstalleerd en ingelogd op dat account, met het profiel `wijnclub`.
 - [ ] Een geverifieerd afzenderadres of domein in Amazon SES, in dezelfde regio. Vraag ook toegang buiten de proefomgeving van SES aan; daarbinnen komt de inlogcode alleen aan op adressen die je zelf hebt geverifieerd.
 - [ ] Het afzenderadres ingevuld bij `afzender_email` in `infra/cdk.json`.
 - [ ] De regio gekozen bij `regio` in `infra/cdk.json`. Nu staat er Ierland (`eu-west-1`).
@@ -82,6 +82,25 @@ cd infra && npx aws-cdk@2.1149.0 deploy "Wijnclub-test-*" -c omgeving=test
 
 Voor productie gebruik je `-c omgeving=prod`. Daar blijven tabellen en bestanden staan als je een stack verwijdert; in test verdwijnen ze.
 
+### Waarom een eigen account
+
+De pipeline rolt uit met de rollen van CDK, en CloudFormation voert daarbij uit met `AdministratorAccess`. Wie de pipeline in handen krijgt, via een overgenomen GitHub-account of een gekaapt pakket, kan dus alles in het account. In een account met alleen de wijnclub blijft de schade tot de wijnclub beperkt. Deel het account daarom niet met andere projecten.
+
+Test en productie staan samen in dat ene account. Een eigen account per omgeving beschermt vooral tegen een tweede ontwikkelaar; die is er niet.
+
+### Verhuizen vanuit een ander account
+
+Staat de testomgeving al in een account dat je met andere projecten deelt, verhuis dan vóór de eerste uitrol naar productie. Er staan dan nog geen leden of bestellingen in, dus er hoeft niets mee.
+
+1. Maak het nieuwe account aan, met het budgetalarm en de tweestapsverificatie van hierboven.
+2. Laat het profiel `wijnclub` naar het nieuwe account wijzen en controleer dat met `aws sts get-caller-identity --profile wijnclub`. Geef het oude account een eigen profielnaam, zodat je ze niet verwisselt.
+3. Verifieer het afzenderadres opnieuw in Amazon SES en vraag opnieuw toegang buiten de proefomgeving aan. Dat geldt per account.
+4. Doe in het nieuwe account `cdk bootstrap` en volg daarna "Eenmalig instellen" onder Pipeline. Zet het nieuwe accountnummer in het geheim `AWS_ACCOUNT_ID` in GitHub.
+5. Rol test uit en draai de rooktest. Het adres van CloudFront is nieuw.
+6. Verwijder pas daarna in het oude account de stacks `Wijnclub-test-*`, met het profiel van het oude account. Verwijder `CDKToolkit` in die regio alleen als geen ander project hem gebruikt; de bucket met bouwbestanden blijft dan staan en leeg je zelf.
+
+Sleutels in Secrets Manager, zoals die van Mollie, zet je in het nieuwe account opnieuw. Ze verhuizen niet mee.
+
 ## Pipeline
 
 De pipeline draait in GitHub Actions. De workflows staan in `.github/workflows`. Elke Action staat vast op een commit-hash.
@@ -98,17 +117,21 @@ GitHub logt via OIDC in op AWS met een tijdelijke rol. Er staan geen AWS-sleutel
 
 | Rol | Alleen vanuit | Mag |
 | --- | --- | --- |
-| `wijnclub-github-lezen` | Een pull request | De leesrol van CDK aannemen, voor `cdk diff` |
+| `wijnclub-github-lezen` | Een pull request | Alleen de sjablonen van de stacks `Wijnclub-*` lezen, voor `cdk diff`. Geen gegevens uit tabellen, buckets of Cognito |
 | `wijnclub-github-test` | De branch `main` | De uitrolrollen van CDK aannemen |
 | `wijnclub-github-prod` | De GitHub-omgeving `productie` | De uitrolrollen van CDK aannemen |
 
-Test en productie staan in hetzelfde account en delen de uitrolrollen van CDK. De scheiding zit dus in de voorwaarden van de rollen en in de beveiliging van de omgeving `productie`.
+De rol voor een pull request neemt de leesrol van CDK niet aan: die heeft `ReadOnlyAccess` op het hele account en kan daarmee ook de ledentabel lezen. De CLI meldt bij de diff dat hij de leesrol niet kan aannemen en gaat verder met de rol zelf. Dat is de bedoeling.
+
+**Bekende beperking.** Test en productie staan in hetzelfde account en delen de uitrolrollen van CDK. De testrol kan daardoor in AWS hetzelfde als de productierol. De goedkeuring in de omgeving `productie` beschermt tegen een uitrol per ongeluk, niet tegen een commit op `main` die de workflow voor test aanpast. Met één ontwikkelaar is dat een bewuste keuze; zie "Waarom een eigen account". De toegang tot de pipeline is het GitHub-account: zet daar tweestapsverificatie of een passkey op. Komt er een tweede ontwikkelaar bij, dan is een eigen account voor productie de volgende stap.
+
+Wijzigt `github_stack.py`, dan rol je `Wijnclub-GitHub` zelf opnieuw uit; tot dan gelden de oude rechten.
 
 ### Eenmalig instellen
 
 Doe dit na de stappen onder "Voor de eerste uitrol".
 
-1. Rol de stack met de rollen zelf uit; de pipeline doet dat nooit. Controleer eerst het account met `aws sts get-caller-identity`. Staat er in het account al een OIDC-koppeling met GitHub, dan faalt deze stap; meld het dan.
+1. Rol de stack met de rollen zelf uit; de pipeline doet dat nooit. Controleer eerst met `aws sts get-caller-identity` dat je in het account van de wijnclub zit: de rollen uit deze stack geven GitHub toegang tot alles in dat account. Staat er in het account al een OIDC-koppeling met GitHub, dan faalt deze stap; meld het dan.
 
     ```bash
     cd infra && npx aws-cdk@2.1149.0 deploy Wijnclub-GitHub -c afzender_email=naam@jouwdomein.nl
