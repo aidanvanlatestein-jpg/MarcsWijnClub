@@ -1,19 +1,32 @@
-/* Overgenomen uit de variabelen van het ontwerp in pen.dev. */
+/* Overgenomen uit design-v2/DESIGN.md, hoofdstuk Tokens. De app is altijd donker, zoals marckookt.com. */
 :root {
+  color-scheme: dark;
+
   --bg: #000000;
-  --surface: #111111;
   --ink: #ffffff;
   --muted: #9a9a9a;
-  --dim: #6e6e6e;
-  --wine: #c9a84c;
+  /* Het ontwerp toont #6E6E6E; #8A8A8A geeft genoeg contrast voor kleine tekst. */
+  --dim: #8a8a8a;
+  --ghost: #262626;
+  --ghost-2: #3a3a3a;
   --line: #2b2b2b;
+  --line-soft: #1e1e1e;
+  --outline: #6e6e6e;
+  /* Geschat op basis van het logo. Marc levert de exacte waarde. */
+  --gold: #c9a84c;
+  --paper: #ffffff;
+  --paper-ink: #000000;
+  --paper-muted: #555555;
+  --paper-weg: #b0b0b0;
   --ok: #9ccb9c;
-  --btn: #4a4a4a;
-  --primary: #ffffff;
-  --on-primary: #000000;
-  --op: #f0907a;
+  --ok-paper: #2f6b45;
+  --grey-btn: #4a4a4a;
   --stip: #5a5a5a;
+  --surface: #111111;
+  --melding: #1c1c1c;
 
+  /* Marc kiest tussen DIN Pro Condensed (licentie) en Barlow Condensed. Wisselen is deze ene regel. */
   --font: 'Barlow Condensed', 'Arial Narrow', sans-serif;
-  --breedte: 480px;
+  --breedte: 430px;
+  --marge: 20px;
 }

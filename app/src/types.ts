@@ -1,5 +1,5 @@
-// De vorm van GET /api/aanbod, zoals functions/wijnclub/handlers/aanbod.py die teruggeeft.
-// Bedragen zijn hele centen, tijden UTC-tekst.
+// De vorm van de gegevens in de web-app. Aanbod volgt GET /api/aanbod, zoals
+// functions/wijnclub/handlers/aanbod.py die teruggeeft. Bedragen zijn hele centen, tijden UTC-tekst.
 
 export interface Afhaalpunt {
   afhaalpuntId: string
@@ -23,6 +23,9 @@ export interface Wijn {
   prijs: number
   voorraad: number
   volgorde: number
+  /** Het aantal flessen waarmee de wijn op de lijst kwam. De flessenrij tekent daarmee wat al weg is.
+   *  Dit veld zit nog niet in de API; zie de open punten in docs/bouwspecificatie.md. */
+  partij?: number
 }
 
 export interface Lijst {
@@ -42,7 +45,14 @@ export interface Bieding {
   jaargang?: number
   druif?: string
   streek?: string
+  /** Waarom deze fles. */
   tekst?: string
+  spijs?: string
+  drinken?: string
+  herkomst?: string
+  /** Hoe de fles bewaard is. In de API hoort dit nu nog bij herkomst. */
+  bewaring?: string
+  spraakbericht?: string
   foto?: string
   startbod: number
   minimaleVerhoging: number
@@ -57,4 +67,55 @@ export interface Bieding {
 export interface Aanbod {
   lijsten: Lijst[]
   biedingen: Bieding[]
+}
+
+export interface Lid {
+  lidId: string
+  naam: string
+  email?: string
+}
+
+export interface Regel {
+  wijnId: string
+  /** Leeg bij een fles uit een bieding. */
+  letter: string
+  naam: string
+  jaargang?: number
+  aantal: number
+  prijs: number
+}
+
+export type BestelStatus = 'open' | 'betaald' | 'verlopen' | 'terugbetaald'
+
+/** Bewaren bij Marc, alleen voor een fles uit een bieding. */
+export const BEWAREN = 'bewaren'
+
+export interface Bestelling {
+  bestellingId: string
+  /** Het nummer op de bon, zoals 0147. */
+  bon: string
+  lidId: string
+  soort: 'lijst' | 'namens' | 'bieding'
+  lijstId?: string
+  regels: Regel[]
+  totaal: number
+  status: BestelStatus
+  /** Een afhaalpuntId, 'bewaren', of nog niet gekozen (bij een gewonnen bieding). */
+  levering: string | null
+  ingevoerdDoor: 'lid' | 'beheer'
+  aangemaakt: string
+  betaaldOp?: string
+  afgeleverdOp?: string
+}
+
+export type Oordeel = 'lekker' | 'niet'
+
+/** Een wijn die het lid op een eerdere lijst kocht. */
+export interface Eerder {
+  wijnId: string
+  letter: string
+  naam: string
+  jaargang?: number
+  aantal: number
+  gekocht: string
 }

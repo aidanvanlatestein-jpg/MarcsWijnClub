@@ -35,7 +35,7 @@ Deze punten moeten vóór de bouw rond zijn:
 - [ ] Marc is akkoord met de pilot en met zijn rol: wijnen invoeren, teksten controleren, afleveren
 - [ ] Vastgelegd hoe leden nu betalen en hoe de flessen bij hen komen
 - [ ] Marc heeft een Mollie-account op naam van zijn zaak
-- [ ] Naam en domein van de club zijn gekozen
+- [ ] De naam van de club is gekozen. Een eigen domein hoeft nog niet: de app draait voorlopig op het adres dat AWS geeft, zie onderwerp 13 op de roadmap
 - [ ] De 20 tot 30 leden voor de pilot zijn gekozen, met voorkeur voor wie nu het vaakst bestelt
 - [ ] Een jurist heeft de punten onder Juridisch en privacy bekeken
 - [ ] Nulmeting gedaan bij de eerstvolgende lijst in WhatsApp: aantal berichten, tijd van Marc, tijd tot betaling, fouten in de telling
@@ -313,7 +313,7 @@ Elke ruit is een voorwaarde om door te gaan. Zonder akkoord van Marc en de juris
 | Week | Oplevering |
 | --- | --- |
 | 1 en 2 | Open beslissingen rond, nulmeting gedaan, Mollie-account en AWS-account aangemaakt |
-| 3 | Omgeving als code met AWS CDK, pipeline met teststack, inloggen op uitnodiging, lege web-app online op het eigen domein |
+| 3 | Omgeving als code met AWS CDK, pipeline met teststack, inloggen op uitnodiging, lege web-app online op het adres dat CloudFront geeft |
 | 4 | Beheer: WhatsApp-bericht plakken en herkennen, lijst met inleiding en afhaalpunten, wijn op de lijst zetten. De lijst en de wijnpagina voor leden |
 | 5 | Bestellen met afhaalpunt, bijbestellen, voorraad. De lijst sluiten met een betaalverzoek, betalen via Mollie in testmodus. Mijn flessen |
 | 6 | Bieding: bieden, sluiten op de eindtijd, betaallink voor de winnaar, bewaren bij Marc. Vastleggen wie een bieding opent en welk bod de eindtijd verlengt |
@@ -331,8 +331,8 @@ De lopende kosten blijven naar verwachting onder €10 per maand; de echte inves
 
 | Post | Schatting | Toelichting |
 | --- | --- | --- |
-| AWS-hosting | Onder €10 per maand | Bij 30 tot 120 gebruikers valt bijna alles binnen het gratis gebruik. Vaste posten zijn het domein in Route 53 en de sleutel in Secrets Manager |
-| Domeinnaam | Ongeveer €10 tot €15 per jaar |  |
+| AWS-hosting | Onder €10 per maand | Bij 30 tot 120 gebruikers valt bijna alles binnen het gratis gebruik. De vaste post is de sleutel in Secrets Manager |
+| Domeinnaam | Ongeveer €10 tot €15 per jaar, plus ongeveer een halve euro per maand als de DNS in Route 53 komt | Nog niet: de app draait voorlopig op het adres van CloudFront. Zie onderwerp 13 op de roadmap |
 | Mollie | Geen vaste kosten, ongeveer €0,30 per iDEAL-betaling | Marc betaalt dit als verkoper. Het is één betaling per bestelling, niet per fles |
 | Inloggen | Gratis op deze schaal | Met een code per e-mail. Een code per sms kost per bericht en is niet nodig |
 | Berichten herkennen via Bedrock | Enkele centen per wijn |  |
@@ -427,6 +427,8 @@ Na een geslaagde pilot volgen twee uitbreidingen met een taalmodel: eerst de oms
 
 Onderwerp 4 tot en met 12 komen uit het marktonderzoek van 19 november 2026. Het zijn ideeën: ze zijn nog niet met Marc besproken en staan in volgorde van verwachte opbrengst tegenover bouwtijd. Geen ervan hoort in de pilot.
 
+Onderwerp 13 is geen idee maar een uitgestelde keuze: het eigen domein. Het staat onderaan omdat het geen functie is, niet omdat het lang kan wachten.
+
 | Onderwerp | Wat het oplevert | Start als |
 | --- | --- | --- |
 | 1. Omschrijving via een taalmodel | Marc zet een fles in enkele minuten online, in zijn eigen woorden | De pilot geslaagd is en het herkennen van Marcs berichten in de pilot goed werkt |
@@ -441,6 +443,7 @@ Onderwerp 4 tot en met 12 komen uit het marktonderzoek van 19 november 2026. Het
 | 10. Voorinschrijving met een drempel | Marc koopt alleen in wat al verkocht is | Marc wijnen kan krijgen met een minimale afname |
 | 11. De vaste doos van Marc | Voorspelbare omzet, en leden die niet elke lijst hoeven te volgen | Een vaste groep op bijna elke lijst bestelt |
 | 12. Wachtlijst bij uitverkocht | Een fles die vrijkomt gaat vanzelf naar wie hem wilde | Marc wijnen gaat verkopen die hij kan nabestellen, of bestellingen geregeld vervallen |
+| 13. Eigen domein en eigen afzenderadres | Een adres dat leden herkennen, en een inlogcode die van de club komt | De naam van de club gekozen is. Uiterlijk vóór de eerste uitnodiging aan een lid |
 
 **1. Omschrijving via een taalmodel**
 
@@ -650,6 +653,16 @@ Staat een wijn op uitverkocht, dan tikt een lid op "Zet me op de wachtlijst" met
 - Marc ziet per wijn hoeveel flessen er meer gevraagd waren. Bij een restpartij kan hij daar niets mee; bij een wijn die hij kan nabestellen wel.
 - Er komt één tabel bij, `wachtlijst` (wijn, tijdstip, lid, aantal). De volgorde is het tijdstip van aanmelden, en dat staat in de voorwaarden.
 - De pilot meet de vraag hiernaar niet.
+
+**13. Eigen domein en eigen afzenderadres**
+
+Voorlopig draait de app op het adres dat CloudFront geeft, zoals `d123abc.cloudfront.net`, en verstuurt Cognito de inlogcode vanaf één los e-mailadres dat in Amazon SES is geverifieerd. Dat is genoeg om te bouwen en om Marc het prototype te laten zien. Besloten op 19 november 2026.
+
+- **Waarom het niet tot na de pilot kan wachten.** De app op het beginscherm, de toestemming voor meldingen en het ingelogd blijven horen bij het adres. Verandert het adres, dan moet elk lid de app opnieuw op het beginscherm zetten, opnieuw inloggen en meldingen opnieuw toestaan. Het domein moet er dus zijn vóór het eerste lid wordt uitgenodigd.
+- **Wat het oplevert.** Een adres dat Marc in de groep kan delen en dat leden herkennen, en een inlogcode met de club als afzender in plaats van een los adres.
+- **Wat erbij komt.** Het domein zelf, een certificaat in AWS Certificate Manager in de regio `us-east-1` (dat vraagt CloudFront, dus een kleine extra stack in die regio), het domein als afzender in SES met DKIM, en `afzender_email` op een adres van dat domein.
+- **SES blijft een eigen stap.** Ook zonder domein geldt: in de proefomgeving van SES komt de inlogcode alleen aan op adressen die je zelf hebt geverifieerd. Toegang daarbuiten vraag je aan bij AWS, en dat moet rond zijn vóór de eerste uitnodiging.
+- De naam van de club is een open beslissing van Marc; het domein volgt daaruit.
 
 **Bewust niet**
 

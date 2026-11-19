@@ -243,7 +243,7 @@ De pilot legt drie tellingen vast, zodat na acht weken te kiezen is tussen de on
 - De groep `beheer` bevat alleen Marc en de bouwer. API Gateway controleert het token; de Lambda-functie controleert de groep.
 - Inloggen wordt niet zelf gebouwd. Draait dit ooit binnen een organisatie met een eigen standaard voor klantlogin, dan vervangt die Cognito.
 
-**Vooraf regelen:** een geverifieerd domein of adres in Amazon SES, en toegang buiten de proefomgeving van SES. In de proefomgeving kan SES alleen mailen naar adressen die je zelf hebt geverifieerd.
+**Vooraf regelen:** een geverifieerd domein of adres in Amazon SES, en toegang buiten de proefomgeving van SES. In de proefomgeving kan SES alleen mailen naar adressen die je zelf hebt geverifieerd. Voorlopig is de afzender één los geverifieerd adres en draait de app op het adres van CloudFront; het eigen domein is onderwerp 13 op de roadmap van het plan.
 
 ## 7. Projectindeling
 
@@ -320,8 +320,8 @@ Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan g
 | Meldingen | Nog niet | Week 7 |
 | Tellingen voor de roadmap: tabel `weergaven`, veld `verlengd`, `GET /api/beheer/tellingen` | Nog niet | Week 6 en 7 |
 | Meting per melding: tabellen `berichten` en `tikken`, `POST /api/mijn/tikken`, `POST /api/beheer/berichten` | Nog niet | Week 7 |
-| Web-app: opzet, gedeelde onderdelen, de schermen Aanbod en Wijn van de lijst met voorbeeldinhoud | Gebouwd | Week 4 |
-| Web-app: inloggen, de overige schermen, koppeling met de API | Nog niet | Week 4 tot en met 7 |
+| Web-app: klikbaar prototype van alle schermen uit `design-v2` (eerste login, aanbod, wijn, bon, bieding met ladder, gewonnen, mijn flessen, Marc, beheer, namens een lid, toestanden) met voorbeeldinhoud en proefacties. Alles staat in de browser (`app/src/staat.tsx`); er gaat niets naar de API | Gebouwd | Week 4 |
+| Web-app: echt inloggen via Cognito, koppeling met de API, betalen via Mollie, foto's uploaden, spraakbericht | Nog niet | Week 4 tot en met 7 |
 
 ## 9. Open punten
 
@@ -335,4 +335,6 @@ Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan g
 - **Rijen automatisch verwijderen.** `weergaven` en `tikken` gaan ervan uit dat DynamoDB een rij verwijdert op het tijdstip in `vervaltOp`. Dat is uit het hoofd opgeschreven en niet nagelezen. Zoek bij het bouwen in week 6 op hoe het werkt en hoe snel na het tijdstip de rij echt weg is.
 - **Grondslag voor de tellingen.** Of het vastleggen van welk lid welke bieding opende of op welke melding tikte onder het gerechtvaardigd belang van Marc valt, of toestemming vraagt, hoort bij de juridische check.
 - **Web-app.** Gekozen: React met Vite. Het ontwerp in pen.dev is de bron voor de schermen; het prototype blijft de bron voor het gedrag.
+- **Ontwerp en plan wijken af.** Waar `design-v2` en het plan verschillen, volgt het prototype het plan, zoals `design-v2/DESIGN.md` voorschrijft. Op de bon is de hoofdknop "Bestel" in plaats van "Betaal met iDEAL": betalen volgt als de lijst sluit, onder Flessen. Je kiest een afhaalpunt in plaats van BRENG of HAAL, en na een gewonnen bieding bewaren of een afhaalpunt. "Laat hem brengen" heet "Zet hem klaar". De voortgang onder Flessen heeft drie stappen (besteld, betaald, afgehaald), omdat het datamodel geen "ingepakt" kent. Het ontwerp moet hierop worden aangepast, of het plan als Marc anders kiest.
+- **Foto's uploaden.** In het prototype blijft een gekozen foto in de browser. In de echte app gaat de upload via een vooraf ondertekende S3-URL, alleen voor de groep `beheer`, met een vaste lijst bestandstypen en een maximale grootte, en de app toont de foto pas na controle aan de serverkant. Een bestand van een gebruiker is een risico; neem dit mee in de review van week 4.
 - **Lokale Python.** Op de machine waarop deze opzet is gemaakt staat Python 3.9, dat niet meer wordt ondersteund. De code en de tests werken ermee, maar pip installeert er oudere versies van pytest en boto3 op, met bekende kwetsbaarheden (pytest: PYSEC-2026-1845; urllib3 1.26, via boto3: meerdere). Die draaien alleen lokaal en komen niet in Lambda. Installeer Python 3.14: dan lopen de versies gelijk met Lambda en zijn de kwetsbaarheden weg. De tests zijn alleen op 3.9 gedraaid.
