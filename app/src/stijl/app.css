@@ -1,4 +1,4 @@
-/* Opmaak van de web-app, volgens design-v2/DESIGN.md. Geen schaduwen, geen afgeronde hoeken. */
+/* Opmaak van de web-app, volgens design-v3/DESIGN.md (de vormentaal komt uit V2). Geen schaduwen, geen afgeronde hoeken. */
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -20,6 +20,7 @@ input, textarea, select { font: inherit; color: inherit; }
 .app {
   max-width: var(--breedte); margin: 0 auto; min-height: 100dvh;
   display: flex; flex-direction: column; position: relative; overflow-x: clip;
+  padding-top: env(safe-area-inset-top);
 }
 main { flex: 1; display: block; }
 
@@ -40,7 +41,7 @@ main { flex: 1; display: block; }
 .kop { display: flex; justify-content: space-between; align-items: center; padding: 6px var(--marge); min-height: 56px; }
 .woordmerk { display: flex; align-items: flex-end; gap: 6px; font-size: 18px; line-height: 1; text-transform: uppercase; }
 .woordmerk b { font-weight: 700; }
-.woordmerk small { font-size: 12px; font-weight: 500; letter-spacing: 1.5px; color: var(--gold); padding-bottom: 1px; }
+.woordmerk small { font-size: 13px; font-weight: 500; letter-spacing: 1.5px; color: var(--gold); padding-bottom: 1px; }
 .tekstlink {
   display: inline-flex; align-items: center; gap: 4px; min-height: 44px;
   font-size: 15px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
@@ -91,7 +92,8 @@ main { flex: 1; display: block; }
 /* Aanbod: de kaart */
 .wijnen { padding: 16px var(--marge) 8px; }
 .wijnregel { display: flex; gap: 14px; padding: 18px 0; }
-.wijnregel.op { opacity: 0.4; }
+.wijnregel.op .wijnregel-naam, .wijnregel.op .prijs .getal { color: var(--dim); }
+.wijnregel.op .wijnregel-omschrijving, .wijnregel.op .prijs .eur, .wijnregel.op .prijs .per, .wijnregel.op .rij-status { color: var(--dim); }
 .reuzenletter {
   width: 86px; height: 120px; flex: none; overflow: hidden;
   font-size: 150px; font-weight: 700; line-height: 120px; color: var(--ghost);
@@ -103,30 +105,39 @@ main { flex: 1; display: block; }
   min-height: 44px; display: flex; align-items: flex-start; padding-top: 2px; width: 100%;
 }
 .wijnregel-omschrijving {
-  font-size: 15px; line-height: 20px; color: var(--muted);
+  font-size: 16px; line-height: 21px; color: var(--muted);
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
 }
 
-/* Flessenrij */
-.flessenrij { display: flex; flex-wrap: wrap; align-items: flex-end; margin: -10px 0 -4px; touch-action: manipulation; }
-.flessenrij[aria-disabled='true'] { pointer-events: none; }
-.fles-tik { height: 44px; display: flex; align-items: flex-end; padding-right: 4px; cursor: pointer; }
+/* Flessenrij: een tekening van voorraad en keuze, met een min- en een plusknop (M2) */
+.flessenkeuze { display: flex; flex-direction: column; gap: 6px; }
+.flessenrij { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 4px; min-height: 20px; }
 .fles {
   display: block; width: 9px; height: 20px; border: 1px solid var(--outline); border-radius: 3px 3px 0 0;
   transition: background-color 120ms ease-out, border-color 120ms ease-out;
 }
 .fles.gekozen { background: var(--ink); border-color: var(--ink); }
 .fles.weg { background: var(--line-soft); border-color: var(--line-soft); }
-.fles-meer {
-  height: 44px; display: flex; align-items: flex-end; padding: 0 6px 0 4px; cursor: pointer;
-  font-size: 15px; font-weight: 700; letter-spacing: 1px; color: var(--muted);
+.fles-meer { padding-left: 2px; font-size: 13px; font-weight: 700; letter-spacing: 1px; line-height: 1; color: var(--muted); }
+.flessenkeuze-onder { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.rij-status {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+  font-size: 13px; font-weight: 600; letter-spacing: 1px; color: var(--muted); text-transform: uppercase;
 }
-.flessenrij.groot { margin: 0; }
-.flessenrij.groot .fles-tik { height: 64px; padding-right: 6px; }
-.flessenrij.groot .fles { width: 18px; height: 52px; border-radius: 6px 6px 0 0; }
-.rij-status { font-size: 13px; font-weight: 600; letter-spacing: 1.2px; color: var(--muted); text-transform: uppercase; }
-.rij-status.goud { color: var(--gold); }
-.rij-status.groot { font-size: 14px; letter-spacing: 1.5px; }
+.rij-status .goud { color: var(--gold); }
+.stappen-knoppen { display: flex; gap: 8px; flex: none; }
+.stap-knop {
+  width: 44px; height: 44px; display: grid; place-items: center;
+  background: var(--grey-btn); color: var(--ink); touch-action: manipulation;
+}
+.stap-knop.meer { background: var(--ink); color: #000; }
+.stap-knop:disabled { opacity: 0.35; }
+.flessenkeuze.groot { gap: 12px; }
+.flessenkeuze.groot .flessenrij { gap: 6px; }
+.flessenkeuze.groot .fles { width: 18px; height: 52px; border-radius: 6px 6px 0 0; }
+.flessenkeuze.groot .fles-meer { font-size: 15px; }
+.flessenkeuze.groot .rij-status { font-size: 14px; letter-spacing: 1.5px; }
+.flessenkeuze.groot .stap-knop { width: 56px; height: 56px; }
 
 /* Bijzondere fles op de kaart */
 .poster { position: relative; display: block; width: 100%; height: 440px; overflow: hidden; background: var(--surface); margin-top: 12px; }
@@ -166,7 +177,10 @@ main { flex: 1; display: block; }
   font-size: 16px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
 }
 
-.tabs { display: flex; padding: 0 var(--marge) max(28px, env(safe-area-inset-bottom)); background: var(--bg); }
+.tabs { display: flex; padding: 0 var(--marge) max(14px, env(safe-area-inset-bottom)); background: var(--bg); }
+.tabs.vrij { gap: 12px; }
+.tabs.vrij .tab { flex: 1 1 auto; }
+.onderkant > :last-child:not(.tabs) { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
 .tab {
   flex: 1; display: flex; flex-direction: column; gap: 10px; padding-bottom: 6px; min-height: 44px;
   font-size: 16px; font-weight: 500; letter-spacing: 2px; color: var(--dim);
@@ -198,16 +212,16 @@ main { flex: 1; display: block; }
 @keyframes verschijn { from { opacity: 0; transform: translateY(-8px); } }
 
 /* Wijn van de lijst */
-.foto-kop { position: relative; height: 430px; background: var(--surface); }
+.foto-kop { position: relative; height: clamp(250px, calc(100dvh - 400px), 430px); background: var(--surface); }
 .foto-kop img { width: 100%; height: 100%; object-fit: cover; }
 .foto-kop .verloop { height: 130px; }
 .reuzenletter-groot {
-  position: absolute; top: 230px; left: 61%; z-index: 1;
+  position: absolute; bottom: -40px; left: 61%; z-index: 1;
   font-size: 300px; font-weight: 700; line-height: 240px; color: var(--ink); pointer-events: none;
 }
 .wijn-inhoud { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 22px; padding: 0 var(--marge) 28px; margin-top: -10px; }
 .naam-groot { font-size: min(64px, 16vw); font-weight: 700; letter-spacing: -1px; line-height: 0.9; text-transform: uppercase; }
-.naam-groot .jaar { display: block; color: var(--line); }
+.naam-groot .jaar { display: block; color: var(--outline); }
 .herkomst-regel { font-size: 14px; font-weight: 600; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
 .citaat { display: flex; gap: 12px; }
 .citaat-teken { font-size: 80px; font-weight: 700; line-height: 64px; color: var(--gold); flex: none; height: 44px; }
@@ -215,12 +229,11 @@ main { flex: 1; display: block; }
 .citaat .door { display: block; margin-top: 10px; font-size: 14px; font-weight: 600; letter-spacing: 2px; color: var(--gold); }
 .twee-kolommen { display: flex; gap: 20px; }
 .twee-kolommen > div { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-.blok-kop { font-size: 30px; font-weight: 700; line-height: 30px; color: var(--line); text-transform: uppercase; }
+.blok-kop { font-size: 30px; font-weight: 700; line-height: 30px; color: var(--outline); text-transform: uppercase; }
 .blok-tekst { font-size: 17px; line-height: 22px; }
 .prijs-groot { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
 .prijs-groot .bedrag-groot { font-size: 80px; letter-spacing: -2px; }
 .prijs-groot .rechts { display: flex; flex-direction: column; align-items: flex-end; font-size: 14px; font-weight: 600; letter-spacing: 1.5px; color: var(--muted); text-align: right; padding-bottom: 6px; }
-.kies-flessen { display: flex; flex-direction: column; gap: 10px; }
 
 /* Papier: de bon */
 .bon-houder { padding: 10px 22px 8px 30px; }
@@ -249,7 +262,7 @@ main { flex: 1; display: block; }
 .bon-totaal-rij > span:first-child { font-size: 18px; font-weight: 700; letter-spacing: 2px; }
 .bon-totaal-rij .bedrag-groot { font-size: 64px; letter-spacing: -1.5px; }
 .bon-totaal-rij .bedrag-groot .eur { font-size: 22px; color: var(--paper-muted); }
-.bon-voet { font-size: 15px; line-height: 20px; color: var(--paper-muted); }
+.bon-voet { font-size: 16px; line-height: 21px; color: var(--paper-muted); }
 @media (prefers-reduced-motion: reduce) { .bon { transform: none; } }
 
 .bon-klein {
@@ -257,7 +270,7 @@ main { flex: 1; display: block; }
   background: var(--paper); color: var(--paper-ink); padding: 18px;
 }
 .bon-klein strong { display: block; font-size: 30px; font-weight: 700; line-height: 30px; }
-.bon-klein span { font-size: 15px; color: var(--paper-muted); }
+.bon-klein span { font-size: 16px; color: var(--paper-muted); }
 
 /* Stempel */
 .stempel {
@@ -272,19 +285,19 @@ main { flex: 1; display: block; }
 .sectie { padding: 22px var(--marge) 8px; display: flex; flex-direction: column; gap: 12px; }
 .sectie-kop { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .tekst { font-size: 17px; line-height: 22px; font-weight: 400; }
-.tekst.klein { font-size: 15px; line-height: 20px; }
+.tekst.klein { font-size: 16px; line-height: 21px; }
 .tekst.gedempt { color: var(--muted); font-weight: 300; }
 
 /* Keuze in twee helften, of in banden */
-.split { display: flex; border: 1px solid var(--ink); min-height: 150px; }
+.split { display: flex; border: 1px solid var(--ink); min-height: 116px; }
 .split > button {
   flex: 1; min-width: 0; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px;
   background: #000; text-align: left;
 }
 .split > button[aria-checked='true'] { background: var(--ink); color: #000; }
-.keuze-woord { font-weight: 700; letter-spacing: -1px; line-height: 0.9; color: var(--ghost-2); text-transform: uppercase; overflow-wrap: anywhere; }
+.keuze-woord { font-weight: 700; letter-spacing: -1px; line-height: 0.9; color: var(--muted); text-transform: uppercase; overflow-wrap: anywhere; }
 [aria-checked='true'] > .keuze-woord { color: #000; }
-.keuze-zin { font-size: 15px; font-weight: 500; line-height: 20px; color: var(--muted); }
+.keuze-zin { font-size: 16px; font-weight: 500; line-height: 20px; color: var(--muted); }
 [aria-checked='true'] > .keuze-zin { color: #000; }
 .banden { display: flex; flex-direction: column; gap: 8px; }
 .banden > button {
@@ -298,11 +311,11 @@ main { flex: 1; display: block; }
 /* Melding en fout */
 .melding-tekst { display: flex; gap: 14px; padding: 16px var(--marge); border-top: 1px solid var(--line); }
 .melding-tekst .uitroep { font-size: 44px; font-weight: 700; line-height: 40px; color: var(--gold); }
-.fout { color: var(--gold); font-size: 15px; font-weight: 600; letter-spacing: 0.5px; }
+.fout { color: var(--gold); font-size: 16px; font-weight: 600; letter-spacing: 0.5px; }
 
 /* Pushmelding in de app */
 .push {
-  position: fixed; top: 8px; left: 12px; right: 12px; z-index: 40;
+  position: fixed; top: calc(8px + env(safe-area-inset-top)); left: 12px; right: 12px; z-index: 40;
   max-width: calc(var(--breedte) - 24px); margin: 0 auto;
   background: var(--melding); border-radius: 16px; padding: 14px; text-align: left;
   display: flex; flex-direction: column; gap: 4px; animation: verschijn 200ms ease-out;
@@ -310,7 +323,7 @@ main { flex: 1; display: block; }
 .push-bron { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--muted); }
 .push-bron i { width: 22px; height: 22px; border-radius: 6px; background: #000; color: var(--gold); display: grid; place-items: center; font-style: normal; font-size: 12px; font-weight: 700; }
 .push strong { font-size: 17px; font-weight: 700; }
-.push span:last-child { font-size: 15px; color: var(--muted); }
+.push span:last-child { font-size: 16px; color: var(--muted); }
 
 /* Blad van onderaf */
 .blad-achter { position: fixed; inset: 0; z-index: 30; background: rgba(0, 0, 0, 0.75); display: flex; align-items: flex-end; justify-content: center; }
@@ -318,10 +331,13 @@ main { flex: 1; display: block; }
   width: 100%; max-width: var(--breedte); max-height: 92dvh; overflow: auto;
   background: #0b0b0b; border-top: 1px solid var(--line);
   padding: 18px var(--marge) max(24px, env(safe-area-inset-bottom)); animation: omhoog 200ms ease-out;
-  display: flex; flex-direction: column; gap: 14px;
+  display: flex; flex-direction: column; gap: 14px; overscroll-behavior: contain;
 }
 .blad:focus { outline: none; }
-.blad.vol { height: 100dvh; max-height: 100dvh; background: #000; border: 0; }
+.blad.vol { height: 100dvh; max-height: 100dvh; background: #000; border: 0; padding-top: max(18px, env(safe-area-inset-top)); }
+.blad-voet { display: flex; gap: 8px; align-items: stretch; }
+.blad-voet .hoofdknop { flex: 1; min-width: 0; }
+.knop-terug { flex: none; width: 60px; display: grid; place-items: center; background: var(--grey-btn); color: var(--ink); }
 .blad-kop { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .blad-kop h2 { font-size: 16px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
 .sluit { width: 44px; height: 44px; flex: none; display: grid; place-items: center; background: #1a1a1a; }
@@ -331,16 +347,16 @@ main { flex: 1; display: block; }
   display: flex; flex-direction: column; gap: 2px; padding: 12px 0; border-bottom: 1px solid var(--line); text-align: left; min-height: 52px;
 }
 .actie-lijst strong { font-size: 19px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
-.actie-lijst span { font-size: 15px; color: var(--muted); }
+.actie-lijst span { font-size: 16px; color: var(--muted); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
 /* Bijzondere fles */
-.poster-groot { position: relative; height: 640px; overflow: hidden; background: var(--surface); }
+.poster-groot { position: relative; height: clamp(300px, calc(100dvh - 390px), 640px); overflow: hidden; background: var(--surface); }
 .poster-groot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.poster-groot .verloop { height: 340px; }
+.poster-groot .verloop { height: min(340px, 80%); }
 .sluit-rand {
   position: absolute; left: 14px; bottom: 120px; writing-mode: vertical-rl; transform: rotate(180deg);
   font-size: 15px; font-weight: 700; letter-spacing: 3px; color: var(--gold); white-space: nowrap;
@@ -372,20 +388,21 @@ main { flex: 1; display: block; }
 .fiche > div { flex: 1; border: 1px solid var(--line); padding: 14px; display: flex; flex-direction: column; gap: 6px; }
 
 /* Bieden: de ladder */
-.ladder { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.ladder { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 6px; touch-action: none; }
 .trede {
   display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%;
   padding: 4px 0; border-bottom: 1px solid var(--line); text-align: left; min-height: 60px;
 }
-.trede .bedrag-groot { font-size: 64px; letter-spacing: -1px; color: var(--ghost-2); }
-.trede .bedrag-groot .eur { color: var(--ghost-2); }
-.trede.dichtbij .bedrag-groot, .trede.dichtbij .bedrag-groot .eur { color: var(--stip); }
+.trede .bedrag-groot { font-size: 64px; letter-spacing: -1px; color: var(--outline); }
+.trede .bedrag-groot .eur { color: var(--dim); }
+.trede.dichtbij .bedrag-groot { color: var(--dim); }
 .trede.gekozen { border-bottom: 0; }
 .trede.gekozen .bedrag-groot { font-size: min(150px, 34vw); letter-spacing: -4px; color: var(--ink); }
 .trede.gekozen .bedrag-groot .eur { color: var(--muted); }
-.trede.hoogste .bedrag-groot { font-size: 44px; color: var(--stip); }
+.trede.hoogste .bedrag-groot { font-size: 44px; color: var(--outline); }
+.trede.hoogste .bedrag-groot .eur { font-size: 14px; }
 .trede.hoogste .bedrag-groot .getal { text-decoration: line-through; text-decoration-thickness: 3px; }
-.trede-label { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; font-size: 14px; font-weight: 700; letter-spacing: 1.5px; color: var(--outline); text-align: right; }
+.trede-label { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; font-size: 14px; font-weight: 700; letter-spacing: 1.5px; color: var(--dim); text-align: right; }
 .trede.gekozen .trede-label { color: var(--gold); }
 .trede.gekozen .trede-label::before { content: ''; width: 80px; height: 3px; background: var(--gold); }
 
@@ -406,9 +423,9 @@ main { flex: 1; display: block; }
 .onderweg-regel { display: flex; gap: 12px; align-items: flex-start; }
 .onderweg-regel .aantal { font-size: 40px; font-weight: 700; line-height: 36px; flex: none; }
 .onderweg-regel strong { display: block; font-size: 20px; font-weight: 700; line-height: 21px; text-transform: uppercase; }
-.onderweg-regel span { font-size: 15px; color: var(--muted); }
+.onderweg-regel span { font-size: 16px; color: var(--muted); }
 .voortgang { display: flex; gap: 4px; }
-.voortgang > div { flex: 1; display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; letter-spacing: 1px; color: var(--dim); }
+.voortgang > div { flex: 1; display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; letter-spacing: 1px; color: var(--dim); }
 .voortgang > div::before { content: ''; height: 4px; background: var(--line); }
 .voortgang > div.klaar { color: var(--ink); }
 .voortgang > div.klaar::before { background: var(--ink); }
@@ -431,6 +448,7 @@ main { flex: 1; display: block; }
 
 /* Marc */
 .portret { position: relative; height: 420px; background: var(--surface); display: flex; align-items: center; justify-content: center; }
+.portret-foto { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 20%; }
 .portret-leeg { font-size: 14px; font-weight: 600; letter-spacing: 2px; color: var(--dim); text-transform: uppercase; padding-bottom: 160px; }
 .portret .verloop { height: 200px; }
 .portret h1 { position: absolute; left: var(--marge); bottom: 6px; text-transform: uppercase; }
@@ -441,7 +459,7 @@ main { flex: 1; display: block; }
   display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-top: 1px solid var(--line);
   font-size: min(34px, 8.5vw); font-weight: 700; line-height: 34px; text-transform: uppercase; text-align: left;
 }
-.grote-links button.gedempt { color: var(--stip); }
+.grote-links button.gedempt { color: var(--dim); }
 
 /* Eerste login */
 .logo-groot { display: flex; flex-direction: column; text-transform: uppercase; }
@@ -490,7 +508,7 @@ main { flex: 1; display: block; }
 .veld > span { font-size: 14px; font-weight: 600; letter-spacing: 1.2px; color: var(--paper-muted); text-transform: uppercase; flex: none; }
 .veld label { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; justify-content: flex-end; }
 .veld input, .veld textarea {
-  min-width: 0; width: 100%; text-align: right; border: 0; background: transparent; color: #000; padding: 8px 0;
+  min-width: 0; width: 100%; min-height: 44px; text-align: right; border: 0; background: transparent; color: #000; padding: 8px 0;
   font-size: 20px; font-weight: 700; text-transform: uppercase;
 }
 .veld textarea { text-align: left; font-size: 16px; font-weight: 400; text-transform: none; line-height: 21px; resize: vertical; min-height: 64px; }
@@ -509,7 +527,7 @@ main { flex: 1; display: block; }
 .bestelling-rij { display: flex; gap: 14px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
 .bestelling-rij.afgevinkt { opacity: 0.5; }
 .bestelling-rij strong { display: block; font-size: 20px; font-weight: 700; text-transform: uppercase; }
-.bestelling-rij .regels { display: block; font-size: 15px; color: var(--muted); }
+.bestelling-rij .regels { display: block; font-size: 16px; color: var(--muted); }
 .bestelling-rij .status { display: block; font-size: 13px; font-weight: 700; letter-spacing: 1.2px; color: var(--muted); text-transform: uppercase; }
 .bestelling-rij .status.goud { color: var(--gold); }
 .vink-knop { width: 44px; height: 44px; flex: none; display: grid; place-items: center; }
@@ -524,4 +542,214 @@ main { flex: 1; display: block; }
   font-size: 18px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
 }
 .leden-keuze button[aria-checked='true'] { background: var(--ink); color: #000; border-color: var(--ink); }
-.uitleg-voorbeeld { font-size: 14px; line-height: 19px; color: var(--dim); }
+.uitleg-voorbeeld { font-size: 16px; line-height: 21px; color: var(--dim); }
+
+/* ---- Nieuw in design-v3 ---- */
+
+/* Eventkop: VANAVOND BIJ MARC., EENMAAL, ANDERMAAL…, VER-KOCHT., AFGELOPEN. Past op 390 px binnen de marges. */
+.eventkop {
+  display: block; font-size: min(88px, 22vw); font-weight: 700; line-height: 0.84; letter-spacing: -2px;
+  text-transform: uppercase;
+}
+.eventkop > span { display: block; }
+.eventkop.verkocht { font-size: min(120px, 30vw); letter-spacing: -3px; }
+
+/* Avatar van Marc */
+.avatar { flex: none; display: block; border-radius: 50%; object-fit: cover; object-position: center 25%; background: var(--line); }
+
+/* Live-balk */
+.live-balk {
+  position: sticky; top: 0; z-index: 6; display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  min-height: 50px; padding: 6px var(--marge); background: var(--bg); border-bottom: 1px solid var(--line);
+}
+.live-balk.marc { background: var(--gold); color: #000; border-bottom: 0; }
+.live-links { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.live-terug { display: flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; margin-left: -12px; }
+.live-stip { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
+.live-balk.marc .live-stip { background: #000; }
+.live-stip.weg { background: var(--dim); }
+.live-tekst { font-size: 15px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+.live-rechts { flex: none; font-size: 13px; font-weight: 600; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; }
+.live-balk.marc .live-rechts { color: #000; }
+
+/* Bericht van Marc */
+.marc-bericht { display: flex; gap: 12px; align-items: flex-start; }
+.marc-tekst { font-size: 18px; line-height: 1.3; font-weight: 400; }
+.marc-afzender { margin-top: 4px; font-size: 13px; font-weight: 700; letter-spacing: 1.5px; color: var(--gold); }
+.marc-typt { display: flex; align-items: center; gap: 10px; font-style: italic; color: var(--muted); font-size: 17px; }
+
+/* Gebeurtenis */
+.gebeurtenis {
+  display: flex; align-items: center; gap: 12px; text-align: center;
+  font-size: 13px; font-weight: 600; letter-spacing: 1.5px; color: var(--event); text-transform: uppercase;
+}
+.gebeurtenis::before, .gebeurtenis::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+/* 02 Aankondiging */
+.aankondiging-kop { position: relative; min-height: 420px; display: flex; flex-direction: column; justify-content: flex-end; }
+.aankondiging-kop img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.6; }
+.aankondiging-kop .verloop { height: 70%; }
+.aankondiging-merk { position: absolute; top: 18px; left: var(--marge); z-index: 2; }
+.aankondiging-titel { position: relative; z-index: 2; padding: 0 var(--marge) 4px; display: flex; flex-direction: column; gap: 10px; }
+.samenvatting { padding: 16px var(--marge) 8px; }
+.samenvatting-kop {
+  display: flex; justify-content: space-between; gap: 12px; padding: 14px 0 8px; border-top: 1px solid var(--ink);
+  font-size: 14px; font-weight: 700; letter-spacing: 2px; color: var(--muted); text-transform: uppercase;
+}
+.samenvatting-kop h2 { font-weight: 700; }
+.samenvatting ul, .terugblik-wijnen { list-style: none; margin: 0; padding: 0; }
+.samenvatting li + li { border-top: 1px solid var(--line-soft); }
+.samenvatting li button { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 54px; padding: 6px 0; }
+.sam-letter { flex: none; width: 24px; font-size: 32px; font-weight: 700; line-height: 1; color: var(--ghost-2); }
+.sam-letter.goud { color: var(--gold); }
+.sam-naam { flex: 1; min-width: 0; font-size: 20px; font-weight: 500; line-height: 1.15; }
+.sam-aantal { flex: none; font-size: 16px; color: var(--muted); }
+.sam-prijs { flex: none; font-size: 22px; font-weight: 700; text-align: right; }
+
+/* 03 De avond: de feed */
+.feed { display: flex; flex-direction: column; gap: 22px; padding: 16px var(--marge) 24px; }
+.feed-item { animation: feed-in 200ms ease-out; }
+@keyframes feed-in { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
+.feed-wijn { border: 1px solid var(--line); scroll-margin-top: 70px; }
+.feed-wijn.nieuwste { border-color: var(--gold); }
+/* Uitverkocht: gedimd met kleuren in plaats van doorzichtigheid, zodat de tekst het contrast van M5 haalt. */
+.feed-wijn.op { border-color: var(--line-soft); }
+.feed-wijn.op .feed-naam, .feed-wijn.op .prijs .getal { color: var(--muted); }
+.feed-wijn.op .feed-wanneer, .feed-wijn.op .feed-omschrijving, .feed-wijn.op .prijs .eur, .feed-wijn.op .prijs .per { color: var(--dim); }
+.feed-wijn-binnen { display: flex; gap: 14px; padding: 18px 16px; }
+.feed-wijn.nieuwste .feed-wijn-binnen { padding-top: 14px; }
+.feed-letter { flex: none; width: 64px; height: 92px; overflow: hidden; font-size: 120px; font-weight: 700; line-height: 0.8; text-align: center; }
+.feed-wijn.op .feed-letter { color: var(--ghost-2); }
+.feed-wijn-tekst { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.feed-wanneer { font-size: 13px; font-weight: 700; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; }
+.feed-naam { font-size: 20px; font-weight: 700; line-height: 1.1; text-transform: uppercase; text-align: left; min-height: 44px; display: flex; align-items: center; }
+.feed-wijn.nieuwste .feed-naam { font-size: 26px; }
+.feed-omschrijving { font-size: 16px; line-height: 21px; color: var(--muted); }
+.feed-prijs-rij { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.feed-rest { font-size: 13px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+.feed-wijn.op .feed-rest { color: var(--dim); }
+.feed-foto { position: relative; height: 300px; overflow: hidden; }
+.feed-foto img { width: 100%; height: 100%; object-fit: cover; }
+.feed-foto .verloop { height: 40%; }
+.net-op-tafel {
+  position: absolute; top: 16px; left: 16px; z-index: 2; background: var(--gold); color: #000; padding: 8px 12px;
+  font-size: 14px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+}
+.feed-foto-letter {
+  position: absolute; left: 16px; bottom: -18px; z-index: 2; font-size: 190px; font-weight: 700; line-height: 0.8;
+}
+.nieuw-van-marc {
+  position: sticky; bottom: 150px; z-index: 4; display: block; margin: 0 auto 8px; background: var(--ink); color: #000;
+  padding: 10px 16px; min-height: 44px; font-size: 15px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+}
+.straks {
+  display: flex; align-items: center; gap: 14px; width: 100%; min-height: 56px; padding: 10px var(--marge);
+  background: var(--surface);
+}
+.straks-tijd { flex: none; font-size: 30px; font-weight: 700; color: var(--gold); }
+.straks-tekst { flex: 1; font-size: 18px; font-weight: 500; }
+
+/* Terugblik */
+.terugblik { display: flex; flex-direction: column; gap: 12px; padding: 24px var(--marge); background: var(--surface); }
+.terugblik .tellers { padding-left: 0; padding-right: 0; }
+.terugblik-wijnen li { display: flex; align-items: center; gap: 14px; min-height: 44px; }
+.vlak { background: var(--surface); margin-top: 20px; }
+
+/* 07 De veiling */
+.kavel { position: relative; display: block; width: 100%; height: 150px; overflow: hidden; text-align: left; }
+.kavel img { position: absolute; right: 0; top: 0; height: 100%; width: 70%; object-fit: cover; opacity: 0.8; }
+.verloop-links { position: absolute; inset: 0; background: linear-gradient(90deg, #000 35%, transparent); }
+.kavel-tekst { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 6px; padding: 20px var(--marge); }
+.kavel-naam { font-size: 40px; font-weight: 700; line-height: 0.92; max-width: 260px; }
+.zaal-stand { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; padding: 18px var(--marge) 16px; border-bottom: 1px solid var(--ink); }
+.zaal-stand > div { display: flex; flex-direction: column; gap: 4px; }
+.hero-bedrag { display: inline-flex; align-items: flex-end; gap: 6px; font-size: min(112px, 28vw); font-weight: 700; line-height: 0.85; letter-spacing: -2px; }
+.hero-bedrag .eur { font-size: 28px; font-weight: 400; color: var(--muted); padding-bottom: 6px; letter-spacing: 0; }
+.hero-bedrag.goud .getal { color: var(--gold); }
+.zaal-hamer { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; padding-bottom: 6px; }
+.zaal-hamer span { font-size: 14px; font-weight: 600; letter-spacing: 2px; color: var(--muted); }
+.zaal-hamer strong { font-size: 40px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.biedlog { list-style: none; margin: 0; padding: 0 var(--marge); }
+.biedlog-bod { display: flex; align-items: baseline; gap: 14px; min-height: 56px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.biedlog-bod strong { font-size: 26px; font-weight: 700; }
+.biedlog-bod .wie { flex: 1; font-size: 20px; color: var(--muted); }
+.biedlog-bod .wanneer { font-size: 16px; color: var(--muted); }
+.biedlog-bod.jij strong, .biedlog-bod.jij .wie { color: var(--gold); }
+.biedlog-bod.jij .wie { font-weight: 700; }
+.biedlog-bod.overboden strong { text-decoration: line-through; text-decoration-thickness: 2px; }
+.biedlog-bericht { display: flex; align-items: center; gap: 14px; padding: 12px 0; font-size: 20px; font-weight: 400; }
+.bied-knoppen { display: flex; gap: 14px; }
+.bied-knoppen .hoofdknop { flex: 1; }
+.knop-hoger { flex: none; min-width: 96px; background: var(--grey-btn); font-size: 22px; font-weight: 700; padding: 0 16px; text-align: center; }
+.hoofdknop.bovenaan:disabled { background: #1c1c1c; color: var(--muted); }
+
+/* 09 Eenmaal, andermaal */
+.eenmaal { display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 40px var(--marge) 16px; }
+.eenmaal .zaal-stand { border-bottom: 0; }
+/* ANDERMAAL… is het langste woord: het moet op 375 px binnen de marges passen. */
+.eenmaal .eventkop { font-size: min(80px, 18vw); }
+.tijdlijn { height: 4px; background: var(--line); }
+.tijdlijn span { display: block; height: 100%; background: var(--ink); transition: width 1s linear; }
+
+/* Voorbeeldbalk: schakelaars voor de open beslissingen */
+.instellingen { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.schakelaar { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 56px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.schakelaar-tekst { display: flex; flex-direction: column; gap: 2px; }
+.schakelaar-tekst strong { font-size: 17px; font-weight: 700; }
+.schakelaar-tekst span { font-size: 15px; color: var(--muted); }
+.schakelaar-stand { flex: none; min-width: 52px; padding: 6px 8px; text-align: center; font-weight: 700; letter-spacing: 1.5px; border: 1px solid var(--outline); }
+.schakelaar[aria-checked='true'] .schakelaar-stand { background: var(--ink); color: #000; border-color: var(--ink); }
+
+/* 15 Beheer live */
+.beheer-blok { display: flex; flex-direction: column; gap: 10px; padding: 22px var(--marge) 0; }
+.beheer-blok-kop { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--ink); }
+.beheer-blok-kop h2 { font-size: 17px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+.beheer-blok-kop span { font-size: 14px; font-weight: 600; letter-spacing: 1.5px; color: var(--muted); }
+.beheer-wijn { display: flex; align-items: center; gap: 14px; min-height: 64px; }
+.beheer-wijn.op-tafel { padding-bottom: 10px; border-bottom: 1px solid var(--line-soft); }
+.beheer-wijn.op strong, .beheer-wijn.op .beheer-rest strong { color: var(--muted); }
+.beheer-wijn.op .beheer-rest span { color: var(--dim); }
+.beheer-wijn > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.beheer-wijn strong { font-size: 20px; font-weight: 700; line-height: 1.1; text-transform: uppercase; }
+.beheer-wijn > div > span { font-size: 16px; color: var(--muted); }
+.beheer-letter { flex: none; width: 48px; font-size: 64px; font-weight: 700; line-height: 0.85; }
+.beheer-letter.klein { font-size: 40px; width: 28px; color: var(--ghost-2); }
+.beheer-letter.goud { color: var(--gold); font-size: 44px; }
+.beheer-rest { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.beheer-rest strong { font-size: 22px; }
+.beheer-rest span { font-size: 13px; font-weight: 600; letter-spacing: 1.5px; color: var(--muted); }
+.bericht-veld { display: flex; gap: 12px; }
+.bericht-veld .invoer { flex: 1; min-height: 48px; }
+.stuur { flex: none; width: 56px; min-height: 48px; display: flex; align-items: center; justify-content: center; background: var(--grey-btn); }
+.stuur:disabled { opacity: 0.6; }
+.snelle-zin { display: block; width: 100%; min-height: 48px; padding: 10px 16px; border: 1px solid var(--line); font-size: 18px; font-weight: 400; }
+.knop-nu { flex: none; min-height: 44px; padding: 8px 16px; background: var(--grey-btn); font-size: 16px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+
+@media (prefers-reduced-motion: reduce) {
+  .feed-item { animation: none; }
+  .tijdlijn span { transition: none; }
+}
+
+/* Kleine en lage schermen (M1, M4). 375 x 667 px is de maat waarop alles moet kloppen. */
+@media (max-width: 359px) {
+  .groot { font-size: 23vw; }
+}
+@media (max-height: 700px) {
+  .groot { font-size: min(88px, 23vw); }
+  .hoofdknop-zone { padding: 12px var(--marge); }
+  .stand .bedrag-groot { font-size: min(88px, 23vw); }
+}
+/* Het biedpaneel past op een laag scherm: kleinere treden, en de uitleg over vegen vervalt. */
+@media (max-height: 660px) {
+  .blad.vol { gap: 10px; }
+  .ladder { gap: 4px; }
+  .ladder > p { display: none; }
+  .trede { min-height: 44px; padding: 0; }
+  .trede .bedrag-groot { font-size: 40px; }
+  .trede .bedrag-groot .eur { font-size: 14px; }
+  .trede.gekozen .bedrag-groot .eur { font-size: 24px; }
+  .trede.gekozen .bedrag-groot { font-size: 84px; letter-spacing: -2px; }
+  .trede.hoogste .bedrag-groot { font-size: 34px; }
+  .blad.vol .melding-tekst { padding: 10px var(--marge); }
+  .blad.vol .melding-tekst .tekst { font-size: 16px; line-height: 20px; }
+}

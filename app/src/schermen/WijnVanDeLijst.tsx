@@ -1,11 +1,14 @@
-import { Flessenrij, RijStatus } from '../onderdelen/Flessenrij'
+import { Flessenrij } from '../onderdelen/Flessenrij'
 import { GrootBedrag, Onderkant, Stippellijn } from '../onderdelen/Knoppen'
 import { TerugLink, ZwevendeNav } from '../onderdelen/Kop'
-import { naamMetJaar } from '../opmaak'
+import { naamMetJaar, tijd } from '../opmaak'
 import { terug, type Ga } from '../route'
 import { useStaat, zoekWijn } from '../staat'
 
-/** 03 Wijn van de lijst: foto, Marcs tekst, erbij en drinken, prijs en de flessenrij. */
+/**
+ * 04 Wijn van de lijst: foto, Marcs tekst, erbij en drinken, prijs en de flessenrij. Vanuit de
+ * aankondiging is de wijn alvast te bekijken; bestellen kan pas als Marc hem op tafel zet.
+ */
 export function WijnVanDeLijst({ wijnId, ga }: { wijnId: string; ga: Ga }) {
   const [staat, dispatch] = useStaat()
   const wijn = zoekWijn(staat, wijnId)
@@ -14,7 +17,7 @@ export function WijnVanDeLijst({ wijnId, ga }: { wijnId: string; ga: Ga }) {
   if (!wijn || staat.lijst.status !== 'open') {
     return (
       <>
-        <TerugLink titel="Terug naar de kaart" onTerug={() => ga({ scherm: 'aanbod' })} />
+        <TerugLink titel="Terug naar de avond" onTerug={() => ga({ scherm: 'aanbod' })} />
         <main className="sectie"><p className="tekst">Deze wijn staat niet (meer) op de lijst.</p></main>
         <Onderkant ga={ga} tab="aanbod" />
       </>
@@ -22,6 +25,7 @@ export function WijnVanDeLijst({ wijnId, ga }: { wijnId: string; ga: Ga }) {
   }
 
   const gekozen = staat.mandje[wijn.wijnId] ?? 0
+  const opTafel = Boolean(wijn.opTafelSinds)
   const op = wijn.voorraad <= 0
   const partij = wijn.partij ?? wijn.voorraad
   const herkomst = [wijn.druif, wijn.producent, wijn.streek].filter(Boolean).join(' · ')
@@ -74,13 +78,15 @@ export function WijnVanDeLijst({ wijnId, ga }: { wijnId: string; ga: Ga }) {
             <GrootBedrag centen={wijn.prijs} />
             <p className="rechts">
               <span>PER FLES</span>
-              <span>{op ? 'UITVERKOCHT' : `${wijn.voorraad} VAN ${partij} OVER`}</span>
+              <span>{!opTafel ? `${partij} FLESSEN` : op ? 'UITVERKOCHT' : `${wijn.voorraad} VAN ${partij} OVER`}</span>
             </p>
           </div>
-          <div className="kies-flessen">
-            <Flessenrij groot vrij={wijn.voorraad} weg={Math.max(0, partij - wijn.voorraad)} gekozen={gekozen} onKies={kies} letter={wijn.letter} naam={wijn.naam} />
-            <RijStatus groot vrij={wijn.voorraad} gekozen={gekozen} />
-          </div>
+          {!opTafel && (
+            <p className="label goud" style={{ padding: '8px 0' }}>
+              {staat.lijst.fase === 'aangekondigd' ? `Komt vanavond op tafel · vanaf ${tijd(staat.lijst.begin)}` : 'Marc zet deze wijn straks op tafel'}
+            </p>
+          )}
+          {opTafel && <Flessenrij groot vrij={wijn.voorraad} weg={Math.max(0, partij - wijn.voorraad)} gekozen={gekozen} onKies={kies} letter={wijn.letter} naam={wijn.naam} />}
         </div>
       </main>
       <Onderkant ga={ga} tab="aanbod" bon />

@@ -1,4 +1,4 @@
-/* Overgenomen uit design-v2/DESIGN.md, hoofdstuk Tokens. De app is altijd donker, zoals marckookt.com. */
+/* Overgenomen uit design-v3/DESIGN.md, hoofdstuk Tokens. De app is altijd donker, zoals marckookt.com. */
 :root {
   color-scheme: dark;
 
@@ -23,6 +23,8 @@
   --grey-btn: #4a4a4a;
   --stip: #5a5a5a;
   --surface: #111111;
+  /* Gebeurtenissen in de feed, 13 px in hoofdletters. Contrast 4.6:1. */
+  --event: #7a7a7a;
   --melding: #1c1c1c;
 
   /* Marc kiest tussen DIN Pro Condensed (licentie) en Barlow Condensed. Wisselen is deze ene regel. */

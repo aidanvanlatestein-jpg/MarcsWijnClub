@@ -186,7 +186,7 @@ function Bewaard({ staat, bestelling: b }: { staat: Staat; bestelling: Bestellin
   const woorden = kort.toUpperCase().split(' ')
   return (
     <section className="bewaring" aria-label="Bij Marc in bewaring">
-      {bieding?.foto ? <img src={bieding.foto} alt="" /> : null}
+      {bieding?.foto ? <img src={bieding.foto} alt="" loading="lazy" decoding="async" /> : null}
       <span className="verloop" aria-hidden />
       <div className="bewaring-info">
         <p className="label goud">Bij Marc in bewaring</p>

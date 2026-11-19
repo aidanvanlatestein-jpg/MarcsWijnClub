@@ -88,7 +88,7 @@ Marc zet wijnen op de lijst of start een bieding en deelt de link; het lid beste
 - Een bod is bindend en moet minstens de minimale verhoging boven het hoogste bod liggen.
 - Een bod in de laatste twee minuten verlengt de eindtijd met twee minuten.
 - De winnaar heeft 48 uur om te betalen. Daarna beslist Marc of de fles naar de volgende bieder gaat.
-- Leden zien het hoogste bod, niet wie het deed.
+- Leden zien het hoogste bod, niet wie het deed. Design-v3 stelt vaste bijnamen per veiling voor, zoals "Bieder 7", die niet herleidbaar zijn tot het lid; dat is een open beslissing voor Aidan en de jurist.
 
 **Regels voor de lijst**
 
@@ -101,33 +101,53 @@ Marc zet wijnen op de lijst of start een bieding en deelt de link; het lid beste
 
 ## Schermen en UX
 
-De app heeft negen schermen voor leden en één voor Marc, elk met één hoofdknop. Het klikbare prototype `wijnclub-prototype.html` laat ze allemaal zien en dient als specificatie voor de bouw.
+De app heeft elf schermen voor leden en één voor Marc, elk met één hoofdknop. Het klikbare prototype `wijnclub-prototype.html` laat ze allemaal zien en dient als specificatie voor de bouw.
 
-Zes regels gelden voor elk scherm:
+Zeven regels gelden voor elk scherm:
 
+- **Gemaakt voor de telefoon:** vrijwel elk lid gebruikt de app op zijn telefoon, staand en met één hand. Elk scherm wordt daarvoor ontworpen en daarop getest. Zie "Mobiel eerst" hieronder.
 - **De lijst is één scherm:** alle wijnen onder elkaar, met het aantal direct erbij. Een bijzondere fles krijgt een eigen scherm met een grote foto.
 - **Dezelfde letters als in WhatsApp:** elke wijn op de lijst heeft een letter, zodat de groep en de app dezelfde taal spreken.
 - **Eén hoofdknop per scherm**, altijd onderaan.
 - **Marc eerst:** zijn inleiding staat boven de lijst en zijn tekst bij elke wijn, boven de prijs.
 - **Snel:** aantallen aantikken, afhaalpunt bevestigen, bestellen. Betalen komt pas als de lijst sluit, zodat bestellen even snel blijft als een WhatsApp-bericht.
-- **Rustig:** geen knipperende aftelklok, badges of punten.
+- **Rustig:** geen knipperende aftelklok, badges of punten. Design-v3 stelt een live-stip die niet knippert, het label "net op tafel" en een rustige klok in de laatste twee minuten van een veiling voor; dat is een open beslissing voor Aidan en Marc.
+
+**Een avond bij Marc (design-v3).** Het ontwerp maakt van elke lijst een avond, zoals nu in de WhatsApp-groep. Marc kondigt de avond aan met een persoonlijk bericht en wat er op tafel komt. Op de begintijd wordt het aanbod een live feed: Marc zet de wijnen een voor een op tafel, zegt er iets bij, en leden zien wat er gebeurt ("een lid nam 2 × wijn H", "wijn F is op"), zonder namen. Bestellen gaat zoals hierboven: aantallen aantikken, afhaalpunt, bestellen; betalen volgt als de avond sluit. De bijzondere fles gaat aan het eind onder de hamer, in een zaal met het hoogste bod groot in beeld en een biedlog. Na afloop volgt een terugblik. Waar dit afwijkt van de regels in dit plan, staat het in de bouwspecificatie, hoofdstuk 9, als open beslissing; het prototype heeft daarvoor een instelling.
 
 Onderaan staan drie tabs: Aanbod, Mijn flessen en Marc.
 
 | Scherm | Wat erop staat | Hoofdknop |
 | --- | --- | --- |
 | Eerste login | Code uit de e-mail, bevestiging 18 jaar of ouder, daarna de tip om de app op het beginscherm te zetten en meldingen aan te zetten | Kom binnen |
-| Aanbod | Bovenaan de lijst: titel, Marcs inleiding en de eindtijd. Per wijn letter, foto, Marcs tekst, prijs, voorraad en een aantal dat je aantikt. Daaronder de bijzondere flessen met het hoogste bod en de eindtijd | Bestel, zodra er iets is aangetikt |
+| Aanbod: aankondiging | Vóór de begintijd: datum, Marcs aankondiging en wat er vanavond op tafel komt, met de veiling als laatste regel. Een wijn is alvast te bekijken | Herinner mij op de begintijd |
+| Aanbod: de avond | Tijdens de avond: een live feed met Marcs berichten, de wijnen die hij op tafel zette (letter, foto, tekst, prijs, voorraad en een aantal dat je aantikt) en wat er gebeurt, zonder namen. Daaronder wanneer de veiling begint. Na afloop een terugblik | Bestel, zodra er iets is aangetikt |
 | Wijn van de lijst | Foto en Marcs tekst. "Wat eet je erbij" en "wanneer drinken" alleen als Marc ze heeft ingevuld | Aantal aantikken, daarna Bestel |
 | Bestelling | De gekozen wijnen met aantallen, het totaal, de afhaalpunten met datum, en de melding dat de bestelling bindend is en betalen volgt bij het sluiten | Bestel |
 | Bijzondere fles | Grote foto, spraakbericht van Marc, drie blokken (waarom deze, wanneer drinken, wat eet je erbij), herkomst en bewaring | Bied met het volgende bedrag |
+| De veiling | De zaal: het hoogste bod groot, de hamertijd, de biedlog met berichten van Marc. In de laatste twee minuten "eenmaal, andermaal" met een rustige klok. Na de hamer "verkocht" voor de winnaar met de betaalknop, "afgelopen" voor de anderen, en de terugblik op de avond | Bied met het volgende bedrag |
 | Bieden | Paneel van onderaf met drie bedragen en de melding dat een bod bindend is | Bevestig bod |
 | Na een gewonnen bieding | Betalen, daarna de keuze tussen bewaren bij Marc en een afhaalpunt | Klaar |
 | Mijn flessen | De bestelling van de lopende lijst met afhaalpunt en status: betalen na sluiting, klaar om te betalen, of betaald. Daaronder wat bij Marc in bewaring ligt en wat je eerder kocht, met de knoppen Lekker, Niet voor mij en Opnieuw | Betaal, zodra de lijst gesloten is |
 | Marc | Zijn foto, een korte tekst, voorwaarden en privacy | Vraag Marc |
-| Beheer | Drie tabs. Lijst: titel, inleiding, eindtijd, afhaalpunten, het overzicht "nog beschikbaar" en de knop om de lijst te sluiten. Wijn: WhatsApp-bericht plakken en laten herkennen, foto, vaste prijs of bieding. Bestellingen: invoeren namens een lid, paklijst per afhaalpunt, alle bestellingen met status | Zet op de lijst, Start de bieding, of Sluit de lijst |
+| Beheer | Drie tabs. Wijn: WhatsApp-bericht plakken en laten herkennen, foto, vaste prijs of veiling; de wijn komt klaar te staan voor de avond. Avond: tijdens de avond wijnen op tafel zetten, iets tegen de tafel zeggen met snelle zinnen, de veiling eerder starten en de avond sluiten, met tellers voor flessen, bestellingen en betaald bedrag. Bestellingen: invoeren namens een lid, paklijst per afhaalpunt, alle bestellingen met status. Titel, aankondiging, tijden en afhaalpunten instellen is nog niet getekend | Zet klaar, Zet wijn op tafel, of Sluit de avond |
 
 "Vraag Marc", "Open aan tafel" en "Zet hem klaar bij een afhaalpunt" openen WhatsApp met een bericht dat al klaarstaat, inclusief de naam van de fles.
+
+**Mobiel eerst**
+
+Vrijwel elk lid opent de app op zijn telefoon, via de link in de WhatsApp-groep. De telefoon is daarom het uitgangspunt voor ontwerp, bouw en test, en geen variant van een groter scherm. Een groter scherm toont dezelfde kolom van hoogstens 430 px. Dit geldt ook voor het beheer: Marc werkt ook op zijn telefoon.
+
+- **Met één hand:** de hoofdknop en de tabs staan onderaan, binnen bereik van de duim. Wat je nodig hebt om te bestellen, te bieden of te betalen staat nooit alleen bovenaan.
+- **Tikvlakken van minstens 44 × 44 px**, met ruimte ertussen. Dat geldt ook voor de flessen in de flessenrij.
+- **Het belangrijkste zonder scrollen** op een kleine telefoon van 375 × 667 px: de eerste wijn op de kaart, het gekozen afhaalpunt en het totaal op de bon, het hoogste bod en de eindtijd bij een bijzondere fles, en de knop om een bod te bevestigen.
+- **Leesbaar:** lopende tekst is minstens 16 px. Alles wat je moet kunnen lezen heeft een contrast van minstens 4,5:1, ook een keuze die nog niet gekozen is. Inzoomen blijft mogelijk.
+- **Geen vergissing bij een bindende stap:** vóór Bestel en Bevestig bod staan aantal, bedrag en afhaalpunt in beeld. Dubbel tikken geeft één bestelling of één bod. Een stap die niet terug te draaien is, zoals de lijst sluiten, vraagt een bevestiging.
+- **Bestand tegen onderbreking:** je keuze blijft staan als je even naar je mail, WhatsApp of je bank gaat en terugkomt. Bij terugkomst zijn voorraad en hoogste bod ververst. De terugknop van de telefoon sluit eerst een open paneel.
+- **Bruikbaar op een trage verbinding:** elk scherm laat zien dat het laadt of dat het niet lukte, en de kaart staat er binnen drie seconden.
+- **Getest op echte telefoons:** de browsertests draaien op telefoonformaat, en elke release wordt met de hand nagelopen op een iPhone en een Android-telefoon.
+
+De meetbare eisen en de stand van het prototype staan in de bouwspecificatie, hoofdstuk 10.
 
 **Stijl, overgenomen van marckookt.com**
 
@@ -164,6 +184,7 @@ Leden en Marc gebruiken dezelfde web-app; Marc heeft daarnaast het beheerscherm.
 | Opslag | DynamoDB | Betalen naar gebruik |
 | Foto's en spraakberichten | S3 achter CloudFront | Niet publiek toegankelijk buiten CloudFront om |
 | Eindtijd van een bieding | EventBridge Scheduler | Eén geplande taak per bieding, die de winnaar vaststelt en de betaallink maakt |
+| Live bijwerken (design-v3, nog te kiezen) | API Gateway WebSocket API + Lambda, of pollen | Nieuwe wijn, bericht en voorraad binnen 2 seconden, de stand van de veiling binnen 1 seconde. Voor de pilot kan pollen elke 3 seconden volstaan. Zie de bouwspecificatie, hoofdstuk 9 |
 | Meldingen | Web Push vanuit Lambda, e-mail via SES als terugval | Op een iPhone werkt een melding pas als de app op het beginscherm staat |
 | Bericht herkennen | Bedrock | Haalt naam, jaargang, aantal, prijs en tekst uit Marcs WhatsApp-bericht. Marc controleert het resultaat |
 | Sleutels | Secrets Manager | Mollie-sleutel en de sleutels voor meldingen |
@@ -215,7 +236,8 @@ Alle tests draaien in pytest, ook de browsertests via Playwright voor Python. Zo
 | --- | --- | --- | --- |
 | Unit-tests | Regels voor bieden (minimale verhoging, verlenging in de laatste twee minuten, eindtijd), bestelling en voorraad, het verwerken van een Mollie-melding, en het herkennen van een WhatsApp-bericht met een nagebootst taalmodel, en het tellen van een tik op een melding: één keer per lid | Elke pull request | Alleen de code, geen AWS |
 | Integratietests | Twintig gelijktijdige biedingen: precies één winnaar per bedrag. Gelijktijdige bestellingen: de voorraad komt nooit onder nul. Een bieding sluit op de eindtijd. Dezelfde Mollie-melding twee keer: één betaling | Elke merge | Teststack, met echte DynamoDB en Mollie in testmodus |
-| End-to-end-tests | Drie stromen op een telefoonscherm: van de lijst bestellen, de lijst sluiten en betalen, bieden en winnen, en Marc die een wijn op de lijst zet | Elke merge | Teststack, via de browser |
+| End-to-end-tests | Drie stromen op een telefoonscherm van 375 × 667 px en van 320 × 568 px: van de lijst bestellen, de lijst sluiten en betalen, bieden en winnen, en Marc die een wijn op de lijst zet. Bij elke stroom ook de eisen voor de telefoon die een test kan meten: tikvlakken, geen horizontaal scrollen en wat zonder scrollen in beeld moet staan | Elke merge | Teststack, via de browser |
+| Handtest op telefoons | Dezelfde stromen op een echte iPhone (in Safari en vanaf het beginscherm) en een echte Android-telefoon (in Chrome), één keer met de schermlezer aan | Elke release | Teststack |
 | Smoke-test | De site laadt, de lijst is op te vragen, inloggen werkt. Er worden geen bestellingen geplaatst | Elke release | Productie |
 | Berichten herkennen | Twintig echte aanbiedingen van Marc met de juiste naam, jaargang, aantal en prijs als antwoord. Minstens 95% van de velden moet kloppen | Bij een wijziging van prompt of model, en wekelijks | Teststack, met het echte taalmodel |
 | Beveiliging | pip-audit en npm audit op bekende kwetsbaarheden, secret scanning op de repository. cdk-nag op de infrastructuur volgt | Elke pull request, en wekelijks | De code |

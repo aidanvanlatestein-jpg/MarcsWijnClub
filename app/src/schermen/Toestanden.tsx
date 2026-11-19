@@ -58,7 +58,7 @@ export function NetOp({ ga }: { ga: Ga }) {
   const kop = letters.length === 1 ? `Wijn ${letters[0]} is net op.` : `Wijn ${letters.slice(0, -1).join(', ')} en ${letters.at(-1)} zijn net op.`
   const allesWeg = op.every((w) => w.voorraad === 0)
   const blijft = regels.some((r) => r.wijn.voorraad > 0)
-  const knop = !blijft ? 'Terug naar de kaart' : allesWeg ? `Bestel zonder wijn ${letters.join(' en ')}` : 'Bestel wat er nog is'
+  const knop = !blijft ? 'Terug naar de avond' : allesWeg ? `Bestel zonder wijn ${letters.join(' en ')}` : 'Bestel wat er nog is'
 
   return (
     <>

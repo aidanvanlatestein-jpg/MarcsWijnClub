@@ -21,7 +21,7 @@ export function Bestelling({ ga }: { ga: Ga }) {
   if (lijst.status !== 'open' || regels.length === 0) {
     return (
       <>
-        <TerugLink titel="Terug naar de kaart" onTerug={() => ga({ scherm: 'aanbod' })} />
+        <TerugLink titel="Terug naar de avond" onTerug={() => ga({ scherm: 'aanbod' })} />
         <main className="sectie">
           <p className="tekst">{lijst.status === 'open' ? 'Je hebt nog geen flessen gekozen.' : 'De lijst is gesloten; bestellen kan niet meer.'}</p>
         </main>
@@ -50,17 +50,12 @@ export function Bestelling({ ga }: { ga: Ga }) {
 
   return (
     <>
-      <TerugLink titel="Terug naar de kaart" onTerug={naarKaart} />
+      <TerugLink titel="Terug naar de avond" onTerug={naarKaart} />
       <main>
         <h1 className="sr">Je bestelling</h1>
-        <Bon
-          kop={`Nº ${bonNummer(staat.volgendeBon)} · ${kortDatum(nu)} · ${tijd(nu)}`}
-          tafel={voorbeeldLid.naam}
-          regels={regels.map((r) => ({ sleutel: r.wijn.wijnId, aantal: r.aantal, letter: r.wijn.letter, naam: r.wijn.naam, jaargang: r.wijn.jaargang, prijs: r.wijn.prijs }))}
-          voet={<>Bindend. Je betaalt als de lijst sluit, in één keer, binnen 48 uur: vóór {kortDatum(plus(lijst.openTot, 48 * 3_600_000))}.</>}
-        />
-        <section className="sectie" style={{ paddingTop: 28 }}>
-          <h2 className="label">Waar haal je ze?</h2>
+        {/* Het afhaalpunt staat boven de bon: zo staat het in beeld als je op Bestel tikt, ook op een kleine telefoon. */}
+        <section className="sectie" style={{ paddingTop: 4, paddingBottom: 14 }}>
+          <h2 className="label">{gekozen ? 'Waar haal je ze?' : 'Waar haal je ze? Kies een afhaalpunt'}</h2>
           <Keuze
             label="Afhaalpunt"
             vorm={lijst.afhaalpunten.length === 2 ? 'split' : 'banden'}
@@ -68,8 +63,14 @@ export function Bestelling({ ga }: { ga: Ga }) {
             onKies={(id) => dispatch({ type: 'levering', afhaalpuntId: id })}
             opties={lijst.afhaalpunten.map((a) => ({ id: a.afhaalpuntId, woord: a.naam, zin: a.wanneer }))}
           />
-          {!gekozen && <p className="tekst klein gedempt">Kies een afhaalpunt om te bestellen.</p>}
         </section>
+        <Bon
+          kop={`Nº ${bonNummer(staat.volgendeBon)} · ${kortDatum(nu)} · ${tijd(nu)}`}
+          tafel={voorbeeldLid.naam}
+          regels={regels.map((r) => ({ sleutel: r.wijn.wijnId, aantal: r.aantal, letter: r.wijn.letter, naam: r.wijn.naam, jaargang: r.wijn.jaargang, prijs: r.wijn.prijs }))}
+          voet={<>Bindend. Je betaalt als de lijst sluit, in één keer, binnen 48 uur: vóór {kortDatum(plus(lijst.openTot, 48 * 3_600_000))}.</>}
+        />
+        <div style={{ height: 24 }} />
       </main>
       <Onderkant
         ga={ga}

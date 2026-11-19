@@ -15,7 +15,7 @@ export function Marc({ ga }: { ga: Ga }) {
     <>
       <main>
         <div className="portret">
-          <span className="portret-leeg">Hier komt een portret van Marc</span>
+          <img className="portret-foto" src="/marc/portret.jpg" alt="Marc" />
           <span className="verloop" aria-hidden />
           <h1>
             <span>Ik ben</span>

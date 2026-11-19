@@ -1,5 +1,7 @@
-// De flessenrij: voorraad en keuze in één rij. Zie design-v2/DESIGN.md, "Flessenrij".
-import type { KeyboardEvent } from 'react'
+// De flessenrij: voorraad en keuze in één rij, met een min- en een plusknop ernaast.
+// De rij is een tekening. Een fles is te smal om met een duim te raken (bouwspecificatie, M2);
+// kiezen gaat daarom met de twee knoppen van minstens 44 × 44 px.
+import { Minus, Plus } from 'lucide-react'
 
 const ZICHTBAAR = 12
 
@@ -22,62 +24,49 @@ export function Flessenrij({ vrij, weg, gekozen, onKies, letter, naam, groot = f
   const meer = totaal - teken
   const op = vrij === 0
   const kies = (n: number) => onKies(Math.max(0, Math.min(vrij, n)))
-  // Tik op vrije fles i: je keuze wordt i. Tik op de meest rechtse gekozen fles: één minder.
-  const tik = (i: number) => kies(i === gekozen ? gekozen - 1 : i)
-
-  const toets = (e: KeyboardEvent) => {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowUp') kies(gekozen + 1)
-    else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') kies(gekozen - 1)
-    else if (e.key === 'Home') kies(0)
-    else if (e.key === 'End') kies(vrij)
-    else return
-    e.preventDefault()
-  }
+  const wijn = `wijn ${letter}, ${naam}`
 
   return (
-    <div
-      className={groot ? 'flessenrij groot' : 'flessenrij'}
-      role="slider"
-      tabIndex={op ? -1 : 0}
-      aria-label={`Aantal flessen van wijn ${letter}, ${naam}, ${vrij} beschikbaar`}
-      aria-valuemin={0}
-      aria-valuemax={vrij}
-      aria-valuenow={gekozen}
-      aria-valuetext={`${gekozen} gekozen`}
-      aria-disabled={op}
-      onKeyDown={toets}
-    >
-      {Array.from({ length: teken }, (_, k) => {
-        const i = k + 1
-        const toestand = i <= gekozen ? 'gekozen' : i <= vrij ? 'vrij' : 'weg'
-        return (
-          <span
-            key={i}
-            className="fles-tik"
-            style={toestand === 'weg' ? { cursor: 'default' } : undefined}
-            onClick={toestand === 'weg' ? undefined : () => tik(i)}
-          >
-            <span className={toestand === 'vrij' ? 'fles' : `fles ${toestand}`} />
-          </span>
-        )
-      })}
-      {meer > 0 && (
-        // Grote voorraad: 12 flessen en "+ n". Een tik op "+ n" kiest er één bij.
-        <span className="fles-meer" onClick={() => kies(Math.max(gekozen, ZICHTBAAR) + 1)}>+ {meer}</span>
-      )}
+    <div className={groot ? 'flessenkeuze groot' : 'flessenkeuze'} role="group" aria-label={`Aantal flessen van ${wijn}`}>
+      <div className="flessenrij" aria-hidden>
+        {Array.from({ length: teken }, (_, k) => {
+          const i = k + 1
+          const toestand = i <= gekozen ? 'gekozen' : i <= vrij ? 'vrij' : 'weg'
+          return <span key={i} className={toestand === 'vrij' ? 'fles' : `fles ${toestand}`} />
+        })}
+        {meer > 0 && <span className="fles-meer">+ {meer}</span>}
+      </div>
+      <div className="flessenkeuze-onder">
+        <RijStatus vrij={vrij} gekozen={gekozen} />
+        {!op && (
+          <div className="stappen-knoppen">
+            <button type="button" className="stap-knop" aria-label={`Eén fles minder van ${wijn}`} disabled={gekozen <= 0} onClick={() => kies(gekozen - 1)}>
+              <Minus size={groot ? 26 : 22} strokeWidth={2.5} aria-hidden />
+            </button>
+            <button type="button" className="stap-knop meer" aria-label={`Eén fles meer van ${wijn}`} disabled={gekozen >= vrij} onClick={() => kies(gekozen + 1)}>
+              <Plus size={groot ? 26 : 22} strokeWidth={2.5} aria-hidden />
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
-/** De regel onder de flessenrij. */
-export function RijStatus({ vrij, gekozen, groot = false }: { vrij: number; gekozen: number; groot?: boolean }) {
-  let tekst: string
-  if (vrij <= 0) tekst = 'OP IS OP'
-  else if (gekozen > 0) tekst = groot ? `TIK OP DE FLESSEN DIE JE WILT · ${gekozen} GEKOZEN` : `${gekozen} GEKOZEN · ${vrij - gekozen} OVER`
-  else tekst = groot ? 'TIK OP DE FLESSEN DIE JE WILT' : `${vrij} OVER · TIK OP EEN FLES`
+/** De regel naast de knoppen: wat je gekozen hebt en wat er nog is. */
+function RijStatus({ vrij, gekozen }: { vrij: number; gekozen: number }) {
   return (
-    <p className={`rij-status${gekozen > 0 && vrij > 0 ? ' goud' : ''}${groot ? ' groot' : ''}`} aria-live="polite">
-      {tekst}
+    <p className="rij-status" aria-live="polite">
+      {vrij <= 0 ? (
+        <span>OP IS OP</span>
+      ) : gekozen > 0 ? (
+        <>
+          <span className="goud">{gekozen} GEKOZEN</span>
+          <span>{vrij - gekozen} OVER</span>
+        </>
+      ) : (
+        <span>{vrij} OVER</span>
+      )}
     </p>
   )
 }

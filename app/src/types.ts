@@ -26,6 +26,10 @@ export interface Wijn {
   /** Het aantal flessen waarmee de wijn op de lijst kwam. De flessenrij tekent daarmee wat al weg is.
    *  Dit veld zit nog niet in de API; zie de open punten in docs/bouwspecificatie.md. */
   partij?: number
+  /** Wanneer Marc de wijn op tafel zette (V3). Leeg: hij staat klaar maar is nog niet zichtbaar in de feed. */
+  opTafelSinds?: string
+  /** Wanneer de laatste fles weg was. */
+  opSinds?: string
 }
 
 export interface Lijst {
@@ -119,3 +123,18 @@ export interface Eerder {
   aantal: number
   gekocht: string
 }
+
+/** Fase van een avond bij Marc (design-v3). Zie docs/bouwspecificatie.md, hoofdstuk 3. */
+export type Fase = 'aangekondigd' | 'live' | 'gesloten'
+
+/** Wat er in de feed van De avond staat. Een gebeurtenis bevat nooit een lidId. */
+export type FeedItem =
+  | { id: string; op: string; soort: 'bericht'; tekst: string }
+  | { id: string; op: string; soort: 'wijn'; wijnId: string }
+  | { id: string; op: string; soort: 'gebeurtenis'; tekst: string }
+
+/** Een regel in de biedlog. Een bieder heeft per veiling een vast nummer dat niet herleidbaar is tot het lid. */
+export type LogItem =
+  | { op: string; soort: 'open'; bedrag: number }
+  | { op: string; soort: 'bod'; bedrag: number; bieder: number | 'jij' }
+  | { op: string; soort: 'bericht'; tekst: string }

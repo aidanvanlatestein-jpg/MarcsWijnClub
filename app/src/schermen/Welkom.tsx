@@ -28,7 +28,7 @@ export function Welkom({ ga }: { ga: Ga }) {
   }
 
   return (
-    <main className="sectie" style={{ gap: 22, paddingTop: 48, minHeight: '100dvh' }}>
+    <main className="sectie" style={{ gap: 22, paddingTop: 'clamp(20px, 5dvh, 48px)' }}>
       <h1 className="logo-groot">
         <span className="marc">Marc</span>
         <span className="kookt">Kookt</span>
@@ -122,14 +122,14 @@ export function Tip({ ga }: { ga: Ga }) {
             <div>
               <h2>Zet meldingen aan</h2>
               <p className="tekst gedempt">
-                Zo weet je het als er een nieuwe lijst is of als iemand je overbiedt. Op een iPhone kan dat pas als de
+                Zo weet je het als Marc een avond aankondigt of als iemand je overbiedt. Op een iPhone kan dat pas als de
                 club op je beginscherm staat.
               </p>
             </div>
           </li>
         </ol>
       </main>
-      <Onderkant ga={ga} knop={<Hoofdknop onClick={verder}>Naar de kaart</Hoofdknop>} />
+      <Onderkant ga={ga} knop={<Hoofdknop onClick={verder}>Naar de avond</Hoofdknop>} />
     </>
   )
 }

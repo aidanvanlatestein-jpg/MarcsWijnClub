@@ -20,7 +20,8 @@ export function heelBedrag(centen: number): string {
 
 /** Hele centen naar "€ 9,75". Met heel: true zonder centen als die nul zijn: "€ 340". */
 export function euro(centen: number, { heel = false } = {}): string {
-  return `€ ${heel ? heelBedrag(centen) : bedrag(centen)}`
+  // Een harde spatie: € en het bedrag blijven op één regel.
+  return `€\u00a0${heel ? heelBedrag(centen) : bedrag(centen)}`
 }
 
 export function tijd(utc: string): string {
@@ -87,4 +88,33 @@ export function vanInvoer(lokaal: string): string | null {
 
 export function nuUtc(): string {
   return new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')
+}
+
+/** "dinsdag" */
+export function weekdag(utc: string): string {
+  return deel(utc, { weekday: 'long' })
+}
+
+/** "dinsdag 19 november" */
+export function datumLang(utc: string): string {
+  return deel(utc, { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
+/** "zojuist", "2 min", of de tijd als het langer dan een uur geleden is. */
+export function geleden(utc: string, nu: number = Date.now()): string {
+  const min = Math.floor((nu - new Date(utc).getTime()) / 60_000)
+  if (min < 1) return 'zojuist'
+  if (min < 60) return `${min} min`
+  return tijd(utc)
+}
+
+/** Minuten tussen twee momenten, afgerond naar beneden. */
+export function minutenTussen(van: string, tot: string): number {
+  return Math.max(0, Math.floor((new Date(tot).getTime() - new Date(van).getTime()) / 60_000))
+}
+
+/** Resterende tijd als m:ss. */
+export function klok(ms: number): string {
+  const s = Math.max(0, Math.ceil(ms / 1000))
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }

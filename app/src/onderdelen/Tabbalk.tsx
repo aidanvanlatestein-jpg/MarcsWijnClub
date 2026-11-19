@@ -1,16 +1,30 @@
 export type Tab = 'aanbod' | 'flessen' | 'marc'
 
-const TABS: { id: Tab; label: string }[] = [
+export interface TabKeuze<T extends string> {
+  id: T
+  label: string
+}
+
+const LEDEN_TABS: TabKeuze<Tab>[] = [
   { id: 'aanbod', label: 'AANBOD' },
   { id: 'flessen', label: 'FLESSEN' },
   { id: 'marc', label: 'MARC' },
 ]
 
-/** Drie gelijke kolommen zonder iconen. De actieve tab heeft een gouden balk. */
-export function Tabbalk({ actief, onKies }: { actief: Tab; onKies: (tab: Tab) => void }) {
+interface Props<T extends string> {
+  tabs: TabKeuze<T>[]
+  actief: T
+  onKies: (tab: T) => void
+  label: string
+  /** Tabs zo breed als hun woord, voor labels van ongelijke lengte. */
+  vrij?: boolean
+}
+
+/** Kolommen zonder iconen, onderaan het scherm. De actieve tab heeft een gouden balk. */
+export function Tabs<T extends string>({ tabs, actief, onKies, label, vrij = false }: Props<T>) {
   return (
-    <nav className="tabs" aria-label="Hoofdmenu">
-      {TABS.map(({ id, label }) => (
+    <nav className={vrij ? 'tabs vrij' : 'tabs'} aria-label={label}>
+      {tabs.map(({ id, label: tekst }) => (
         <button
           key={id}
           type="button"
@@ -18,9 +32,14 @@ export function Tabbalk({ actief, onKies }: { actief: Tab; onKies: (tab: Tab) =>
           aria-current={id === actief ? 'page' : undefined}
           onClick={() => onKies(id)}
         >
-          {label}
+          {tekst}
         </button>
       ))}
     </nav>
   )
+}
+
+/** De drie tabs van een lid: drie gelijke kolommen. */
+export function Tabbalk({ actief, onKies }: { actief: Tab; onKies: (tab: Tab) => void }) {
+  return <Tabs tabs={LEDEN_TABS} actief={actief} onKies={onKies} label="Hoofdmenu" />
 }

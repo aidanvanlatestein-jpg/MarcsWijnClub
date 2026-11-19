@@ -44,6 +44,18 @@ pytest
 
 De tests draaien lokaal en raken AWS niet. Ze controleren de regels voor bestellen en bieden, de eerste API-functie, en wat de vier stacks opleveren.
 
+De browsertests in `tests/web` lopen de web-app door op een telefoonscherm van 375 × 667 en 320 × 568 px, met de eisen uit hoofdstuk 10 van de bouwspecificatie. Ze testen de gebouwde app in `app/dist` en slaan zich over als die of de browser ontbreekt. Eenmalig de browser installeren:
+
+```bash
+playwright install chromium-headless-shell
+```
+
+Daarna, na elke wijziging in de web-app:
+
+```bash
+cd app && npm run build && cd .. && pytest tests/web
+```
+
 ## De omgeving opbouwen zonder uit te rollen
 
 ```bash

@@ -11,6 +11,7 @@ Dit document werkt het pilotplan uit tot bouwniveau: sleutels in DynamoDB, de le
 | Taal backend | Python, Lambda-runtime `python3.14` |
 | Omgeving als code | AWS CDK in Python (`aws-cdk-lib` 2.255.0) |
 | Web-app | React met Vite, in TypeScript. `npm run build` in `app/` schrijft statische bestanden naar `app/dist`; die staan op S3 achter CloudFront. Geen paden: één pagina |
+| Apparaat | De telefoon eerst: vrijwel elk lid gebruikt de app op zijn telefoon. De eisen staan in hoofdstuk 10 |
 | API | API Gateway HTTP API, bereikbaar via CloudFront onder `/api/*` |
 | Inloggen | Cognito, eenmalige code per e-mail, alleen op uitnodiging |
 | Betalen | Mollie, iDEAL |
@@ -71,6 +72,13 @@ Tien tabellen, alle met betalen naar gebruik en herstel naar een tijdstip. `beta
 - **`tikken`**: `berichtId`, `lidId`, `eerst`, `vervaltOp`. Eén rij per lid per bericht, alleen voor de tellingen.
 
 `minimaalVolgendBod` bestaat omdat DynamoDB in een voorwaarde niet kan rekenen. Na elk bod wordt het `bod + minimaleVerhoging`.
+
+**Nieuw door design-v3, nog niet in de tabellen.** Het ontwerp maakt van elke lijst "een avond bij Marc". Het prototype in `app/` gebruikt daarvoor deze velden; ze komen in de tabellen zodra de open beslissingen uit hoofdstuk 9 genomen zijn:
+
+- **`lijsten`**: `fase` (`aangekondigd`, `live`, `gesloten`), `begin` (de begintijd, zoals 19:30), `veilingBegin` (wanneer de veiling opent als Marc niet eerder start), `aankondigingOp`. De `inleiding` is Marcs aankondiging.
+- **`wijnen`**: `opTafelSinds` (wanneer Marc de wijn op tafel zette; leeg is "staat klaar" en dan is hij niet te koop) en `opSinds` (wanneer de laatste fles weg was). Bij een bieding: `geopend` (wanneer de zaal openging).
+- **Nieuwe tabel `feed`**: sleutel `lijstId` + `tijdstip`, met `soort` (`wijn`, `bericht`, `gebeurtenis`), en `wijnId` of `tekst`. Een gebeurtenis zoals "een lid nam 2 × wijn H" bevat nooit een `lidId`.
+- **`biedingen`**: een vast `bieder`-nummer per lid per veiling, voor "Bieder 7" in de biedlog. Het nummer is niet herleidbaar tot het lid; alleen de server kent de koppeling.
 
 ## 3. Levensloop van een bestelling
 
@@ -183,7 +191,7 @@ Alle paden beginnen met `/api`. Elke aanroep vraagt een geldig token van Cognito
 | `GET` en `PUT /api/mijn/profiel` | Naam, telefoon, afhaalpunt van voorkeur, bevestiging 18 jaar | `200` |
 | `POST` en `DELETE /api/mijn/meldingen` | Abonnement op meldingen | `200` |
 | `POST /api/mijn/tikken` | Een tik op een melding: `berichtId`. Telt één keer per lid, zie Tellingen voor de roadmap | altijd `200` |
-| `POST /api/beheer/herken` | Velden uit Marcs WhatsApp-bericht | `200` |
+| `POST /api/beheer/herken` | Velden uit Marcs WhatsApp-bericht: `naam`, `producent`, `jaargang`, `aantal`, `prijs` in centen, `tekst` en `ontbreekt`. Zie "Een bericht herkennen" | `200`, `400` |
 | `POST /api/beheer/uploads` | Tijdelijke uploadlink voor foto of spraakbericht | `200` |
 | `POST` en `PUT /api/beheer/lijsten` | Lijst aanmaken met titel, inleiding, eindtijd en afhaalpunten; openen, sluiten | `200`, `201` |
 | `POST /api/beheer/lijsten/{id}/herinnering` | Eén melding "nog beschikbaar" aan alle leden. Kan één keer per lijst | `200`, `409` |
@@ -206,6 +214,16 @@ Een fout heeft altijd dezelfde vorm, zonder interne details:
 ```
 
 Details staan in het logboek, zonder namen, adressen of bedragen per persoon.
+
+**Een bericht herkennen.** Een taalmodel in Bedrock leest het bericht. De regels staan in `domein/herkennen.py`; de handler roept alleen het model aan.
+
+- Het bericht is hoogstens 2000 tekens, anders `400` zonder aanroep van het model. Het gaat tussen `<bericht>` en `</bericht>` naar het model, als tekst om te lezen en nooit als opdracht.
+- Het model geeft JSON terug. De prijs komt terug zoals Marc hem schreef, zoals `10,5`. De app rekent hem om naar centen, niet het model.
+- Alleen wat in het bericht staat, wordt overgenomen. Naam en producent staan er woord voor woord in. Elk woord van de tekst staat in het bericht, dus geen verzonnen smaken. Jaargang, aantal en prijs staan er als los getal in: 18 telt niet als het alleen in 2018 voorkomt.
+- Daarnaast gelden grenzen: jaargang 1900 tot 2100, aantal 1 tot 999, prijs boven nul en hoogstens € 1000.
+- Klopt een veld niet, of is het antwoord geen leesbare JSON, dan blijft dat veld leeg en staat het in `ontbreekt`. Marc vult het dan zelf in. Een fout van het model zelf geeft de algemene fout; Marc kan dan alles zelf invullen.
+- De letter wordt niet herkend: de app geeft de volgende letter van de lijst.
+- Het bericht en het antwoord komen niet in het logboek, alleen of het lukte en welke velden ontbraken.
 
 **Uploads zijn een risico.** De uploadlink is alleen voor de groep `beheer`, geldt enkele minuten, staat alleen afbeeldingen en geluid toe en heeft een maximale grootte. Bestanden komen in een eigen map van de bucket en worden nooit uitgevoerd.
 
@@ -320,6 +338,7 @@ Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan g
 | Regels voor geld, bestelling en bieding, met tests | Gebouwd | Week 5 en 6 |
 | Regels voor afhaalpunt, betalen na het sluiten en één betaling per lid per lijst, met tests | Gebouwd | Week 5 |
 | Regels na de review van 19 november: dubbele betaling herkennen, alle betalingen meewegen op de termijn, een herhaalde bestelpoging herkennen, een botsing in de tijd onderscheiden van uitverkocht, bovengrens op een bod, niet jezelf overbieden, bieding sluiten en bestelling schrijven in één transactie. Met tests; de handlers die ze uitvoeren zijn er nog niet | Gebouwd | Week 5 en 6 |
+| Regels voor het herkennen van een bericht (`domein/herkennen.py`): vraag aan het model en controle van het antwoord, met tests op een nagebootst model. De handler, de koppeling met Bedrock en de test met twintig echte berichten zijn er nog niet | Gebouwd | Week 4 |
 | Lijst sluiten met betaalverzoek, herinnering na 24 uur | Nog niet | Week 5 en 7 |
 | Afhaalpunten in beheer, paklijst, herinnering "nog beschikbaar" | Nog niet | Week 4 en 7 |
 | Overige API-aanroepen | Nog niet | Week 4 tot en met 7 |
@@ -328,8 +347,12 @@ Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan g
 | Meldingen | Nog niet | Week 7 |
 | Tellingen voor de roadmap: tabel `weergaven`, veld `verlengd`, `GET /api/beheer/tellingen` | Nog niet | Week 6 en 7 |
 | Meting per melding: tabellen `berichten` en `tikken`, `POST /api/mijn/tikken`, `POST /api/beheer/berichten` | Nog niet | Week 7 |
-| Web-app: klikbaar prototype van alle schermen uit `design-v2` (eerste login, aanbod, wijn, bon, bieding met ladder, gewonnen, mijn flessen, Marc, beheer, namens een lid, toestanden) met voorbeeldinhoud en proefacties. Alles staat in de browser (`app/src/staat.tsx`); er gaat niets naar de API | Gebouwd | Week 4 |
+| Web-app: klikbaar prototype van alle schermen uit `design-v3` (eerste login, aankondiging, de avond als live feed, wijn, bon, bijzondere fles, de veiling met biedlog, biedpaneel, eenmaal andermaal, hamerslag met terugblik, na de betaling, mijn flessen, Marc, beheer: wijn klaarzetten, de avond presenteren, bestellingen, namens een lid, toestanden) met voorbeeldinhoud en proefacties. Alles staat in de browser (`app/src/staat.tsx`); er gaat niets naar de API en "live" is nagebootst in de browser | Gebouwd | Week 4 |
 | Web-app: echt inloggen via Cognito, koppeling met de API, betalen via Mollie, foto's uploaden, spraakbericht | Nog niet | Week 4 tot en met 7 |
+| Web-app: eisen voor de telefoon uit hoofdstuk 10. Het prototype voldoet aan M1, M2, M4 en M6 en deels aan acht andere; de stand per eis staat in dat hoofdstuk | Deels | Week 4 tot en met 7 |
+| Web-app: manifest en een voorlopig icoon voor het beginscherm (`app/public/manifest.webmanifest`, `app/public/iconen/`). Geen service worker | Gebouwd | Week 4 |
+| Browsertests op telefoonformaat tegen het prototype: `tests/web`, Playwright in pytest, op 375 × 667 en 320 × 568 px, en een eigen stap in de pipeline (`controles.yml`, job `telefoon`). Ze meten M1, M2, M4, M5, M6, M9 en M10 | Gebouwd | Week 4 |
+| End-to-end-tests tegen de teststack en de handtest op echte telefoons (M14) | Nog niet | Week 4 tot en met 7 |
 
 ## 9. Open punten
 
@@ -346,6 +369,60 @@ Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan g
 - **Rijen automatisch verwijderen.** `weergaven` en `tikken` gaan ervan uit dat DynamoDB een rij verwijdert op het tijdstip in `vervaltOp`. Dat is uit het hoofd opgeschreven en niet nagelezen. Zoek bij het bouwen in week 6 op hoe het werkt en hoe snel na het tijdstip de rij echt weg is.
 - **Grondslag voor de tellingen.** Of het vastleggen van welk lid welke bieding opende of op welke melding tikte onder het gerechtvaardigd belang van Marc valt, of toestemming vraagt, hoort bij de juridische check.
 - **Web-app.** Gekozen: React met Vite. Het ontwerp in pen.dev is de bron voor de schermen; het prototype blijft de bron voor het gedrag.
-- **Ontwerp en plan wijken af.** Waar `design-v2` en het plan verschillen, volgt het prototype het plan, zoals `design-v2/DESIGN.md` voorschrijft. Op de bon is de hoofdknop "Bestel" in plaats van "Betaal met iDEAL": betalen volgt als de lijst sluit, onder Flessen. Je kiest een afhaalpunt in plaats van BRENG of HAAL, en na een gewonnen bieding bewaren of een afhaalpunt. "Laat hem brengen" heet "Zet hem klaar". De voortgang onder Flessen heeft drie stappen (besteld, betaald, afgehaald), omdat het datamodel geen "ingepakt" kent. Het ontwerp moet hierop worden aangepast, of het plan als Marc anders kiest.
+- **Ontwerp en plan wijken af.** Waar `design-v3` en het plan verschillen in functie en regels, volgt het prototype het plan, zoals `design-v3/DESIGN.md` voorschrijft. Op de bon is de hoofdknop "Bestel" in plaats van "Betaal met iDEAL": betalen volgt als de avond sluit, op de terugblik en onder Flessen. Je kiest een afhaalpunt in plaats van BRENG of HAAL, en na een gewonnen veiling bewaren of een afhaalpunt. "Laat hem brengen" heet "Zet hem klaar". De voortgang onder Flessen heeft drie stappen (besteld, betaald, afgehaald), omdat het datamodel geen "ingepakt" kent. Het ontwerp moet hierop worden aangepast, of het plan als Marc anders kiest.
+- **Open beslissingen uit design-v3.** Het ontwerp wijkt op vijf punten bewust af van het plan en vraagt die met een instelling te bouwen. In het prototype: (1) *Rust*: live-stip, NET OP TAFEL en de klok in de laatste twee minuten staan aan en zijn samen uit te zetten in de voorbeeldbalk; (2) *Wie bood*: bijnamen als "Bieder 7" staan aan en zijn uit te zetten, dan toont de biedlog alleen bedragen en tijden. Nog een vraag voor de jurist; (3) *Live*: zie hieronder; (4) *Rol van Marc*: hij zet tijdens de avond wijnen op tafel en stuurt berichten (scherm 15). Een nieuwe wijn komt daarom eerst klaar te staan en is pas te koop als hij op tafel ligt. Zonder Marc op de avond zou een wijn op de begintijd vanzelf op tafel moeten komen; dat is nog niet gebouwd; (5) *Lijst sluiten*: op de eindtijd, of eerder met SLUIT DE AVOND. In het prototype sluit de avond alleen met de knop; op de eindtijd sluiten volgt met de API. De veiling opent wel vanzelf op de begintijd en de hamer valt vanzelf op de eindtijd.
+- **Live bijwerken.** Design-v3 vraagt nieuwe wijnen, berichten en voorraad binnen 2 seconden en de stand van de veiling binnen 1 seconde. Het plan heeft dat nog niet. Voorstel van het ontwerp: een WebSocket API in API Gateway met Lambda, gevoed door DynamoDB Streams, of voor de pilot pollen elke 3 seconden zolang het scherm zichtbaar is. Het bod zelf blijft een gewone aanroep met de voorwaardelijke schrijfactie. Naar schatting een week extra bouwtijd. Aidan kiest; tot dan bootst het prototype het na in de browser.
+- **Marcs portret en foto's.** Het ontwerp toont Marcs portret als avatar bij elk bericht en een sfeerfoto van zijn site op de aankondiging. Het prototype gebruikt zijn portret van marckookt.com (`app/public/marc/portret.jpg`, 360 × 424 px) als avatar en op zijn pagina; Marc levert nog een groter origineel. Op de aankondiging staat zijn sfeerfoto van dezelfde site (`app/public/marc/sfeer.jpg`); Marc levert nog twee of drie eigen sfeerfoto's voor aankondigingen. De berichten van Marc in de feed, de biedlog, de snelle zinnen en de aantallen leden zijn verzonnen en als voorbeeld gemarkeerd.
 - **Foto's uploaden.** In het prototype blijft een gekozen foto in de browser. In de echte app gaat de upload via een vooraf ondertekende S3-URL, alleen voor de groep `beheer`, met een vaste lijst bestandstypen en een maximale grootte, en de app toont de foto pas na controle aan de serverkant. Een bestand van een gebruiker is een risico; neem dit mee in de review van week 4.
+- **De flessenrij op de telefoon.** Twaalf flessen van 44 px passen niet naast elkaar op een telefoon. In het prototype kies je daarom met een min- en een plusknop van 44 × 44 px; de rij is een tekening van de voorraad en je keuze en is zelf niet meer aan te tikken. Dat wijkt af van het ontwerp (`design-v2` en `design-v3`), waar je op een fles tikt en de rij een schuifregelaar is, en van het ontwerpidee "je kiest flessen, geen aantallen". Aidan en Marc beslissen of dit zo blijft; daarna moet het ontwerp worden aangepast.
+- **Andere aanpassingen voor de telefoon die van het ontwerp afwijken.** Op de bon staat het afhaalpunt boven het papier in plaats van eronder. De foto van een wijn en de poster van een bijzondere fles zijn niet meer vast 430 en 640 px hoog, maar schalen mee met de hoogte van het scherm. In het biedpaneel staat naast Bevestig een knop om te stoppen. Beheer heeft de drie tabs uit het pilotplan, met de hoofdknop onderaan. Het ontwerp moet hierop worden aangepast, of het prototype als Aidan en Marc anders kiezen.
+- **Spookwoorden in koppen.** Het eerste woord van een grote kop ("Mijn" in "Mijn flessen", "Nieuwe", "De", "Nog", "Namens", en "Niets open.") staat in `--ghost` met een contrast van 1,4:1. Dat is het beeldmerk van het ontwerp, maar het woord hoort bij de kop en haalt M5 niet. Kies: lichter grijs (minstens 3:1), of de eis voor deze woorden laten vallen.
+- **Voorlopig icoon.** Het icoon voor het beginscherm is een gouden W op zwart, getekend zonder Marcs logo. Vervang het zodra Marc het logo aanlevert.
+- **De link uit WhatsApp en de app op het beginscherm.** Uit het hoofd opgeschreven en niet nagezocht: op een iPhone opent een link uit WhatsApp in de browser en niet in de app op het beginscherm, en die twee delen mogelijk geen login. Een lid dat de app heeft geïnstalleerd, zou dan na een tik op Marcs link opnieuw moeten inloggen. Zoek dit op en test het op een echte iPhone en een echte Android-telefoon vóór de eerste uitnodiging; het bepaalt of "zet de app op je beginscherm" de juiste tip is.
+- **Terug van de bank.** Ook niet nagezocht: na betalen in de app van de bank komt het lid terug in de browser, mogelijk niet in de app op het beginscherm en mogelijk zonder login. Het scherm na betalen moet dan ook zonder login iets zinnigs tonen, zonder persoonsgegevens, en de status moet kloppen zodra het lid de app weer opent. Test dit in week 5 met Mollie in testmodus op echte telefoons.
+- **Zichtbare hoogte in de browser.** De maat 375 × 667 px in hoofdstuk 10 is een schatting van wat een gangbare telefoon in de browser overhoudt met de adresbalk in beeld. Meet dit na op echte toestellen en pas de maat aan als hij niet klopt.
 - **Lokale Python.** Op de machine waarop deze opzet is gemaakt staat Python 3.9, dat niet meer wordt ondersteund. De code en de tests werken ermee, maar pip installeert er oudere versies van pytest en boto3 op, met bekende kwetsbaarheden (pytest: PYSEC-2026-1845; urllib3 1.26, via boto3: meerdere). Die draaien alleen lokaal en komen niet in Lambda. Installeer Python 3.14: dan lopen de versies gelijk met Lambda en zijn de kwetsbaarheden weg. De tests zijn alleen op 3.9 gedraaid.
+
+## 10. Eisen voor de telefoon
+
+Vrijwel elk lid gebruikt de app op zijn telefoon: de link komt uit de WhatsApp-groep. De telefoon is daarom het uitgangspunt en geen variant. De eisen gelden voor elk scherm, ook voor beheer, en zijn zo geschreven dat je ze kunt meten. Maten zijn CSS-pixels.
+
+Er zijn twee referentiematen, beide staand. **375 × 667 px** is de maat waarop alles moet kloppen: een kleine iPhone, en naar schatting ook wat een grotere telefoon in de browser overhoudt met de adresbalk in beeld. **320 × 568 px** is de ondergrens: daar mag je meer moeten scrollen, maar alles blijft bruikbaar.
+
+| Nr | Eis | Hoe je het toetst |
+| --- | --- | --- |
+| M1 | **Schermmaat.** Elk scherm werkt van 320 tot 430 px breed, zonder horizontaal scrollen. Boven 430 px blijft de app één gecentreerde kolom | Browsertest op beide referentiematen: de pagina is niet breder dan het scherm |
+| M2 | **Tikvlakken.** Alles wat je kunt aantikken is minstens 44 × 44 px. Tussen twee tikvlakken naast elkaar zit minstens 8 px, of ze zijn samen één vlak | Browsertest meet elk bedienbaar onderdeel |
+| M3 | **Eén hand.** De hoofdknop en de tabs staan onderaan. Een paneel sluit ook met een knop onderaan of door omlaag te vegen, niet alleen met het kruisje rechtsboven. De vaste onderkant neemt op 375 × 667 px hoogstens een kwart van de hoogte in | Browsertest meet de onderkant; de rest in de handtest |
+| M4 | **Zonder scrollen in beeld** op 375 × 667 px, boven de vaste onderkant. Aanbod: de eerste wijn met naam, prijs en flessenrij. Bestelling: het totaal en het gekozen afhaalpunt, of de keuze zelf als er nog niets gekozen is. Bijzondere fles: het hoogste bod en de eindtijd. Biedpaneel: het gekozen bod, de melding dat het bindend is en de knop Bevestig. Mijn flessen: wat je moet betalen. Op 320 × 568 px staat in het biedpaneel de knop Bevestig nog steeds in beeld | Browsertest per scherm |
+| M5 | **Leesbaar.** Lopende tekst is minstens 16 px, een label in hoofdletters minstens 13 px. Tekst die je moet kunnen lezen heeft een contrast van minstens 4,5:1, of 3:1 vanaf 24 px. Dat geldt ook voor een keuze die nog niet gekozen is en voor een jaargang of bedrag. Alleen versiering mag lichter, en is dan verborgen voor schermlezers | Browsertest meet grootte en contrast; de handtest buiten in daglicht |
+| M6 | **Invoer.** Een veld heeft tekst van minstens 16 px, zodat een iPhone niet inzoomt. Elk veld vraagt het juiste toetsenbord: cijfers voor een code, een aantal of een bedrag. De code uit de e-mail kun je plakken en laten invullen door de telefoon. Een lid hoeft niets te typen om te bestellen of te bieden | Browsertest op de kenmerken van elk veld |
+| M7 | **Inzoomen en grote tekst.** Inzoomen is niet geblokkeerd. Met de tekstgrootte van de telefoon op de grootste stand blijft elke stroom bruikbaar: niets valt weg of over elkaar | Handtest |
+| M8 | **Veilige randen.** Niets wat je moet lezen of aantikken valt onder de inkeping, de statusbalk of de veegbalk onderaan, ook niet als de app schermvullend vanaf het beginscherm draait. Dat geldt boven en onder, ook in een paneel | Handtest op een iPhone, vanaf het beginscherm |
+| M9 | **Terugknop en vegen.** De terugknop of het teruggebaar van de telefoon sluit eerst een open paneel en gaat daarna naar het vorige scherm. Vegen in het biedpaneel scrolt de pagina niet mee en ververst de pagina niet | Browsertest voor terug; handtest voor vegen |
+| M10 | **Geen vergissing.** Vóór Bestel en Bevestig bod staan aantal, bedrag en afhaalpunt in beeld. De knop werkt één keer: dubbel tikken of een trage verbinding geeft één bestelling, één bod of één betaling. Een stap in beheer die niet terug te draaien is, zoals de lijst sluiten, vraagt een bevestiging | Browsertest met dubbel tikken; integratietest op de API |
+| M11 | **Onderbreking.** Het mandje, het gekozen afhaalpunt en een half ingevulde login blijven staan na herladen en na wisselen naar een andere app en terug. Komt het lid terug in de app, dan zijn voorraad en hoogste bod binnen twee seconden ververst | Browsertest met herladen; handtest met wisselen van app |
+| M12 | **Trage verbinding.** Elk scherm heeft een toestand voor laden en voor "het lukte niet, probeer opnieuw". Op een gemiddelde telefoon met 4G staat de kaart er binnen drie seconden. Een foto is niet groter dan nodig voor het scherm en hoogstens 150 kB, heeft vaste afmetingen zodat de pagina niet verspringt, en laadt pas als hij in beeld komt | Lighthouse in de pipeline, met de instelling voor mobiel |
+| M13 | **Op het beginscherm.** De app heeft een manifest met naam en iconen en opent schermvullend en staand. De app werkt ook volledig in de browser, zonder installeren. Een link uit WhatsApp, een melding of een e-mail opent het juiste scherm | Handtest op iPhone en Android |
+| M14 | **Testen.** De end-to-end-tests draaien op beide referentiematen. Elke release wordt met de hand nagelopen op een echte iPhone, in Safari en vanaf het beginscherm, en op een echte Android-telefoon in Chrome. De bestelstroom wordt één keer per release met de schermlezer doorlopen: VoiceOver en TalkBack | Pipeline en een afvinklijst per release |
+
+### Stand van het prototype op 19 november 2026
+
+Het prototype in `app/` is twee keer nagelopen in de browser: vóór de aanpassingen voor de telefoon op 375 × 812, 390 × 664, 375 × 667 en 320 × 568 px, en erna op 375 × 667 en 320 × 568 px. Bij de eerste meting voldeed het aan M1 en M6. Hieronder staat de stand na de aanpassingen. Het gaat om een nagebootst telefoonscherm, geen echte telefoon: vegen, het toetsenbord, de schermlezer en de app op het beginscherm zijn niet getest.
+
+| Nr | Stand | Bevinding |
+| --- | --- | --- |
+| M1 | Voldoet | Geen horizontaal scrollen op 320 en 375 px breed. De naam van een afhaalpunt krimpt mee op een smal scherm en breekt niet meer af |
+| M2 | Voldoet | Kiezen gaat met een min- en een plusknop van 44 × 44 px op de kaart en 56 × 56 px op de wijnpagina, met 8 px ertussen. De flessenrij is een tekening. De velden onder "Herkend" in beheer zijn 44 px hoog. De gouden voorbeeldbalk is 28 px hoog; die verdwijnt in de echte app |
+| M3 | Deels | Hoofdknop en tabs staan onderaan, ook in beheer. De vaste onderkant is 145 px: 22% van 667 px. Het biedpaneel heeft onderaan een knop om te stoppen, naast Bevestig. Een gewoon paneel sluit met het kruisje in de kop van het paneel, een tik ernaast of de terugknop van de telefoon, maar niet met een knop onderaan of door omlaag te vegen |
+| M4 | Voldoet | Gemeten op 375 × 667 px. Aanbod: de eerste wijn loopt van 321 tot 571 px, de tabs beginnen op 609 px. Bestelling: de keuze van het afhaalpunt staat op 105 tot 221 px en het totaal op 429 tot 489 px, boven de onderkant op 523 px. Bijzondere fles: het hoogste bod en de eindtijd staan op 340 tot 476 px. Biedpaneel: Bevestig staat op 581 tot 643 px; op 320 × 568 px op 455 tot 544 px. Mijn flessen is niet opnieuw gemeten; de knop Betaal is daar de vaste hoofdknop. Niet geëist, wel goed om te weten: op de wijnpagina staan prijs en flessenrij nog onder de vouw (vanaf 593 px) |
+| M5 | Voldoet niet | Na de aanpassingen voor de telefoon haalden alle schermen de eis, op de spookwoorden in grote koppen na (1,4:1, zie de open punten; de browsertests slaan ze voorlopig over). De omzetting naar `design-v3` bracht nieuwe overtredingen, gevonden door de browsertests: het label "Startbod" op de aankondiging is 12 px (`Aanbod.tsx`), de afzender en het tijdstip bij een bericht van Marc in de avond zijn 12 px (`.marc-afzender`), en een uitverkochte wijn in de avond staat op 45% dekking (`.feed-wijn.op`, ook `.beheer-wijn.op`), wat 2,2:1 geeft |
+| M6 | Voldoet | Alle velden hebben tekst van 16 px of meer, het juiste toetsenbord, en de code heeft `one-time-code` en plakken. Bestellen en bieden gaan zonder typen |
+| M7 | Deels | Inzoomen is niet geblokkeerd. Alle maten zijn vaste pixels; grote tekst is niet getest |
+| M8 | Deels | De app, de melding en het biedpaneel houden boven rekening met de inkeping, en de onderkant en de panelen onder met de veegbalk. Niet getest op een echte iPhone |
+| M9 | Deels | De terugknop sluit eerst een open paneel; getest in de browser. De ladder heeft `touch-action: none` en een paneel `overscroll-behavior: contain`, zodat vegen de pagina niet meeneemt. Het vegen zelf is niet op een echte telefoon getest |
+| M10 | Deels | Het afhaalpunt staat boven de bon en is in beeld als je op Bestel tikt. Een bod vraagt een bevestiging met het bedrag. De lijst sluiten vraagt een bevestiging met het aantal leden dat een betaalverzoek krijgt. Dubbel tikken is nog niet te toetsen: er is geen API |
+| M11 | Deels | Mandje en afhaalpunt overleven herladen (opslag in de browser, per tabblad). In de echte app opnieuw toetsen, ook na het sluiten van de app. Verversen bij terugkomst bestaat nog niet |
+| M12 | Nog niet te toetsen | Er is geen API, dus geen toestand voor laden of mislukken. Foto's onder de vouw laden pas als ze in beeld komen. De app laadt vijf gewichten van het lettertype. De voorbeeldfoto's zijn 70 tot 90 kB |
+| M13 | Deels | Er is een manifest met een voorlopig icoon; de app opent schermvullend en staand. Niet getest vanaf het beginscherm van een echte telefoon. Schermen hebben een eigen adres, ook de tabs van beheer. Wat een link uit WhatsApp doet, staat bij de open punten |
+| M14 | Deels | De browsertests in `tests/web` draaien bij elke pull request op beide referentiematen, tegen het prototype in `app/dist`. Ze lopen inloggen, bestellen en een paneel met de terugknop door, en meten op elk scherm tikvlakken, horizontaal scrollen, contrast en tekstgrootte. Het biedpaneel zit er nog niet in: bieden vraagt een lopende veiling, en die stroom verandert nog met `design-v3`. Tegen de teststack en op echte telefoons is nog niets getest |

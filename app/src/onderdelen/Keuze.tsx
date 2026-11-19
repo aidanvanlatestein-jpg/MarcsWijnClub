@@ -16,9 +16,16 @@ interface Props {
   uitgeschakeld?: boolean
 }
 
-/** Het grote woord moet in zijn vak passen: korter woord, grotere letters. */
-function grootte(woord: string, vorm: 'split' | 'banden'): number {
-  return vorm === 'split' ? Math.min(52, Math.floor(280 / Math.max(woord.length, 1))) : Math.min(60, Math.floor(400 / Math.max(woord.length, 1)))
+/**
+ * Het grote woord moet in zijn vak passen: korter woord, grotere letters. De maat geldt voor een scherm
+ * van 375 px breed. Een helft van de split is daar 134,5 px breed (de helft van het scherm min 53 px aan
+ * marge, rand en binnenruimte); op een smaller scherm krimpt het woord evenredig mee, zodat het niet afbreekt.
+ */
+function grootte(woord: string, vorm: 'split' | 'banden'): string {
+  const lengte = Math.max(woord.length, 1)
+  if (vorm === 'banden') return `${Math.min(60, Math.floor(400 / lengte))}px`
+  const px = Math.min(52, Math.floor(280 / lengte))
+  return `min(${px}px, calc((50vw - 53px) * ${(px / 134.5).toFixed(3)}))`
 }
 
 /** Een keuze die werkt als een radiogroep: BRENG of HAAL, LIJST of BIEDING, een afhaalpunt. */

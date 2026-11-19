@@ -56,6 +56,39 @@ jobs:
       - name: Typen controleren en bouwen
         run: npm run build
 
+  # De eisen voor de telefoon uit hoofdstuk 10 van de bouwspecificatie, in Chromium op
+  # 375 x 667 en 320 x 568 px. Tegen de gebouwde web-app; raakt AWS niet.
+  telefoon:
+    name: Web-app op telefoonformaat (Playwright)
+    runs-on: ubuntu-24.04
+    env:
+      WIJNCLUB_BROWSERTESTS: verplicht
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: |
+            requirements-dev.txt
+            infra/requirements.txt
+      - name: Web-app bouwen
+        working-directory: app
+        run: npm ci && npm run build
+      - name: Afhankelijkheden en browser installeren
+        run: |
+          pip install -r requirements-dev.txt
+          playwright install --with-deps chromium-headless-shell
+      - name: Browsertests (pytest)
+        run: pytest tests/web
+
   infra:
     name: Infrastructuur (cdk synth)
     runs-on: ubuntu-24.04
