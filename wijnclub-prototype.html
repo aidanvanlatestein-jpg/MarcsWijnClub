@@ -170,22 +170,33 @@
 
   #toast { position: absolute; left: 16px; right: 16px; top: 92px; background: #fff; color: #000; padding: 12px 16px; text-align: center; font-size: 17px; opacity: 0; transform: translateY(-8px); transition: .25s; pointer-events: none; z-index: 6; box-shadow: 0 8px 24px rgba(0,0,0,.6); }
   #toast.show { opacity: 1; transform: none; }
+
+  .letter { display: inline-block; min-width: 22px; margin-right: 8px; padding: 0 4px; border: 1px solid var(--gold); color: var(--gold); font-size: 13px; font-weight: 500; letter-spacing: .08em; text-align: center; vertical-align: 3px; }
+  .open .t .letter, .row .t .letter { font-weight: 500; }
+  .intro { border-left: 2px solid var(--gold); padding: 2px 0 2px 12px; margin: 0; }
+  .seg.three { grid-template-columns: repeat(3, 1fr); }
+  .seg.three button { padding: 12px 4px; font-size: 14px; }
+  select { appearance: none; }
+  input:disabled { color: var(--muted); }
 </style>
 </head>
 <body>
 <div class="stage">
   <aside class="notes">
     <h2>Prototype wijnclub</h2>
-    <p>Klik door de telefoon heen. Alle wijnen, prijzen en teksten zijn voorbeelden; er wordt niets besteld of betaald.</p>
+    <p>Klik door de telefoon heen. Alle wijnen, prijzen en teksten zijn voorbeelden; er wordt niets besteld of betaald. Herlaad de pagina om opnieuw te beginnen.</p>
     <ol>
       <li><button data-jump="welkom">Eerste login</button></li>
       <li><button data-jump="aanbod">De lijst en de biedingen</button></li>
       <li><button data-jump="wijn:d">Wijn van de lijst</button></li>
-      <li><button data-jump="mandje">Mandje en afrekenen</button></li>
+      <li><button data-jump="mandje">Bestellen en afhaalpunt kiezen</button></li>
+      <li><button data-jump="sluiting">De lijst sluit: betalen</button></li>
       <li><button data-jump="fles:barolo">Bijzondere fles met bieding</button></li>
       <li><button data-jump="flessen">Mijn flessen</button></li>
       <li><button data-jump="marc">Marc</button></li>
-      <li><button data-jump="beheer">Beheer voor Marc</button></li>
+      <li><button data-jump="beheer:lijst">Beheer: lijst en afhaalpunten</button></li>
+      <li><button data-jump="beheer:wijn">Beheer: wijn toevoegen</button></li>
+      <li><button data-jump="beheer:bestellingen">Beheer: bestellingen</button></li>
     </ol>
   </aside>
 
@@ -211,18 +222,30 @@
 
 <script>
 // ---------- Voorbeeldgegevens (in de echte app komen deze uit de API) ----------
-// De lijst: vaste prijs, meerdere wijnen in één bestelling
+// De lijst: vaste prijs, enkele uren open, betalen als de lijst sluit
+const lijst = {
+  titel: 'Doordeweekse wijnen',
+  inleiding: 'Vandaag wijnen voor het gewone glas: goede prijs en niets ingewikkelds. Bestellen kan tot vanavond.',
+  sluit: 'vanavond om 22:00',
+  gesloten: false
+};
+// Afhaalpunten: Marc maakt ze per lijst aan
+const punten = [
+  { id: 'roermond', naam: 'Roermond', wanneer: 'Vanaf vrijdag, op afspraak' },
+  { id: 'utrecht', naam: 'Utrecht', wanneer: 'Zaterdag 28 november, centraal afhaalpunt' },
+  { id: 'amsterdam', naam: 'Amsterdam', wanneer: 'Zaterdag 28 november, centraal afhaalpunt' }
+];
 const list = [
   { id: 'a', name: 'Verdejo', year: 2023, region: 'Rueda, Spanje', price: 9.5, stock: 12, tint: '#55632b', label: '#f3efe4',
-    text: 'Fris en strak, met limoen, venkel en een licht bittertje. Het eerste glas op een warme avond.', spijs: 'Gegrilde gamba, geitenkaas, of gewoon zo.', wanneer: 'Nu, binnen twee jaar.' },
+    text: 'Fris en strak, met limoen, venkel en een licht bittertje. Het eerste glas op een warme avond.' },
   { id: 'b', name: 'Grüner Veltliner', year: 2023, region: 'Kamptal, Oostenrijk', price: 12.5, stock: 6, tint: '#5c6a2c', label: '#efe9dc',
     text: 'Witte peper, groene appel en een sappige afdronk. Past bij bijna alles wat groen is.', spijs: 'Asperges, schnitzel, Aziatische gerechten met gember.', wanneer: 'Nu tot 2027.' },
   { id: 'c', name: 'Côtes du Rhône', year: 2021, region: 'Rhône, Frankrijk', price: 13.5, stock: 6, tint: '#5a1620', label: '#efe6d2',
-    text: 'Rode bessen, tijm en een beetje peper. Soepel genoeg voor doordeweeks, serieus genoeg voor zondag.', spijs: 'Lamsstoof, ratatouille, harde kazen.', wanneer: 'Nu tot 2028.' },
+    text: 'Rode bessen, tijm en een beetje peper. Soepel genoeg voor doordeweeks, serieus genoeg voor zondag.', spijs: 'Lamsstoof, ratatouille, harde kazen.' },
   { id: 'd', name: 'Negroamaro', year: 2022, region: 'Puglia, Italië', price: 11.5, stock: 12, tint: '#4d1a1a', label: '#e9dfc8',
     text: 'Donker fruit, pruimen en warme kruiden. Vol en soepel, met een lange afdronk. Een echte winterwijn.', spijs: 'Pasta met ragù, gegrild rood vlees, oude pecorino.', wanneer: 'Nu tot 2027.' },
   { id: 'e', name: 'Crémant de Loire', year: 'Brut', region: 'Loire, Frankrijk', price: 15.5, stock: 0, tint: '#6f6226', label: '#f3efe4',
-    text: 'Fijne bubbel, brioche en groene appel.', spijs: 'Oesters, gefrituurde hapjes.', wanneer: 'Nu.' }
+    text: 'Fijne bubbel, brioche en groene appel.' }
 ];
 // Bijzondere flessen: bieding, hoogste bod wint
 const lots = {
@@ -244,24 +267,28 @@ const lots = {
   }
 };
 // Mijn flessen
-const onderweg = [];
+const afhalen = [];
 const stored = [{ id: 'c1', name: 'Châteauneuf-du-Pape', year: 2015, until: 'Nu tot 2030', tint: '#4d1a1a', label: '#efe6d2' }];
 const past = [
   { id: 'p1', name: 'Verdejo 2023', when: 'Vorige lijst · 2 flessen', rate: 'lekker', relist: 'a' },
   { id: 'p2', name: 'Primitivo 2021', when: 'Twee lijsten terug · 1 fles', rate: null, relist: null },
   { id: 'p3', name: 'Negroamaro 2022', when: 'Twee lijsten terug · 3 flessen', rate: 'lekker', relist: 'd' }
 ];
+// Bestellingen van andere leden, voor het beheer. Leden zijn verzonnen.
 const orders = [
-  { who: 'Lid 14', what: '3 flessen · € 36,50', status: 'Betaald', cls: 'ok', del: 'Brengen' },
-  { who: 'Lid 7', what: 'Barolo Riserva 2013 · bod € 240', status: 'Bieding loopt', cls: 'wait', del: 'Sluit za 20:00' },
-  { who: 'Lid 22', what: '6 flessen · € 71', status: 'Betaald', cls: 'ok', del: 'Afhalen' }
+  { who: 'lid-14', regels: '2 × C, 1 × D', flessen: 3, bedrag: 38.5, punt: 'utrecht', via: 'app' },
+  { who: 'lid-7', regels: '2 × A, 2 × B, 2 × D', flessen: 6, bedrag: 67, punt: 'roermond', via: 'app' },
+  { who: 'lid-22', regels: '4 × D', flessen: 4, bedrag: 46, punt: 'amsterdam', via: 'Marc' }
 ];
 
 // ---------- Hulpjes ----------
+const LETTERS = 'ABCDEFGHI';
 const $ = s => document.querySelector(s);
 const eur = n => '€ ' + n.toLocaleString('nl-NL', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 });
 const left = h => h >= 24 ? `${Math.floor(h / 24)} d ${h % 24} u` : `${h} u`;
 const wine = id => list.find(w => w.id === id);
+const letter = id => LETTERS[list.findIndex(w => w.id === id)];
+const punt = id => punten.find(p => p.id === id);
 const flessen = n => n === 1 ? '1 fles' : `${n} flessen`;
 const bottle = (label) => `<svg viewBox="0 0 80 240" aria-hidden="true">
   <path d="M34 6h12v54c0 14 16 18 16 40v124a6 6 0 0 1-6 6H24a6 6 0 0 1-6-6V100c0-22 16-26 16-40z" fill="#0d120e" stroke="rgba(255,255,255,.16)"/>
@@ -272,14 +299,18 @@ const bottle = (label) => `<svg viewBox="0 0 80 240" aria-hidden="true">
   <path d="M24 104v118" stroke="rgba(255,255,255,.14)" stroke-width="2"/>
 </svg>`;
 const photo = (o, tall) => `<div class="photo ${tall ? 'tall' : ''}" style="--tint:${o.tint}">${bottle(o.label)}<span class="tag">Voorbeeldfoto</span></div>`;
-const stepper = w => { const q = S.cart[w.id] || 0; return w.stock === 0 ? `<span class="chip">Uitverkocht</span>` : `<div class="step ${q ? 'on' : 'zero'}"><button data-act="minus" data-param="${w.id}" aria-label="Eén minder ${w.name}">−</button><span aria-live="polite">${q}</span><button data-act="plus" data-param="${w.id}" aria-label="Eén meer ${w.name}">+</button></div>`; };
-function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2200); }
+const stepper = w => { if (lijst.gesloten) return '<span></span>'; const q = S.cart[w.id] || 0; return w.stock === 0 ? `<span class="chip">Uitverkocht</span>` : `<div class="step ${q ? 'on' : 'zero'}"><button data-act="minus" data-param="${w.id}" aria-label="Eén minder ${w.name}">−</button><span aria-live="polite">${q}</span><button data-act="plus" data-param="${w.id}" aria-label="Eén meer ${w.name}">+</button></div>`; };
+const kies = (act, k, b, s, on) => `<button class="choice" data-act="${act}" data-param="${k}" aria-pressed="${on}"><b>${b}</b><span>${s}</span></button>`;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2400); }
 function sheet(html) { const s = $('#sheet'); s.innerHTML = html ? `<div class="panel">${html}</div>` : ''; s.classList.toggle('open', !!html); }
-const cartCount = () => Object.values(S.cart).reduce((a, b) => a + b, 0);
-const cartTotal = () => Object.entries(S.cart).reduce((a, [id, q]) => a + wine(id).price * q, 0);
+const som = regels => Object.entries(regels).reduce((a, [id, q]) => a + wine(id).price * q, 0);
+const tel = regels => Object.values(regels).reduce((a, b) => a + b, 0);
+const cartCount = () => tel(S.cart);
+const cartTotal = () => som(S.cart);
+const bijPunt = id => { const r = orders.filter(o => o.punt === id); const mijn = S.order && S.order.punt === id; return { n: r.length + (mijn ? 1 : 0), fl: r.reduce((a, o) => a + o.flessen, 0) + (mijn ? tel(S.order.regels) : 0) }; };
 
 // ---------- Navigatie ----------
-const S = { screen: 'welkom', param: null, stack: [], cart: {}, pick: null, delivery: 'bewaren', cartDelivery: 'brengen', kind: 'vast', parsed: false };
+const S = { screen: 'welkom', param: null, stack: [], cart: {}, order: null, punt: 'roermond', pick: null, delivery: 'bewaren', kind: 'vast', parsed: false, beheer: 'lijst' };
 const tabOf = { aanbod: 'aanbod', wijn: 'aanbod', fles: 'aanbod', mandje: 'aanbod', flessen: 'flessen', kelderfles: 'flessen', marc: 'marc', beheer: 'marc' };
 const noTabs = ['welkom', 'installeren', 'betalen', 'levering'];
 const withBack = ['wijn', 'fles', 'mandje', 'kelderfles', 'beheer', 'betalen'];
@@ -302,10 +333,10 @@ const screens = {
   installeren: () => `<section class="pad">
     <p class="eyebrow">Nog één ding</p>
     <h1>Mis geen lijst</h1>
-    <p>Van de meeste wijnen heeft Marc er maar een paar. Zo ben je er op tijd bij:</p>
+    <p>Een lijst staat maar een paar uur open, en van de meeste wijnen heeft Marc er weinig. Zo ben je er op tijd bij:</p>
     <ul class="rows">
       <li><div class="row"><div><div class="t">Zet de club op je beginscherm</div><div class="s">Tik op Deel en kies "Zet op beginscherm"</div></div></div></li>
-      <li><div class="row"><div><div class="t">Zet meldingen aan</div><div class="s">Alleen bij een nieuwe lijst of als je overboden bent</div></div></div></li>
+      <li><div class="row"><div><div class="t">Zet meldingen aan</div><div class="s">Bij een nieuwe lijst, en één keer voor hij sluit</div></div></div></li>
     </ul>
     <div style="margin-top:24px">
       <button class="btn" data-act="notify">Meldingen aan</button>
@@ -314,12 +345,16 @@ const screens = {
   </section>`,
 
   aanbod: () => `<section>
-    <div class="pad" style="padding-bottom:14px"><p class="eyebrow">Open tot zondag 20:00</p><h1>De lijst van deze week</h1>
-      <p class="muted" style="margin:0">Tik aan hoeveel je wilt en bestel in één keer.</p></div>
+    <div class="pad" style="padding-bottom:14px">
+      <p class="eyebrow">${lijst.gesloten ? 'Gesloten' : 'Open tot ' + lijst.sluit}</p>
+      <h1>${lijst.titel}</h1>
+      <p class="intro">${lijst.inleiding}</p>
+      <p class="fine" style="margin:10px 0 0">${lijst.gesloten ? 'Deze lijst is gesloten. Je bestelling staat onder Mijn flessen.' : 'Tik aan hoeveel je wilt. Betalen doe je pas als de lijst sluit.'}</p>
+    </div>
     ${list.map(w => `<div class="lrow ${w.stock === 0 ? 'sold' : ''}">
       <div class="thumb" style="--tint:${w.tint}">${bottle(w.label)}</div>
       <button class="open" data-go="wijn" data-param="${w.id}">
-        <div class="t">${w.name} <span>${w.year}</span></div>
+        <div class="t"><span class="letter">${letter(w.id)}</span>${w.name} <span>${w.year}</span></div>
         <div class="s">${w.region}</div>
         <div class="d">${w.text}</div>
         <div class="p">${eur(w.price)}${w.stock ? `<small>nog ${w.stock}</small>` : ''}</div>
@@ -346,28 +381,28 @@ const screens = {
   wijn: id => { const w = wine(id); return `<section>
     ${photo(w)}
     <div class="pad" style="padding-top:16px">
-      <p class="eyebrow">${w.region}</p>
+      <p class="eyebrow">Wijn ${letter(w.id)} · ${w.region}</p>
       <p class="name">${w.name} <span>${w.year}</span></p>
       <h2>Marc over deze wijn</h2><p>${w.text}</p>
-      <h2>Wat eet je erbij</h2><p>${w.spijs}</p>
-      <h2>Wanneer drinken</h2><p>${w.wanneer}</p>
+      ${w.spijs ? `<h2>Wat eet je erbij</h2><p>${w.spijs}</p>` : ''}
+      ${w.wanneer ? `<h2>Wanneer drinken</h2><p>${w.wanneer}</p>` : ''}
       <p style="margin-top:22px"><button class="link" data-act="ask" data-param="${w.name} ${w.year}">Vraag Marc iets over deze wijn</button></p>
     </div>
   </section>`; },
 
   mandje: () => { const ids = Object.keys(S.cart); if (!ids.length) return `<section class="pad"><p class="eyebrow">Je bestelling</p><h1>Nog leeg</h1><p class="muted">Tik op de lijst aan hoeveel je van een wijn wilt.</p><button class="btn" data-tab="aanbod">Naar de lijst</button></section>`;
-    const opt = (k, b, s) => `<button class="choice" data-act="cartDelivery" data-param="${k}" aria-pressed="${S.cartDelivery === k}"><b>${b}</b><span>${s}</span></button>`;
     return `<section>
-    <div class="pad" style="padding-bottom:8px"><p class="eyebrow">Je bestelling</p><h1>${flessen(cartCount())}</h1></div>
+    <div class="pad" style="padding-bottom:8px"><p class="eyebrow">${S.order ? 'Bijbestellen' : 'Je bestelling'}</p><h1>${flessen(cartCount())}</h1></div>
     ${ids.map(id => { const w = wine(id); return `<div class="lrow">
       <div class="thumb" style="--tint:${w.tint}">${bottle(w.label)}</div>
-      <div class="open"><div class="t">${w.name} <span>${w.year}</span></div><div class="p">${eur(w.price * S.cart[id])}<small>${eur(w.price)} per fles</small></div></div>
+      <div class="open"><div class="t"><span class="letter">${letter(id)}</span>${w.name} <span>${w.year}</span></div><div class="p">${eur(w.price * S.cart[id])}<small>${eur(w.price)} per fles</small></div></div>
       ${stepper(w)}
     </div>`; }).join('')}
     <div class="pad" style="border-top:1px dotted var(--line)">
       <div class="total"><span>Totaal</span><span>${eur(cartTotal())}</span></div>
-      ${opt('brengen', 'Marc brengt het', 'Bij zijn eerstvolgende ronde')}
-      ${opt('afhalen', 'Ik haal het op', 'In Roermond, op afspraak')}
+      <h2 style="margin-top:4px">Waar haal je het op?</h2>
+      ${punten.map(p => kies('punt', p.id, p.naam, p.wanneer, S.punt === p.id)).join('')}
+      <p class="fine" style="margin-top:12px">Je bestelling is bindend. Betalen doe je met iDEAL als de lijst sluit, ${lijst.sluit}.</p>
     </div>
   </section>`; },
 
@@ -389,11 +424,11 @@ const screens = {
     </div>
   </section>`; },
 
-  betalen: what => { const cart = what === 'cart'; const o = cart ? null : lots[what]; const amount = cart ? cartTotal() : o.high; return `<section class="pad">
+  betalen: what => { const mijn = what === 'order'; const o = mijn ? null : lots[what]; const amount = mijn ? som(S.order.regels) : o.high; return `<section class="pad">
     <p class="eyebrow">Afrekenen</p>
     <h1>Betalen</h1>
     <ul class="rows">
-      ${cart ? Object.entries(S.cart).map(([id, q]) => `<li><div class="row"><div class="t">${q} × ${wine(id).name} ${wine(id).year}</div><div class="r">${eur(wine(id).price * q)}</div></div></li>`).join('')
+      ${mijn ? Object.entries(S.order.regels).map(([id, q]) => `<li><div class="row"><div class="t">${q} × ${wine(id).name} ${wine(id).year}</div><div class="r">${eur(wine(id).price * q)}</div></div></li>`).join('')
              : `<li><div class="row"><div><div class="t">${o.name} ${o.year}</div><div class="s">Gewonnen bieding</div></div><div class="r">${eur(amount)}</div></div></li>`}
     </ul>
     <div class="total"><span>Totaal</span><span>${eur(amount)}</span></div>
@@ -402,19 +437,28 @@ const screens = {
     <p class="fine" style="margin-top:14px">In dit prototype wordt niets betaald.</p>
   </section>`; },
 
-  levering: id => { const o = lots[id]; const opt = (k, b, s) => `<button class="choice" data-act="delivery" data-param="${k}" aria-pressed="${S.delivery === k}"><b>${b}</b><span>${s}</span></button>`; return `<section class="pad">
+  levering: id => { const o = lots[id]; return `<section class="pad">
     <p class="eyebrow">Betaald. De ${o.name} is van jou</p>
     <h1>Waar wil je hem hebben?</h1>
-    ${opt('bewaren', 'Marc bewaart hem', 'Hij ligt in Marcs kelder tot jij hem wilt hebben')}
-    ${opt('brengen', 'Marc brengt hem', 'Bij zijn eerstvolgende ronde')}
-    ${opt('afhalen', 'Ik haal hem op', 'In Roermond, op afspraak')}
+    ${kies('delivery', 'bewaren', 'Marc bewaart hem', 'Hij ligt in Marcs kelder tot jij hem wilt hebben', S.delivery === 'bewaren')}
+    ${punten.map(p => kies('delivery', p.id, 'Afhalen in ' + p.naam, p.wanneer, S.delivery === p.id)).join('')}
     <button class="btn primary" style="margin-top:14px" data-act="done" data-param="${o.id}">Klaar</button>
   </section>`; },
 
-  flessen: () => `<section class="pad">
-    <p class="eyebrow">Wat je kocht en wat er voor je ligt</p>
+  flessen: () => { const o = S.order; return `<section class="pad">
+    <p class="eyebrow">Wat je bestelde en wat er voor je ligt</p>
     <h1>Mijn flessen</h1>
-    ${onderweg.length ? `<h2>Onderweg</h2><ul class="rows">${onderweg.map(o => `<li><div class="row"><div><div class="t">${o.what}</div><div class="s">${o.how}</div></div><span class="chip ok">Betaald</span></div></li>`).join('')}</ul>` : ''}
+    ${o ? `<h2>${lijst.titel}</h2>
+      <ul class="rows">${Object.entries(o.regels).map(([id, q]) => `<li><div class="row"><div class="t">${q} × ${wine(id).name} ${wine(id).year}</div><div class="r">${eur(wine(id).price * q)}</div></div></li>`).join('')}</ul>
+      <div class="total"><span>Totaal</span><span>${eur(som(o.regels))}</span></div>
+      <p class="muted">Afhalen in ${punt(o.punt).naam}. ${punt(o.punt).wanneer}.</p>
+      ${o.status === 'besteld' ? `<p><span class="chip wait">Betalen na sluiting</span></p>
+          <p class="fine">De lijst sluit ${lijst.sluit}. Tot die tijd kun je bijbestellen.</p>
+          <p><button class="link" data-act="sluit">Demo: de lijst sluit</button></p>`
+        : o.status === 'betalen' ? `<button class="btn primary" data-go="betalen" data-param="order">Betaal ${eur(som(o.regels))}</button>
+          <p class="fine" style="margin-top:10px">De lijst is gesloten. Betaal binnen 48 uur; Marc neemt je wijn mee zodra je betaald hebt.</p>`
+        : `<p><span class="chip ok">Betaald</span></p>`}` : ''}
+    ${afhalen.length ? `<h2>Af te halen</h2><ul class="rows">${afhalen.map(a => `<li><div class="row"><div><div class="t">${a.what}</div><div class="s">${a.where}</div></div><span class="chip ok">Betaald</span></div></li>`).join('')}</ul>` : ''}
     ${stored.length ? `<h2>In bewaring bij Marc</h2><ul class="rows">${stored.map(c => `<li><button class="row" data-go="kelderfles" data-param="${c.id}"><div><div class="t">${c.name} ${c.year}</div><div class="s">${c.until}</div></div><div class="r">›</div></button></li>`).join('')}</ul>` : ''}
     <h2>Eerder gekocht</h2>
     <ul class="rows">${past.map(p => { const w = p.relist && wine(p.relist); return `<li><div class="row"><div>
@@ -423,10 +467,10 @@ const screens = {
           <button class="chip" data-act="rate" data-param="${p.id}" data-val="lekker" aria-pressed="${p.rate === 'lekker'}">Lekker</button>
           <button class="chip" data-act="rate" data-param="${p.id}" data-val="niet" aria-pressed="${p.rate === 'niet'}">Niet voor mij</button>
         </div></div>
-        ${w && w.stock ? `<button class="chip ok" data-act="again" data-param="${w.id}">Opnieuw · ${eur(w.price)}</button>` : ''}
+        ${w && w.stock && !lijst.gesloten ? `<button class="chip ok" data-act="again" data-param="${w.id}">Opnieuw · ${eur(w.price)}</button>` : ''}
       </div></li>`; }).join('')}</ul>
     <p class="fine" style="margin-top:16px">Wat je lekker vond, gebruikt Marc om je de volgende keer iets aan te raden.</p>
-  </section>`,
+  </section>`; },
 
   kelderfles: id => { const c = stored.find(x => x.id === id); return `<section>
     ${photo(c)}
@@ -436,7 +480,7 @@ const screens = {
       <h2>Wanneer drinken</h2><p>${c.until}</p>
       <div style="margin-top:22px">
         <button class="btn primary" data-act="table" data-param="${c.id}">Open aan tafel</button>
-        <button class="btn" data-act="bring" data-param="${c.id}">Laat hem brengen</button>
+        <button class="btn" data-act="bring" data-param="${c.id}">Zet hem klaar bij een afhaalpunt</button>
       </div>
       <p class="fine" style="margin-top:14px">Open aan tafel: Marc kookt bij jou thuis een menu rond deze fles.</p>
     </div>
@@ -455,44 +499,77 @@ const screens = {
     </ul>
   </section>`,
 
-  beheer: () => { const v = S.parsed; return `<section class="pad">
-    <p class="eyebrow">Beheer</p>
-    <h1>Nieuwe wijn</h1>
-    <label for="b-plak">Plak je WhatsApp-bericht</label>
-    <textarea id="b-plak" placeholder="Wijn D Negroamaro 2022 · Donker fruit, pruimen en warme kruiden… · 12 flessen beschikbaar €11,5 pfl"></textarea>
-    <button class="btn" style="margin-top:10px" data-act="parse">Herken en vul in</button>
-    <button class="btn ghost" data-act="photo">Foto toevoegen</button>
-    <label for="b-naam">Naam</label><input id="b-naam" type="text" placeholder="Naam van de wijn" value="${v ? 'Negroamaro' : ''}">
-    <div class="two">
-      <div><label for="b-jaar">Jaargang</label><input id="b-jaar" type="text" inputmode="numeric" placeholder="2022" value="${v ? '2022' : ''}"></div>
-      <div><label for="b-aantal">Aantal</label><input id="b-aantal" type="text" inputmode="numeric" placeholder="12" value="${v ? '12' : ''}"></div>
-    </div>
-    <label>Verkoop</label>
-    <div class="seg">
-      <button data-act="kind" data-param="vast" aria-pressed="${S.kind === 'vast'}">Vaste prijs</button>
-      <button data-act="kind" data-param="bieding" aria-pressed="${S.kind === 'bieding'}">Bieding</button>
-    </div>
-    <div class="two">
-      <div><label for="b-prijs">${S.kind === 'bieding' ? 'Startbod' : 'Prijs per fles'}</label><input id="b-prijs" type="text" inputmode="decimal" placeholder="€" value="${v && S.kind === 'vast' ? '11,50' : ''}"></div>
-      <div><label for="b-eind">${S.kind === 'bieding' ? 'Sluit op' : 'Lijst open tot'}</label><input id="b-eind" type="text" placeholder="zo 20:00"></div>
-    </div>
-    <label for="b-tekst">Tekst voor leden</label>
-    <textarea id="b-tekst" placeholder="Wat je erover wilt zeggen">${v ? 'Donker fruit, pruimen en warme kruiden. Vol en soepel, met een lange afdronk. Een echte winterwijn.' : ''}</textarea>
-    ${S.kind === 'bieding' ? `<button class="btn ghost" style="margin-top:10px" data-act="record">Spraakbericht opnemen</button>` : ''}
-    <button class="btn primary" style="margin-top:10px" data-act="publish">${S.kind === 'bieding' ? 'Start de bieding' : 'Zet op de lijst'}</button>
-    <h2>Bestellingen</h2>
-    <ul class="rows">${orders.map(r => `<li><div class="row"><div><div class="t">${r.what}</div><div class="s">${r.who} · ${r.del}</div></div><span class="chip ${r.cls}">${r.status}</span></div></li>`).join('')}</ul>
-    <button class="btn ghost" style="margin-top:14px" data-act="proxy">Bestelling namens een lid invoeren</button>
-    <p class="fine" style="margin-top:10px">Voor wie nog via WhatsApp bestelt, zodat de voorraad blijft kloppen.</p>
-  </section>`; }
+  beheer: () => { const t = S.beheer; const v = S.parsed;
+    const tabs = `<div class="seg three">${[['lijst', 'Lijst'], ['wijn', 'Wijn'], ['bestellingen', 'Bestellingen']].map(([k, n]) => `<button data-act="beheer" data-param="${k}" aria-pressed="${t === k}">${n}</button>`).join('')}</div>`;
+    if (t === 'lijst') return `<section class="pad"><p class="eyebrow">Beheer</p>${tabs}
+      <h1 style="margin-top:20px">De lijst</h1>
+      <label for="l-titel">Titel</label><input id="l-titel" type="text" value="${lijst.titel}">
+      <label for="l-intro">Inleiding</label><textarea id="l-intro">${lijst.inleiding}</textarea>
+      <label for="l-tot">Open tot</label><input id="l-tot" type="text" value="Vanavond 22:00">
+      <h2>Afhaalpunten</h2>
+      <ul class="rows">${punten.map(p => { const b = bijPunt(p.id); return `<li><div class="row"><div><div class="t">${p.naam}</div><div class="s">${p.wanneer}</div></div><div class="r">${b.n} besteld</div></div></li>`; }).join('')}</ul>
+      <button class="btn ghost" style="margin-top:12px" data-act="addpunt">Afhaalpunt toevoegen</button>
+      <h2>Nog beschikbaar</h2>
+      <ul class="rows">${list.map(w => `<li><div class="row"><div class="t"><span class="letter">${letter(w.id)}</span>${w.name} ${w.year}</div><div class="r">${w.stock ? w.stock + ' ×' : 'op'}</div></div></li>`).join('')}</ul>
+      <div style="margin-top:14px">
+        <button class="btn" data-act="deel">Deel overzicht in WhatsApp</button>
+        <button class="btn ghost" data-act="herinner">Stuur leden een herinnering</button>
+        ${lijst.gesloten ? `<p style="margin-top:14px"><span class="chip">Lijst gesloten</span></p>` : `<button class="btn primary" data-act="sluitbeheer">Sluit de lijst nu</button>`}
+      </div>
+      <p class="fine" style="margin-top:10px">Bij het sluiten krijgt elk lid met een bestelling een betaalverzoek.</p>
+    </section>`;
+    if (t === 'wijn') return `<section class="pad"><p class="eyebrow">Beheer</p>${tabs}
+      <h1 style="margin-top:20px">Nieuwe wijn</h1>
+      <label for="b-plak">Plak je WhatsApp-bericht</label>
+      <textarea id="b-plak" placeholder="Wijn D Negroamaro 2022 · Donker fruit, pruimen en warme kruiden… · 12 flessen beschikbaar €11,5 pfl"></textarea>
+      <button class="btn" style="margin-top:10px" data-act="parse">Herken en vul in</button>
+      <button class="btn ghost" data-act="photo">Foto toevoegen</button>
+      <label for="b-naam">Naam</label><input id="b-naam" type="text" placeholder="Naam van de wijn" value="${v ? 'Negroamaro' : ''}">
+      <div class="two">
+        <div><label for="b-jaar">Jaargang</label><input id="b-jaar" type="text" inputmode="numeric" placeholder="2022" value="${v ? '2022' : ''}"></div>
+        <div><label for="b-aantal">Aantal</label><input id="b-aantal" type="text" inputmode="numeric" placeholder="12" value="${v ? '12' : ''}"></div>
+      </div>
+      <label>Verkoop</label>
+      <div class="seg">
+        <button data-act="kind" data-param="vast" aria-pressed="${S.kind === 'vast'}">Vaste prijs</button>
+        <button data-act="kind" data-param="bieding" aria-pressed="${S.kind === 'bieding'}">Bieding</button>
+      </div>
+      <div class="two">
+        <div><label for="b-prijs">${S.kind === 'bieding' ? 'Startbod' : 'Prijs per fles'}</label><input id="b-prijs" type="text" inputmode="decimal" placeholder="€" value="${v && S.kind === 'vast' ? '11,50' : ''}"></div>
+        <div>${S.kind === 'bieding' ? `<label for="b-eind">Sluit op</label><input id="b-eind" type="text" placeholder="za 20:00">` : `<label>Letter</label><input type="text" value="${LETTERS[list.length]}" disabled>`}</div>
+      </div>
+      <label for="b-tekst">Tekst voor leden</label>
+      <textarea id="b-tekst" placeholder="Wat je erover wilt zeggen">${v ? 'Donker fruit, pruimen en warme kruiden. Vol en soepel, met een lange afdronk. Een echte winterwijn.' : ''}</textarea>
+      <label for="b-spijs">Wat eet je erbij (mag leeg blijven)</label><input id="b-spijs" type="text">
+      <label for="b-drink">Wanneer drinken (mag leeg blijven)</label><input id="b-drink" type="text">
+      ${S.kind === 'bieding' ? `<button class="btn ghost" style="margin-top:14px" data-act="record">Spraakbericht opnemen</button>` : ''}
+      <button class="btn primary" style="margin-top:14px" data-act="publish">${S.kind === 'bieding' ? 'Start de bieding' : 'Zet op de lijst'}</button>
+    </section>`;
+    return `<section class="pad"><p class="eyebrow">Beheer</p>${tabs}
+      <h1 style="margin-top:20px">Bestellingen</h1>
+      <label for="p-kort">Bestelling namens een lid</label>
+      <div class="two">
+        <select id="p-lid"><option>lid-3</option><option>lid-9</option><option>lid-31</option></select>
+        <input id="p-kort" type="text" placeholder="C2 D2" autocapitalize="characters">
+      </div>
+      <div class="two" style="margin-top:10px">
+        <select id="p-punt">${punten.map(p => `<option value="${p.id}">${p.naam}</option>`).join('')}</select>
+        <button class="btn" data-act="proxy">Voeg toe</button>
+      </div>
+      <p class="fine" style="margin-top:10px">Voor wie in de groep of in een privébericht bestelt. Typ de letters en aantallen zoals in WhatsApp; de voorraad telt direct mee.</p>
+      <h2>Paklijst per afhaalpunt</h2>
+      <ul class="rows">${punten.map(p => { const b = bijPunt(p.id); return `<li><div class="row"><div><div class="t">${p.naam}</div><div class="s">${p.wanneer}</div></div><div class="r">${b.n} besteld · ${flessen(b.fl)}</div></div></li>`; }).join('')}</ul>
+      <h2>Alle bestellingen</h2>
+      <ul class="rows">${orders.map(r => `<li><div class="row"><div><div class="t">${r.regels}</div><div class="s">${r.who} · ${punt(r.punt).naam} · ${eur(r.bedrag)} · via ${r.via}</div></div><span class="chip ${lijst.gesloten ? 'wait' : ''}">${lijst.gesloten ? 'Wacht op betaling' : 'Besteld'}</span></div></li>`).join('')}</ul>
+    </section>`; }
 };
 
 // De vaste balk onderaan: één hoofdknop per scherm
 function bar() {
   const n = cartCount();
-  if (S.screen === 'aanbod') return n ? `<div class="info"><small>${flessen(n)}</small><strong>${eur(cartTotal())}</strong></div><button class="btn primary" data-go="mandje">Bestel</button>` : '';
-  if (S.screen === 'wijn') { const w = wine(S.param); return `<div class="info"><small>${w.stock ? `Nog ${w.stock}` : 'Uitverkocht'}</small><strong>${eur(w.price)}</strong></div>${stepper(w)}${n ? `<button class="btn primary" data-go="mandje">Bestel</button>` : ''}`; }
-  if (S.screen === 'mandje') return n ? `<div class="info"><small>Totaal</small><strong>${eur(cartTotal())}</strong></div><button class="btn primary" data-go="betalen" data-param="cart">Betaal met iDEAL</button>` : '';
+  if (S.screen === 'aanbod') return n && !lijst.gesloten ? `<div class="info"><small>${flessen(n)}</small><strong>${eur(cartTotal())}</strong></div><button class="btn primary" data-go="mandje">Bestel</button>` : '';
+  if (S.screen === 'wijn') { const w = wine(S.param); if (lijst.gesloten) return ''; return `<div class="info"><small>${w.stock ? `Nog ${w.stock}` : 'Uitverkocht'}</small><strong>${eur(w.price)}</strong></div>${stepper(w)}${n ? `<button class="btn primary" data-go="mandje">Bestel</button>` : ''}`; }
+  if (S.screen === 'mandje') return n ? `<div class="info"><small>Betalen na sluiting</small><strong>${eur(cartTotal())}</strong></div><button class="btn primary" data-act="order">${S.order ? 'Voeg toe' : 'Bestel'}</button>` : '';
   if (S.screen === 'fles') { const o = lots[S.param];
     if (o.mine) return `<div class="info"><small class="mine">Jouw bod is het hoogste</small><strong>${eur(o.high)}</strong><button class="link demo" data-act="close" data-param="${o.id}">Demo: sluit de bieding</button></div><button class="btn" data-act="bid" data-param="${o.id}">Verhoog</button>`;
     return `<div class="info"><small>Hoogste bod · sluit over ${left(o.hours)}</small><strong>${eur(o.high)}</strong></div><button class="btn primary" data-act="bid" data-param="${o.id}">Bied ${eur(o.high + o.step)}</button>`; }
@@ -530,6 +607,7 @@ function waSheet(title, msg) {
     <button class="btn primary" data-act="sent">Open WhatsApp (demo)</button>
     <button class="btn ghost" data-act="cancel">Sluiten</button>`);
 }
+function sluitLijst(msg) { lijst.gesloten = true; S.cart = {}; if (S.order && S.order.status === 'besteld') S.order.status = 'betalen'; render(true); toast(msg); }
 
 // ---------- Acties ----------
 const acts = {
@@ -538,7 +616,12 @@ const acts = {
   start() { S.stack = []; go('aanbod', null, false); },
   plus(id) { const w = wine(id); const q = S.cart[id] || 0; if (q >= w.stock) return toast(`Marc heeft er nog maar ${w.stock}`); S.cart[id] = q + 1; render(true); },
   minus(id) { const q = S.cart[id] || 0; if (!q) return; if (q === 1) delete S.cart[id]; else S.cart[id] = q - 1; render(true); },
-  cartDelivery(k) { S.cartDelivery = k; render(true); },
+  punt(k) { S.punt = k; render(true); },
+  order() { if (!cartCount()) return; const extra = !!S.order; const o = S.order || (S.order = { regels: {}, status: 'besteld' });
+    Object.entries(S.cart).forEach(([id, q]) => { o.regels[id] = (o.regels[id] || 0) + q; wine(id).stock -= q; });
+    o.punt = S.punt; S.cart = {}; S.stack = []; go('flessen', null, false); toast(extra ? 'Toegevoegd aan je bestelling' : 'Besteld. Betalen doe je als de lijst sluit'); },
+  sluit() { sluitLijst('De lijst is gesloten. Je bestelling staat klaar om te betalen'); },
+  sluitbeheer() { sluitLijst('Lijst gesloten. Leden met een bestelling krijgen een betaalverzoek'); },
   play() { const v = $('#voice'); v.classList.toggle('playing'); v.querySelector('button').textContent = v.classList.contains('playing') ? '❚❚' : '▶'; },
   bid(id) { S.pick = null; bidSheet(id); },
   pick(a, el) { S.pick = Number(a); bidSheet(el.dataset.lot); },
@@ -549,29 +632,40 @@ const acts = {
     <button class="btn primary" data-go="betalen" data-param="${id}">Betaal ${eur(o.high)}</button>
     <button class="btn ghost" data-act="cancel">Later</button>`); },
   paid(what) {
-    if (what !== 'cart') { S.delivery = 'bewaren'; return go('levering', what, false); }
-    const how = S.cartDelivery === 'brengen' ? 'Marc brengt het bij zijn eerstvolgende ronde' : 'Afhalen in Roermond, op afspraak';
-    onderweg.unshift({ what: `${flessen(cartCount())} · ${eur(cartTotal())}`, how });
-    Object.entries(S.cart).forEach(([id, q]) => { wine(id).stock -= q; });
-    S.cart = {}; S.stack = []; go('flessen', null, false); toast('Besteld en betaald. Marc heeft je bestelling');
+    if (what !== 'order') { S.delivery = 'bewaren'; return go('levering', what, false); }
+    S.order.status = 'betaald'; S.stack = []; go('flessen', null, false); toast(`Betaald. Tot ziens in ${punt(S.order.punt).naam}`);
   },
   delivery(k) { S.delivery = k; render(true); },
-  done(id) { const o = lots[id];
-    if (S.delivery === 'bewaren') stored.unshift({ id: 'n' + Date.now(), name: o.name, year: o.year, until: o.wanneer, tint: o.tint, label: o.label });
-    else onderweg.unshift({ what: `${o.name} ${o.year}`, how: S.delivery === 'brengen' ? 'Marc brengt hem bij zijn eerstvolgende ronde' : 'Afhalen in Roermond, op afspraak' });
-    delete lots[id]; S.stack = []; go('flessen', null, false); toast(S.delivery === 'bewaren' ? 'Hij ligt bij Marc voor je klaar' : 'Genoteerd'); },
+  done(id) { const o = lots[id]; const bewaren = S.delivery === 'bewaren';
+    if (bewaren) stored.unshift({ id: 'n' + Date.now(), name: o.name, year: o.year, until: o.wanneer, tint: o.tint, label: o.label });
+    else afhalen.unshift({ what: `${o.name} ${o.year}`, where: `${punt(S.delivery).naam}. ${punt(S.delivery).wanneer}` });
+    delete lots[id]; S.stack = []; go('flessen', null, false); toast(bewaren ? 'Hij ligt bij Marc voor je klaar' : 'Genoteerd'); },
   rate(id, el) { const p = past.find(x => x.id === id); p.rate = p.rate === el.dataset.val ? null : el.dataset.val; render(true); },
   again(id) { const w = wine(id); const q = S.cart[id] || 0; if (q >= w.stock) return toast(`Marc heeft er nog maar ${w.stock}`); S.cart[id] = q + 1; toast(`${w.name} staat in je bestelling`); setTimeout(() => go('mandje'), 500); },
   ask(what) { waSheet('Vraag Marc', what ? `Hoi Marc, ik heb een vraag over de ${what}.` : 'Hoi Marc, ik heb een vraag over een wijn.'); },
   table(id) { const c = stored.find(x => x.id === id); waSheet('Open aan tafel', `Hoi Marc, ik wil mijn ${c.name} ${c.year} aan tafel openen. Wanneer kun je bij ons koken?`); },
-  bring(id) { const c = stored.find(x => x.id === id); waSheet('Laat hem brengen', `Hoi Marc, wil je mijn ${c.name} ${c.year} langsbrengen? Wanneer komt het jou uit?`); },
+  bring(id) { const c = stored.find(x => x.id === id); waSheet('Zet hem klaar', `Hoi Marc, wil je mijn ${c.name} ${c.year} meenemen naar een afhaalpunt? Welke rit komt jou uit?`); },
   sent() { sheet(''); toast('In de echte app opent nu WhatsApp'); },
   doc() { toast('Hier komt de tekst van Marc'); },
+  beheer(k) { S.beheer = k; render(); },
   kind(k) { S.kind = k; render(true); },
   parse() { S.parsed = true; S.kind = 'vast'; render(true); toast('Naam, jaargang, aantal, prijs en tekst ingevuld'); },
   photo() { toast('Opent de camera van je telefoon'); },
   record() { toast('Neemt 30 seconden op'); },
-  proxy() { toast('Kies het lid en tik de aantallen aan'); },
+  addpunt() { toast('Naam, datum en toelichting invullen'); },
+  herinner() { toast('Leden krijgen één melding: nog beschikbaar tot ' + lijst.sluit); },
+  deel() { waSheet('Nog beschikbaar', 'Nog beschikbaar<br>' + list.filter(w => w.stock).map(w => `${letter(w.id)} ${w.name} ${w.stock}x`).join('<br>') + '<br>Bestellen kan tot ' + lijst.sluit + ' via de link.'); },
+  proxy() { const lid = $('#p-lid').value; const txt = $('#p-kort').value.toUpperCase();
+    const hits = [...txt.matchAll(/\b([A-I])\s*X?\s*(\d+)|(\d+)\s*X?\s*(?:WIJN\s*)?([A-I])\b/g)];
+    if (!hits.length) return toast('Typ bijvoorbeeld C2 D2');
+    const regels = [];
+    for (const m of hits) { const L = m[1] || m[4]; const q = Number(m[2] || m[3]); const w = list[LETTERS.indexOf(L)];
+      if (!w) return toast(`Wijn ${L} staat niet op deze lijst`);
+      if (q < 1 || q > w.stock) return toast(w.stock ? `Van ${L} zijn er nog maar ${w.stock}` : `Wijn ${L} is op`);
+      regels.push([w, q, L]); }
+    regels.forEach(([w, q]) => { w.stock -= q; });
+    orders.unshift({ who: lid, regels: regels.map(([, q, L]) => `${q} × ${L}`).join(', '), flessen: regels.reduce((a, r) => a + r[1], 0), bedrag: regels.reduce((a, r) => a + r[0].price * r[1], 0), punt: $('#p-punt').value, via: 'Marc' });
+    render(true); toast(`Bestelling voor ${lid} toegevoegd`); },
   publish() { const bieding = S.kind === 'bieding'; S.parsed = false; S.stack = []; go('aanbod', null, false); toast(bieding ? 'Bieding gestart. Leden krijgen een melding' : 'Staat op de lijst'); }
 };
 
@@ -582,9 +676,13 @@ document.addEventListener('click', e => {
   if (el.dataset.tab) { S.stack = []; return go(el.dataset.tab, null, false); }
   if (el.dataset.jump) { const [s, p] = el.dataset.jump.split(':');
     if (s === 'fles' && !lots[p]) return toast('Deze fles is in deze demo al verkocht');
-    if (s === 'mandje' && !cartCount()) { S.cart = { a: 1, c: 1, d: 1 }; }
+    if (s === 'mandje' && lijst.gesloten) return toast('De lijst is in deze demo al gesloten. Herlaad de pagina');
+    if (s === 'mandje' && !cartCount()) S.cart = { a: 1, c: 1, d: 1 };
+    if (s === 'sluiting') { if (!S.order) { S.order = { regels: { a: 1, c: 1, d: 2 }, status: 'besteld', punt: 'utrecht' }; ['a', 'c', 'd'].forEach(id => { wine(id).stock -= S.order.regels[id]; }); }
+      S.stack = []; S.screen = 'flessen'; S.param = null; sheet(''); return sluitLijst('De lijst is gesloten. Je bestelling staat klaar om te betalen'); }
+    if (s === 'beheer') S.beheer = p || 'lijst';
     S.stack = ['wijn', 'fles', 'mandje'].includes(s) ? [['aanbod', null]] : s === 'beheer' ? [['marc', null]] : [];
-    return go(s, p, false); }
+    return go(s, s === 'beheer' ? null : p, false); }
   if (el.dataset.go) return go(el.dataset.go, el.dataset.param);
   acts[el.dataset.act]?.(el.dataset.param, el);
 });

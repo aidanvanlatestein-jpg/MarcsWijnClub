@@ -5,6 +5,8 @@ import pytest
 from wijnclub.domein import bestelling as b
 
 NU = datetime(2026, 11, 19, 15, 40, tzinfo=timezone.utc)
+SLUIT = datetime(2026, 11, 19, 21, 0, tzinfo=timezone.utc)
+AFHAALPUNTEN = ("punt-roermond", "punt-utrecht")
 TABELLEN = {"lijsten": "t-lijsten", "wijnen": "t-wijnen", "bestellingen": "t-bestellingen"}
 WIJNEN = {
     "a": {"naam": "Verdejo 2023", "prijs": 950},
@@ -12,11 +14,13 @@ WIJNEN = {
 }
 
 
-def maak(soort=b.LIJST, regels=None):
+def maak(soort=b.LIJST, regels=None, levering="punt-utrecht", bestelling_id="b-1"):
+    bieding = soort == b.BIEDING
     return b.nieuwe_bestelling(
-        bestelling_id="b-1", lid_id="lid-1", soort=soort, lijst_id="lijst-1",
+        bestelling_id=bestelling_id, lid_id="lid-1", soort=soort, lijst_id=None if bieding else "lijst-1",
         regels=regels or [{"wijnId": "a", "aantal": 1}, {"wijnId": "d", "aantal": 2}],
-        wijnen=WIJNEN, levering="brengen", ingevoerd_door="lid", aangemaakt=NU,
+        wijnen=WIJNEN, levering=None if bieding else levering, ingevoerd_door="lid", aangemaakt=NU,
+        lijst_sluit=None if bieding else SLUIT, afhaalpunten=AFHAALPUNTEN,
     )
 
 
@@ -51,14 +55,92 @@ def test_nieuwe_bestelling_neemt_prijs_uit_de_opslag():
     assert bestelling["totaal"] == 950 + 2 * 1150
     assert bestelling["status"] == b.OPEN
     assert bestelling["voorraadGereserveerd"] is True
-    assert bestelling["betaalVoor"] == "2026-11-19T16:00:00Z"
+    assert bestelling["levering"] == "punt-utrecht"
     assert bestelling["regels"][1] == {"wijnId": "d", "naam": "Negroamaro 2022", "aantal": 2, "prijs": 1150}
+
+
+def test_van_de_lijst_betaal_je_tot_48_uur_na_het_sluiten():
+    assert maak()["betaalVoor"] == "2026-11-21T21:00:00Z"
+    assert maak(soort=b.NAMENS)["betaalVoor"] == "2026-11-21T21:00:00Z"
 
 
 def test_bieding_heeft_48_uur_en_geen_voorraad():
     bestelling = maak(soort=b.BIEDING)
     assert bestelling["betaalVoor"] == "2026-11-21T15:40:00Z"
     assert bestelling["voorraadGereserveerd"] is False
+    assert bestelling["levering"] is None
+
+
+def test_zonder_eindtijd_van_de_lijst_geen_bestelling():
+    with pytest.raises(b.OngeldigeBestelling) as fout:
+        b.betaal_voor(soort=b.LIJST, aangemaakt=NU, lijst_sluit=None)
+    assert fout.value.code == "geen_lijst"
+
+
+@pytest.mark.parametrize(
+    "soort, levering, code",
+    [
+        (b.LIJST, None, "geen_afhaalpunt"),
+        (b.NAMENS, None, "geen_afhaalpunt"),
+        (b.LIJST, "punt-onbekend", "onbekend_afhaalpunt"),
+        (b.LIJST, "brengen", "onbekend_afhaalpunt"),
+        (b.LIJST, b.BEWAREN, "bewaren_alleen_bij_bieding"),
+        (b.BIEDING, "punt-onbekend", "onbekend_afhaalpunt"),
+    ],
+)
+def test_levering_moet_een_afhaalpunt_van_de_lijst_zijn(soort, levering, code):
+    with pytest.raises(b.OngeldigeBestelling) as fout:
+        b.valideer_levering(soort=soort, levering=levering, afhaalpunten=AFHAALPUNTEN)
+    assert fout.value.code == code
+
+
+@pytest.mark.parametrize(
+    "soort, levering",
+    [(b.LIJST, "punt-roermond"), (b.NAMENS, "punt-utrecht"), (b.BIEDING, None), (b.BIEDING, b.BEWAREN), (b.BIEDING, "punt-utrecht")],
+)
+def test_geldige_levering(soort, levering):
+    b.valideer_levering(soort=soort, levering=levering, afhaalpunten=AFHAALPUNTEN)
+
+
+@pytest.mark.parametrize(
+    "soort, status, lijst_status, verwacht",
+    [
+        (b.LIJST, b.OPEN, "open", False),
+        (b.LIJST, b.OPEN, "gesloten", True),
+        (b.NAMENS, b.OPEN, "open", False),
+        (b.NAMENS, b.OPEN, "gesloten", True),
+        (b.BIEDING, b.OPEN, None, True),
+        (b.LIJST, b.BETAALD, "gesloten", False),
+        (b.LIJST, b.VERLOPEN, "gesloten", False),
+    ],
+)
+def test_betalen_kan_pas_als_de_lijst_gesloten_is(soort, status, lijst_status, verwacht):
+    assert b.mag_betalen(soort=soort, status=status, lijst_status=lijst_status) is verwacht
+
+
+def test_een_betaalverzoek_telt_alle_open_bestellingen_van_de_lijst():
+    eerste = maak()
+    bijbesteld = maak(regels=[{"wijnId": "a", "aantal": 2}], bestelling_id="b-2")
+    namens = maak(soort=b.NAMENS, regels=[{"wijnId": "d", "aantal": 1}], bestelling_id="b-3")
+    al_betaald = dict(maak(bestelling_id="b-4"), status=b.BETAALD)
+    verzoek = b.betaalverzoek([eerste, bijbesteld, namens, al_betaald])
+    assert verzoek == {"bestellingIds": ["b-1", "b-2", "b-3"], "bedrag": 3250 + 1900 + 1150}
+
+
+def test_betaald_transactie_zet_alle_bestellingen_tegelijk_op_betaald():
+    stappen = b.betaald_transactie(tabellen=TABELLEN, bestelling_ids=["b-1", "b-2"], nu=NU)
+    assert [stap["Update"]["Key"] for stap in stappen] == [
+        {"bestellingId": {"S": "b-1"}},
+        {"bestellingId": {"S": "b-2"}},
+    ]
+    assert all(stap["Update"]["ConditionExpression"] == "#status = :open" for stap in stappen)
+
+
+@pytest.mark.parametrize("ids, code", [([], "geen_bestellingen"), (["b-1", "b-1"], "dubbele_bestelling")])
+def test_betaald_transactie_weigert(ids, code):
+    with pytest.raises(b.OngeldigeBestelling) as fout:
+        b.betaald_transactie(tabellen=TABELLEN, bestelling_ids=ids, nu=NU)
+    assert fout.value.code == code
 
 
 def test_onbekende_wijn_wordt_geweigerd():

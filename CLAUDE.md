@@ -4,7 +4,7 @@
 
 Een besloten web-app voor de wijnverkoop van Marc, een privéchef in Roermond (marckookt.com). Marc verkoopt nu wijn via een WhatsApp-groep van ongeveer 120 mensen. De app vervangt het bestellen in die groep door twee vormen:
 
-- **De lijst:** wijnen tegen vaste prijs, meerdere in één bestelling, in één keer afrekenen met iDEAL.
+- **De lijst:** wijnen tegen vaste prijs, enkele uren open. Een lid bestelt meerdere wijnen in één keer en kiest een afhaalpunt. Betalen met iDEAL volgt zodra de lijst sluit.
 - **De bieding:** bijzondere flessen, het hoogste bod op de eindtijd wint.
 
 Het doel is een pilot met 20 tot 30 leden. Het is geen marktplaats tussen leden en geen product voor andere verkopers.

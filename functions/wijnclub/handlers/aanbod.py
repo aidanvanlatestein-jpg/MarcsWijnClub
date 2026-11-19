@@ -11,9 +11,9 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # Alleen deze velden gaan naar de web-app.
-LIJST_VELDEN = ("lijstId", "titel", "openVan", "openTot")
+LIJST_VELDEN = ("lijstId", "titel", "inleiding", "openVan", "openTot", "afhaalpunten")
 WIJN_VELDEN = (
-    "wijnId", "naam", "producent", "jaargang", "streek", "tekst", "spijs", "drinken",
+    "wijnId", "letter", "naam", "producent", "jaargang", "streek", "tekst", "spijs", "drinken",
     "foto", "prijs", "voorraad", "volgorde",
 )
 

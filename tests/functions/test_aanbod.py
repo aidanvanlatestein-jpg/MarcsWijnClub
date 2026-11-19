@@ -17,10 +17,13 @@ def aanvraag(sub="lid-1", groepen=None):
 @pytest.fixture
 def gevuld(monkeypatch):
     monkeypatch.setattr(opslag, "open_lijsten", lambda nu: [
-        {"lijstId": "lijst-1", "titel": "Week 47", "status": "open", "openTot": "2026-11-22T19:00:00Z", "intern": "x"},
+        {"lijstId": "lijst-1", "titel": "Week 47", "inleiding": "Voor het gewone glas.", "status": "open",
+         "openTot": "2026-11-22T19:00:00Z", "intern": "x",
+         "afhaalpunten": [{"afhaalpuntId": "punt-utrecht", "naam": "Utrecht", "wanneer": "2026-11-28"}]},
     ])
     monkeypatch.setattr(opslag, "wijnen_van_lijst", lambda lijst_id: [
-        {"wijnId": "d", "naam": "Negroamaro", "prijs": Decimal("1150"), "voorraad": Decimal("12"), "inkoopprijs": Decimal("600")},
+        {"wijnId": "d", "letter": "D", "naam": "Negroamaro", "prijs": Decimal("1150"), "voorraad": Decimal("12"),
+         "inkoopprijs": Decimal("600")},
     ])
     monkeypatch.setattr(opslag, "open_biedingen", lambda nu: [
         {"wijnId": "barolo", "naam": "Barolo Riserva", "hoogsteBod": Decimal("24000"), "hoogsteBieder": "lid-7",
@@ -32,7 +35,10 @@ def test_aanbod_geeft_lijst_en_biedingen(gevuld):
     resultaat = aanbod.handler(aanvraag(), None)
     assert resultaat["statusCode"] == 200
     inhoud = json.loads(resultaat["body"])
-    assert inhoud["lijsten"][0]["wijnen"] == [{"wijnId": "d", "naam": "Negroamaro", "prijs": 1150, "voorraad": 12}]
+    lijst = inhoud["lijsten"][0]
+    assert lijst["wijnen"] == [{"wijnId": "d", "letter": "D", "naam": "Negroamaro", "prijs": 1150, "voorraad": 12}]
+    assert lijst["inleiding"] == "Voor het gewone glas."
+    assert lijst["afhaalpunten"] == [{"afhaalpuntId": "punt-utrecht", "naam": "Utrecht", "wanneer": "2026-11-28"}]
     assert inhoud["biedingen"][0]["hoogsteBod"] == 24000
 
 

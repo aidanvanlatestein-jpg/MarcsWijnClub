@@ -8,9 +8,9 @@ Opgeslagen uit het document op 19 november 2026: https://claude.ai/artifact/D2dj
 
 De pilot is een besloten web-app waarin 20 tot 30 leden van Marcs WhatsApp-groep op twee manieren wijn kopen: van de lijst tegen vaste prijs, en via een bieding op een bijzondere fles. Na acht weken pilot weten we of leden liever zo bestellen dan via de groepschat, en of het Marc tijd scheelt.
 
-- **De lijst:** de wijnen die Marc nu in WhatsApp aanbiedt, met zijn tekst per wijn. Een lid tikt aan hoeveel flessen het wil en rekent de hele bestelling in één keer af met iDEAL.
+- **De lijst:** de wijnen die Marc nu in WhatsApp aanbiedt, met zijn tekst per wijn. Een lijst staat enkele uren open. Een lid tikt aan hoeveel flessen het wil, kiest een afhaalpunt en bestelt. Betalen met iDEAL volgt als de lijst sluit.
 - **De bieding:** voor bijzondere flessen waarvan Marc er maar één of enkele heeft. Het hoogste bod op de eindtijd wint. Marc kiest per wijn welke vorm het wordt.
-- **Voor Marc:** hij plakt zijn WhatsApp-bericht en de wijn staat online. De voorraad telt automatisch af, en lijstjes, hartjes en losse betaalverzoeken vervallen.
+- **Voor Marc:** hij plakt zijn WhatsApp-bericht en de wijn staat online. De voorraad telt automatisch af. Het overzicht "nog beschikbaar", de paklijst per afhaalpunt en de betaalverzoeken maakt de app.
 - **Wat het niet is:** geen marktplaats tussen leden, geen app uit de App Store en geen vervanging van de WhatsApp-groep. De groep blijft de plek waar Marc de link deelt.
 
 De app draait serverloos op AWS en kost naar verwachting minder dan €10 per maand aan hosting. De betaling loopt via Marcs eigen Mollie-account.
@@ -21,8 +21,8 @@ Het plan rust op acht aannames die nog niet bevestigd zijn. De eerste drie bepal
 
 | Aanname | Als het anders is |
 | --- | --- |
-| Bij de lijst betaalt een lid direct bij het bestellen | Laat Marc nu achteraf betalen, dan moet de app een openstaand bedrag per lid bijhouden |
-| Bestellingen van de lijst brengt Marc langs of het lid haalt ze op | Bij een andere werkwijze verandert de keuze na het bestellen |
+| Een bestelling van de lijst is bindend en wordt betaald zodra de lijst sluit | Wil Marc vooraf betaald krijgen, dan komt afrekenen terug bij het bestellen en wordt bestellen trager dan in WhatsApp |
+| Marc levert via afhaalpunten per regio, op een datum die hij kiest | Brengt hij aan huis, dan komt er een adres en een tijdvak per bestelling bij |
 | Marc heeft geregeld een bijzondere fles die een bieding waard is | Zonder zulke flessen blijft de bieding ongebruikt en kan dat deel later gebouwd worden |
 | De wijnen komen uit Marcs eigen inkoop | Verkoop namens leden vraagt een beoordelingsstap en commissie. Dat is een latere fase |
 | Marc is de verkoper en ontvangt de betalingen op zijn eigen Mollie-account | Zonder eigen account moet er een andere verkopende partij komen |
@@ -46,16 +46,16 @@ De pilot heeft drie tabs voor leden en één beheerscherm voor Marc. Alles wat h
 
 | Onderdeel | In de pilot | Niet in de pilot |
 | --- | --- | --- |
-| De lijst | Wijnen van Marc tegen vaste prijs, met voorraad per wijn. Meerdere wijnen in één bestelling | Staffelkorting, abonnement |
+| De lijst | Wijnen van Marc tegen vaste prijs, met voorraad per wijn en zijn eigen inleiding. Enkele uren open. Meerdere wijnen in één bestelling, bijbestellen tot de lijst sluit | Staffelkorting, abonnement |
 | De bieding | Bijzondere flessen, één per keer, met eindtijd. Het hoogste bod wint | Flessen van leden, prijsvergelijking |
-| Advies | Bij elke wijn: Marcs tekst, wat eet je erbij, wanneer drinken. Bij een bieding ook herkomst, bewaring en een spraakbericht | Algemeen wijnadvies los van het aanbod |
-| Betalen | iDEAL via Mollie. Lijst: direct bij het bestellen. Bieding: na het winnen | Credits, creditcard, betalen tussen leden |
-| Mijn flessen | Bestellingen onderweg, flessen in bewaring, eerder gekocht met oordeel en opnieuw bestellen | Zelf flessen van elders toevoegen |
-| Levering | Brengen of afhalen. Bewaren bij Marc alleen voor flessen uit een bieding | Pakketverzending |
+| Advies | Bij elke wijn Marcs tekst. "Wat eet je erbij" en "wanneer drinken" mogen leeg blijven. Bij een bieding ook herkomst, bewaring en een spraakbericht | Algemeen wijnadvies los van het aanbod |
+| Betalen | iDEAL via Mollie. Lijst: één betaling per lid zodra de lijst sluit. Bieding: na het winnen | Credits, creditcard, betalen tussen leden, vooraf betalen bij het bestellen |
+| Mijn flessen | De bestelling van de lopende lijst, flessen in bewaring, eerder gekocht met oordeel en opnieuw bestellen | Zelf flessen van elders toevoegen |
+| Levering | Afhaalpunten per regio met een datum, door Marc per lijst ingesteld. Bewaren bij Marc alleen voor flessen uit een bieding | Pakketverzending, bezorgen aan huis |
 | Contact | Knop "Vraag Marc" en knop "Open aan tafel", beide naar WhatsApp met de wijn ingevuld | Chat in de app, een bot, een boekingssysteem voor diners |
-| Meldingen | Nieuwe lijst, nieuwe bieding, overboden, gewonnen, betaalherinnering | Marketingberichten |
+| Meldingen | Nieuwe lijst, één herinnering "nog beschikbaar" voor het sluiten, betaalverzoek bij het sluiten, nieuwe bieding, overboden, gewonnen | Marketingberichten |
 | Toegang | Alleen op uitnodiging van Marc | Open aanmelding |
-| Beheer | WhatsApp-bericht plakken en laten herkennen, wijn op de lijst zetten of bieding starten, bestelling namens een lid invoeren, bestellingen zien, levering afvinken | Boekhouding, facturen |
+| Beheer | Lijst met inleiding en afhaalpunten instellen, WhatsApp-bericht plakken en laten herkennen, wijn op de lijst zetten of bieding starten, bestelling namens een lid invoeren met letters en aantallen, overzicht "nog beschikbaar" delen in WhatsApp, paklijst per afhaalpunt | Boekhouding, facturen |
 
 De stijl volgt marckookt.com: de lijst op één scherm, een bijzondere fles met een grote foto, korte tekst in de je-vorm.
 
@@ -65,21 +65,23 @@ Marc zet wijnen op de lijst of start een bieding en deelt de link; het lid beste
 
 **Voor Marc**
 
-1. Hij plakt zijn WhatsApp-bericht in de app en voegt de foto toe. Naam, jaargang, tekst, aantal en prijs worden herkend; hij controleert ze.
-2. Hij kiest per wijn: op de lijst tegen vaste prijs, of als bieding met startbod en eindtijd.
-3. Bij een bieding voegt hij de herkomst toe en spreekt hij een bericht van 30 seconden in.
+1. Hij maakt een lijst aan met een titel, een korte inleiding, een eindtijd en de afhaalpunten. De afhaalpunten van de vorige lijst staan al klaar.
+2. Per wijn plakt hij zijn WhatsApp-bericht en voegt hij de foto toe. Naam, jaargang, tekst, aantal en prijs worden herkend; hij controleert ze. De wijn krijgt de volgende letter, zoals nu in de groep.
+3. Hij kiest per wijn: op de lijst tegen vaste prijs, of als bieding met startbod en eindtijd. Bij een bieding voegt hij de herkomst toe en spreekt hij een bericht van 30 seconden in.
 4. Hij publiceert. Leden krijgen een melding en Marc deelt de link in de WhatsApp-groep.
-5. De voorraad telt automatisch af. Bestelt iemand nog via WhatsApp, dan voert Marc die bestelling zelf in.
-6. Hij ziet wie wat bestelde en betaalde, en vinkt af: gebracht, afgehaald of in bewaring.
+5. De voorraad telt automatisch af. Bestelt iemand in de groep of in een privébericht, dan typt Marc de letters en aantallen in, zoals "C2 D2".
+6. Voor het sluiten deelt hij met één tik het overzicht "nog beschikbaar" in de groep. Leden krijgen één herinnering.
+7. Als de lijst sluit, krijgt elk lid met een bestelling een betaalverzoek. Marc ziet per afhaalpunt wie wat krijgt en wie betaald heeft.
 
 **Voor een lid**
 
 1. Het lid krijgt een uitnodiging van Marc en logt eenmalig in met een code per e-mail. Daarna blijft het ingelogd op die telefoon.
 2. Het zet de app op het beginscherm van de telefoon en staat meldingen toe.
 3. Bij een nieuwe lijst tikt het per wijn aan hoeveel flessen het wil.
-4. Het kiest brengen of afhalen en betaalt de hele bestelling in één keer met iDEAL.
-5. Op een bijzondere fles doet het een bod. Wint het, dan volgt een betaallink en de keuze: brengen, afhalen of bewaren bij Marc.
-6. Onder Mijn flessen staat wat onderweg is, wat bij Marc ligt en wat het eerder kocht. Daar geeft het aan wat het lekker vond en bestelt het opnieuw.
+4. Het kiest een afhaalpunt en bestelt. De bestelling is bindend; bijbestellen kan tot de lijst sluit.
+5. Als de lijst sluit, betaalt het alles in één keer met iDEAL, binnen 48 uur.
+6. Op een bijzondere fles doet het een bod. Wint het, dan volgt een betaallink en de keuze: een afhaalpunt, of bewaren bij Marc.
+7. Onder Mijn flessen staat de bestelling van de lopende lijst, wat bij Marc ligt en wat het eerder kocht. Daar geeft het aan wat het lekker vond en bestelt het opnieuw.
 
 **Regels voor een bieding**
 
@@ -91,20 +93,23 @@ Marc zet wijnen op de lijst of start een bieding en deelt de link; het lid beste
 **Regels voor de lijst**
 
 - De voorraad is leidend. Is een wijn op, dan staat hij op uitverkocht.
-- Flessen in een bestelling zijn 15 minuten gereserveerd, tot de betaling rond is.
-- Een lijst sluit op de eindtijd die Marc kiest.
-- Bestellen moet sneller zijn dan een WhatsApp-bericht: van lijst tot betalen in drie tikken.
+- Een bestelling is bindend. Annuleren kan alleen via Marc.
+- Een lijst sluit op de eindtijd die Marc kiest, of eerder als hij hem zelf sluit.
+- Betalen kan vanaf het sluiten, binnen 48 uur. Marc levert pas uit na betaling.
+- Na 24 uur volgt één herinnering. Na 48 uur vervalt de bestelling: de flessen komen terug in Marcs voorraad en hij krijgt bericht.
+- Bestellen is één tik na het kiezen van de aantallen. Dat is even snel als een WhatsApp-bericht.
 
 ## Schermen en UX
 
 De app heeft negen schermen voor leden en één voor Marc, elk met één hoofdknop. Het klikbare prototype `wijnclub-prototype.html` laat ze allemaal zien en dient als specificatie voor de bouw.
 
-Vijf regels gelden voor elk scherm:
+Zes regels gelden voor elk scherm:
 
 - **De lijst is één scherm:** alle wijnen onder elkaar, met het aantal direct erbij. Een bijzondere fles krijgt een eigen scherm met een grote foto.
+- **Dezelfde letters als in WhatsApp:** elke wijn op de lijst heeft een letter, zodat de groep en de app dezelfde taal spreken.
 - **Eén hoofdknop per scherm**, altijd onderaan.
-- **Marc eerst:** zijn tekst staat bij elke wijn, boven de prijs.
-- **Snel:** van lijst tot betalen in drie tikken. Bestellen mag niet trager zijn dan een WhatsApp-bericht.
+- **Marc eerst:** zijn inleiding staat boven de lijst en zijn tekst bij elke wijn, boven de prijs.
+- **Snel:** aantallen aantikken, afhaalpunt bevestigen, bestellen. Betalen komt pas als de lijst sluit, zodat bestellen even snel blijft als een WhatsApp-bericht.
 - **Rustig:** geen knipperende aftelklok, badges of punten.
 
 Onderaan staan drie tabs: Aanbod, Mijn flessen en Marc.
@@ -112,17 +117,17 @@ Onderaan staan drie tabs: Aanbod, Mijn flessen en Marc.
 | Scherm | Wat erop staat | Hoofdknop |
 | --- | --- | --- |
 | Eerste login | Code uit de e-mail, bevestiging 18 jaar of ouder, daarna de tip om de app op het beginscherm te zetten en meldingen aan te zetten | Kom binnen |
-| Aanbod | Bovenaan de lijst van de week: per wijn foto, Marcs tekst, prijs, voorraad en een aantal dat je aantikt. Daaronder de bijzondere flessen met het hoogste bod en de eindtijd | Bestel, zodra er iets is aangetikt |
-| Wijn van de lijst | Foto, Marcs tekst, wat eet je erbij, wanneer drinken | Aantal aantikken, daarna Bestel |
-| Bestelling | De gekozen wijnen met aantallen, het totaal, en de keuze tussen brengen en afhalen | Betaal met iDEAL |
+| Aanbod | Bovenaan de lijst: titel, Marcs inleiding en de eindtijd. Per wijn letter, foto, Marcs tekst, prijs, voorraad en een aantal dat je aantikt. Daaronder de bijzondere flessen met het hoogste bod en de eindtijd | Bestel, zodra er iets is aangetikt |
+| Wijn van de lijst | Foto en Marcs tekst. "Wat eet je erbij" en "wanneer drinken" alleen als Marc ze heeft ingevuld | Aantal aantikken, daarna Bestel |
+| Bestelling | De gekozen wijnen met aantallen, het totaal, de afhaalpunten met datum, en de melding dat de bestelling bindend is en betalen volgt bij het sluiten | Bestel |
 | Bijzondere fles | Grote foto, spraakbericht van Marc, drie blokken (waarom deze, wanneer drinken, wat eet je erbij), herkomst en bewaring | Bied met het volgende bedrag |
 | Bieden | Paneel van onderaf met drie bedragen en de melding dat een bod bindend is | Bevestig bod |
-| Na een gewonnen bieding | Betalen, daarna de keuze tussen bewaren bij Marc, brengen of afhalen | Klaar |
-| Mijn flessen | Wat onderweg is, wat bij Marc in bewaring ligt, en wat je eerder kocht met de knoppen Lekker, Niet voor mij en Opnieuw | Opnieuw bestellen, of Open aan tafel bij een bewaarde fles |
+| Na een gewonnen bieding | Betalen, daarna de keuze tussen bewaren bij Marc en een afhaalpunt | Klaar |
+| Mijn flessen | De bestelling van de lopende lijst met afhaalpunt en status: betalen na sluiting, klaar om te betalen, of betaald. Daaronder wat bij Marc in bewaring ligt en wat je eerder kocht, met de knoppen Lekker, Niet voor mij en Opnieuw | Betaal, zodra de lijst gesloten is |
 | Marc | Zijn foto, een korte tekst, voorwaarden en privacy | Vraag Marc |
-| Beheer | Eén formulier op de telefoon: WhatsApp-bericht plakken en laten herkennen, foto, vaste prijs of bieding. Daaronder de bestellingen en de knop om een bestelling namens een lid in te voeren | Zet op de lijst, of Start de bieding |
+| Beheer | Drie tabs. Lijst: titel, inleiding, eindtijd, afhaalpunten, het overzicht "nog beschikbaar" en de knop om de lijst te sluiten. Wijn: WhatsApp-bericht plakken en laten herkennen, foto, vaste prijs of bieding. Bestellingen: invoeren namens een lid, paklijst per afhaalpunt, alle bestellingen met status | Zet op de lijst, Start de bieding, of Sluit de lijst |
 
-"Vraag Marc", "Open aan tafel" en "Laat hem brengen" openen WhatsApp met een bericht dat al klaarstaat, inclusief de naam van de fles.
+"Vraag Marc", "Open aan tafel" en "Zet hem klaar bij een afhaalpunt" openen WhatsApp met een bericht dat al klaarstaat, inclusief de naam van de fles.
 
 **Stijl, overgenomen van marckookt.com**
 
@@ -234,29 +239,32 @@ Komen er meer leden of andere verkopers bij, dan is een eigen AWS-account voor p
 
 ## Gegevensmodel
 
-Zes soorten gegevens volstaan, elk in een eigen DynamoDB-tabel met betalen naar gebruik. Mijn flessen heeft geen eigen tabel: dat scherm leest de bestellingen en oordelen van het lid.
+Zeven soorten gegevens volstaan, elk in een eigen DynamoDB-tabel met betalen naar gebruik. Mijn flessen heeft geen eigen tabel: dat scherm leest de bestellingen en oordelen van het lid.
 
 | Tabel | Sleutel | Belangrijkste velden |
 | --- | --- | --- |
-| `lid` | lidId (uit Cognito) | naam, telefoon, afleveradres, datum 18+-bevestiging, meldingsabonnementen |
-| `lijst` | lijstId | titel, open van en tot, status |
-| `wijn` | wijnId | naam, producent, jaargang, soort (vaste prijs of bieding), tekst, spijs, drinken van en tot, foto. Bij vaste prijs: lijstId, prijs, voorraad. Bij een bieding: startbod, minimale verhoging, eindtijd, herkomst, spraakbericht, hoogste bod, hoogste bieder |
+| `lid` | lidId (uit Cognito) | naam, telefoon, afhaalpunt van voorkeur, datum 18+-bevestiging, meldingsabonnementen |
+| `lijst` | lijstId | titel, inleiding, open van en tot, status, afhaalpunten (naam, datum, toelichting) |
+| `wijn` | wijnId | naam, producent, jaargang, soort (vaste prijs of bieding), tekst, foto. Optioneel: spijs, drinken van en tot. Bij vaste prijs: lijstId, letter, prijs, voorraad. Bij een bieding: startbod, minimale verhoging, eindtijd, herkomst, spraakbericht, hoogste bod, hoogste bieder |
 | `bod` | wijnId + tijdstip | lidId, bedrag |
-| `bestelling` | bestellingId | lidId, regels (wijnId, aantal, prijs), totaal, Mollie-betaling, status (open, betaald, verlopen, terugbetaald), levering (brengen, afhalen, bewaren), afgeleverd, ingevoerd door (lid of Marc) |
+| `bestelling` | bestellingId | lidId, lijstId, regels (wijnId, aantal, prijs), totaal, status (open, betaald, verlopen, terugbetaald), betalen vóór, afhaalpunt of bewaren, afgeleverd, ingevoerd door (lid of Marc) |
+| `betaling` | nummer van de Mollie-betaling | de bestellingen die erin zitten |
 | `oordeel` | lidId + wijnId | lekker of niet voor mij |
 
-Twee regels houden de gegevens kloppend:
+Drie regels houden de gegevens kloppend:
 
 - **Een bod** wordt alleen opgeslagen als het hoger is dan het hoogste bod plus de minimale verhoging, de eindtijd niet voorbij is en de bieding open staat. DynamoDB controleert dat in dezelfde schrijfactie, zodat twee gelijktijdige biedingen elkaar niet overschrijven.
-- **Voorraad** gaat omlaag op het moment van bestellen, voor alle wijnen in de bestelling tegelijk. Is één wijn net op, dan gaat de hele bestelling niet door en ziet het lid welke wijn het is. Komt de betaling niet binnen 15 minuten, dan komt de voorraad terug.
+- **Voorraad** gaat omlaag op het moment van bestellen, voor alle wijnen in de bestelling tegelijk. Is één wijn net op, dan gaat de hele bestelling niet door en ziet het lid welke wijn het is. Is een bestelling 48 uur na het sluiten niet betaald, dan komt de voorraad terug.
+- **Eén betaling per lid per lijst.** Alle open bestellingen van een lid op dezelfde lijst gaan in één betaling, ook wat het bijbestelde en wat Marc namens hem invoerde.
 
 ## Betaling
 
 Alle betalingen lopen via iDEAL op Marcs eigen Mollie-account, zodat het geld rechtstreeks bij hem komt en de app nooit geld vasthoudt.
 
-- **De lijst:** het lid rekent de hele bestelling in één keer af op de betaalpagina van Mollie en komt terug in de app. Mollie meldt de uitkomst aan de app, die de bestelling op betaald zet.
+- **De lijst:** bestellen kost niets en is bindend. Zodra de lijst sluit, krijgt het lid een betaalverzoek voor alles wat het op die lijst bestelde. Het betaalt in één keer op de betaalpagina van Mollie, binnen 48 uur. Marc levert pas uit na betaling.
 - **Bieding:** bieden kost niets. De winnaar krijgt na de eindtijd een betaallink die 48 uur geldig is. iDEAL kan geen bedrag vooraf reserveren; in een besloten groep die Marc kent is dat een aanvaardbaar risico.
-- **Bestelling namens een lid:** Marc voert de bestelling in en het lid krijgt een betaallink.
+- **Bestelling namens een lid:** Marc voert de bestelling in. Hij telt mee in dezelfde betaling als de lijst sluit.
+- **Wie niet betaalt:** na 24 uur volgt één herinnering. Na 48 uur vervalt de bestelling, komen de flessen terug in Marcs voorraad en krijgt hij bericht.
 - **Bewaren bij Marc:** alleen voor flessen uit een bieding, en gratis tijdens de pilot. Een bewaarvergoeding is een latere keuze.
 - **Terugbetalen:** Marc doet dat zelf in het Mollie-dashboard. De app neemt de status over.
 
@@ -282,7 +290,7 @@ Zes punten moeten door een jurist bekeken worden voordat de pilot start. De midd
 **Privacy (AVG)**
 
 - Marc is verantwoordelijk voor de gegevens van zijn leden. Wie de app bouwt en beheert is verwerker; daar hoort een verwerkersovereenkomst bij.
-- De app bewaart alleen wat nodig is: naam, e-mail, telefoon, afleveradres, biedingen en aankopen. Geen geboortedatum, geen kopie van een identiteitsbewijs.
+- De app bewaart alleen wat nodig is: naam, e-mail, telefoon, afhaalpunt van voorkeur, biedingen en aankopen. Geen adres, geen geboortedatum, geen kopie van een identiteitsbewijs.
 - Alle gegevens staan in een AWS-regio binnen de EU.
 - Er komt een korte privacyverklaring in de app, en een lid kan zijn gegevens laten verwijderen. Betaalgegevens blijven bij Mollie en in Marcs boekhouding zolang de fiscale bewaarplicht dat vraagt.
 - Namen, adressen en bedragen per persoon komen niet in de logbestanden.
@@ -299,10 +307,10 @@ Elke ruit is een voorwaarde om door te gaan. Zonder akkoord van Marc en de juris
 | --- | --- |
 | 1 en 2 | Open beslissingen rond, nulmeting gedaan, Mollie-account en AWS-account aangemaakt |
 | 3 | Omgeving als code met AWS CDK, pipeline met teststack, inloggen op uitnodiging, lege web-app online op het eigen domein |
-| 4 | Beheer: WhatsApp-bericht plakken en herkennen, wijn op de lijst zetten. De lijst en de wijnpagina voor leden |
-| 5 | Bestelling met meerdere wijnen, voorraad, betalen via Mollie in testmodus. Mijn flessen |
+| 4 | Beheer: WhatsApp-bericht plakken en herkennen, lijst met inleiding en afhaalpunten, wijn op de lijst zetten. De lijst en de wijnpagina voor leden |
+| 5 | Bestellen met afhaalpunt, bijbestellen, voorraad. De lijst sluiten met een betaalverzoek, betalen via Mollie in testmodus. Mijn flessen |
 | 6 | Bieding: bieden, sluiten op de eindtijd, betaallink voor de winnaar, bewaren bij Marc |
-| 7 | Meldingen, bestelling namens een lid, knoppen naar WhatsApp, voorwaarden en privacyverklaring, alarmen |
+| 7 | Meldingen en herinneringen, bestelling namens een lid, overzicht "nog beschikbaar" en paklijst per afhaalpunt, knoppen naar WhatsApp, voorwaarden en privacyverklaring, alarmen |
 | 8 | Eerste release naar productie. Proefdraaien met Marc en vijf leden, met één echte lijst en echte betalingen |
 | 9 tot en met 16 | Pilot. Marc plaatst zijn lijsten in de app en start minstens twee biedingen. Alleen fouten worden hersteld; er komen geen nieuwe functies bij |
 
@@ -336,16 +344,17 @@ De pilot is geslaagd als leden liever via de app bestellen dan via WhatsApp en M
 | --- | --- | --- |
 | Uitgenodigde leden die inloggen | 70% of meer | Telling in de app |
 | Bestellingen van pilotleden die via de app komen | 80% of meer | Bestellingen van leden tegenover wat Marc namens leden invoert |
-| Tijd van lijst openen tot betaald | Onder één minuut | Gemeten in de app |
+| Tijd van lijst openen tot besteld | Onder een halve minuut | Gemeten in de app |
+| Betaald binnen 48 uur na het sluiten, zonder dat Marc erachteraan moet | 90% of meer | Tijd tussen sluiten en betalen |
 | Tijd van Marc per lijst | Lager dan de nulmeting | Marc noteert het per lijst |
-| Fouten in voorraad of betaling | Geen | Marcs telling tegenover de app |
+| Fouten in voorraad, betaling of paklijst | Geen | Marcs telling tegenover de app |
 | Biedingen: aantal bieders per fles en eindprijs tegenover Marcs verwachting | Geen streefwaarde, wel volgen | Telling in de app |
 | Oordeel van leden | Vijf gesprekken na afloop | Bellen of aan tafel |
 
 Na acht weken valt het besluit:
 
-- **Doorgaan** als de streefwaarden voor bestellen via de app, fouten en Marcs tijd gehaald zijn. Dan volgen de overige leden.
-- **Bijsturen** als leden wel inloggen maar via WhatsApp blijven bestellen. Dan is bestellen in de app nog niet snel genoeg.
+- **Doorgaan** als de streefwaarden voor bestellen via de app, betalen, fouten en Marcs tijd gehaald zijn. Dan volgen de overige leden.
+- **Bijsturen** als leden wel inloggen maar via WhatsApp blijven bestellen: dan is bestellen in de app nog niet snel genoeg. Betaalt minder dan 90% op tijd, dan komt afrekenen bij het bestellen terug.
 - **Stoppen** als minder dan de helft inlogt of Marc er meer tijd aan kwijt is dan via WhatsApp.
 
 De bieding wordt apart beoordeeld: trekt een bijzondere fles meerdere bieders en een prijs waar Marc tevreden over is, dan blijft hij. Zo niet, dan gaat alleen de lijst door.
