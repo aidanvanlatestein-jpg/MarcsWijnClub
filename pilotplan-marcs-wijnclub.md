@@ -245,7 +245,7 @@ Zeven soorten gegevens volstaan, elk in een eigen DynamoDB-tabel met betalen naa
 | --- | --- | --- |
 | `lid` | lidId (uit Cognito) | naam, telefoon, afhaalpunt van voorkeur, datum 18+-bevestiging, meldingsabonnementen |
 | `lijst` | lijstId | titel, inleiding, open van en tot, status, afhaalpunten (naam, datum, toelichting) |
-| `wijn` | wijnId | naam, producent, jaargang, soort (vaste prijs of bieding), tekst, foto. Optioneel: spijs, drinken van en tot. Bij vaste prijs: lijstId, letter, prijs, voorraad. Bij een bieding: startbod, minimale verhoging, eindtijd, herkomst, spraakbericht, hoogste bod, hoogste bieder |
+| `wijn` | wijnId | naam, producent, jaargang, soort (vaste prijs of bieding), tekst, foto. Optioneel: druif, spijs, drinken van en tot. Bij vaste prijs: lijstId, letter, prijs, voorraad. Bij een bieding: startbod, minimale verhoging, eindtijd, herkomst, spraakbericht, hoogste bod, hoogste bieder |
 | `bod` | wijnId + tijdstip | lidId, bedrag |
 | `bestelling` | bestellingId | lidId, lijstId, regels (wijnId, aantal, prijs), totaal, status (open, betaald, verlopen, terugbetaald), betalen vóór, afhaalpunt of bewaren, afgeleverd, ingevoerd door (lid of Marc) |
 | `betaling` | nummer van de Mollie-betaling | de bestellingen die erin zitten |

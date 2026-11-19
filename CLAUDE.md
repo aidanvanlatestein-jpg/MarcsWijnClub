@@ -34,7 +34,7 @@ Dit project is van Aidan persoonlijk. Het heeft niets te maken met een werkgever
 | `wijnclub-prototype.html` | Klikbaar prototype, de specificatie van de schermen |
 | `functions/wijnclub/` | Lambda-functies in Python. `domein/` bevat de regels zonder AWS |
 | `infra/` | AWS CDK in Python, vier stacks per omgeving (`test`, `prod`) |
-| `app/` | De web-app |
+| `app/` | De web-app: React met Vite. Bouwt naar `app/dist` |
 | `tests/` | pytest, voor de functies en voor de stacks |
 
 Lees het plan en de bouwspecificatie voordat je iets ontwerpt. Wijkt een wijziging ervan af, pas dan het document aan in dezelfde wijziging.
@@ -47,6 +47,10 @@ source .venv/bin/activate
 
 ```bash
 pytest
+```
+
+```bash
+cd app && npm ci && npm run build
 ```
 
 ```bash

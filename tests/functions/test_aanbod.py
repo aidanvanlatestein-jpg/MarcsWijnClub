@@ -42,6 +42,16 @@ def test_aanbod_geeft_lijst_en_biedingen(gevuld):
     assert inhoud["biedingen"][0]["hoogsteBod"] == 24000
 
 
+def test_aanbod_geeft_de_druif_mee_als_die_er_is(monkeypatch, gevuld):
+    monkeypatch.setattr(opslag, "wijnen_van_lijst", lambda lijst_id: [
+        {"wijnId": "i", "letter": "I", "naam": "Cándido Immensum 2022", "druif": "Negroamaro",
+         "streek": "Puglia, Italië", "prijs": Decimal("1150"), "voorraad": Decimal("12")},
+    ])
+    wijn = json.loads(aanbod.handler(aanvraag(), None)["body"])["lijsten"][0]["wijnen"][0]
+    assert wijn["druif"] == "Negroamaro"
+    assert wijn["streek"] == "Puglia, Italië"
+
+
 def test_aanbod_lekt_geen_interne_velden(gevuld):
     tekst = aanbod.handler(aanvraag(), None)["body"]
     assert "hoogsteBieder" not in tekst

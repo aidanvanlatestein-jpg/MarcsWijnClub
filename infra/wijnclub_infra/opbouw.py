@@ -1,7 +1,8 @@
 """Zet de vier stacks van één omgeving in elkaar."""
 from __future__ import annotations
 
-from typing import Dict
+from pathlib import Path
+from typing import Dict, Optional
 
 import aws_cdk as cdk
 
@@ -9,10 +10,10 @@ from .api_stack import ApiStack
 from .auth_stack import AuthStack
 from .config import Omgeving
 from .data_stack import DataStack
-from .web_stack import WebStack
+from .web_stack import WEB, WebStack
 
 
-def bouw(app: cdk.App, omgeving: Omgeving) -> Dict[str, cdk.Stack]:
+def bouw(app: cdk.App, omgeving: Omgeving, web_map: Optional[Path] = None) -> Dict[str, cdk.Stack]:
     env = cdk.Environment(region=omgeving.regio)
 
     data = DataStack(app, omgeving.stacknaam("Data"), omgeving=omgeving, env=env)
@@ -33,6 +34,7 @@ def bouw(app: cdk.App, omgeving: Omgeving) -> Dict[str, cdk.Stack]:
         api_domein=api.domein,
         user_pool=inloggen.user_pool,
         user_pool_client=inloggen.client,
+        web_map=web_map or WEB,
         env=env,
     )
     for stack in (data, inloggen, api, web):

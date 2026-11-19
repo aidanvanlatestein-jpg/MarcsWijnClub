@@ -85,6 +85,10 @@ def test_sluiten_kan_pas_op_de_eindtijd():
     assert bd.mag_sluiten(wijn(biedingStatus="gesloten", eindtijd="2026-11-19T15:00:00Z"), NU) is False
 
 
+def test_leden_zien_de_druif_van_een_bijzondere_fles():
+    assert bd.openbaar({**wijn(), "druif": "Nebbiolo"}, "lid-1")["druif"] == "Nebbiolo"
+
+
 def test_leden_zien_niet_wie_de_hoogste_bieder_is():
     zichtbaar = bd.openbaar(wijn(), "lid-1")
     assert "hoogsteBieder" not in zichtbaar

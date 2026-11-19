@@ -13,7 +13,8 @@ from constructs import Construct
 
 from .config import Omgeving
 
-WEB = Path(__file__).resolve().parents[2] / "app"
+# De gebouwde web-app: npm run build in app/ schrijft naar app/dist.
+WEB = Path(__file__).resolve().parents[2] / "app" / "dist"
 
 
 class WebStack(Stack):
@@ -26,9 +27,16 @@ class WebStack(Stack):
         api_domein: str,
         user_pool: cognito.UserPool,
         user_pool_client: cognito.UserPoolClient,
+        web_map: Path = WEB,
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
+
+        if not (web_map / "index.html").is_file():
+            raise FileNotFoundError(
+                "De web-app is nog niet gebouwd: {} ontbreekt. Draai eerst: "
+                "cd app && npm ci && npm run build".format(web_map / "index.html")
+            )
 
         # De bucket is niet publiek: alleen CloudFront mag erbij.
         bucket = s3.Bucket(
@@ -72,7 +80,7 @@ class WebStack(Stack):
             "Uitrol",
             destination_bucket=bucket,
             sources=[
-                s3deploy.Source.asset(str(WEB)),
+                s3deploy.Source.asset(str(web_map)),
                 # Wat de web-app nodig heeft om in te loggen. Dit zijn geen geheimen.
                 s3deploy.Source.json_data(
                     "config.json",

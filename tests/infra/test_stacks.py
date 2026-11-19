@@ -16,21 +16,29 @@ VLAGGEN = {
 }
 
 
-def sjablonen(naam):
+def sjablonen(naam, web_map):
     # Dezelfde instellingen als een echte synthese, zodat de test hetzelfde bouwt.
     app = cdk.App(context=VLAGGEN)
     omgeving = config.Omgeving(naam=naam, regio="eu-west-1", afzender_email="noreply@voorbeeld.nl")
-    return {deel: Template.from_stack(stack) for deel, stack in opbouw.bouw(app, omgeving).items()}
+    return {deel: Template.from_stack(stack) for deel, stack in opbouw.bouw(app, omgeving, web_map).items()}
 
 
 @pytest.fixture(scope="module")
-def test():
-    return sjablonen("test")
+def web_map(tmp_path_factory):
+    # Een nep-build, zodat de tests niet afhangen van npm run build.
+    map_ = tmp_path_factory.mktemp("dist")
+    (map_ / "index.html").write_text("<!doctype html>")
+    return map_
 
 
 @pytest.fixture(scope="module")
-def prod():
-    return sjablonen("prod")
+def test(web_map):
+    return sjablonen("test", web_map)
+
+
+@pytest.fixture(scope="module")
+def prod(web_map):
+    return sjablonen("prod", web_map)
 
 
 def test_zeven_tabellen_met_betalen_naar_gebruik_en_herstel(test):
@@ -140,6 +148,13 @@ def test_zonder_afzender_stopt_de_opbouw_met_uitleg():
     app = cdk.App(context={"omgeving": "test", "afzender_email": ""})
     with pytest.raises(ValueError, match="afzender_email ontbreekt"):
         config.laad(app)
+
+
+def test_zonder_gebouwde_web_app_stopt_de_opbouw_met_uitleg(tmp_path):
+    app = cdk.App(context=VLAGGEN)
+    omgeving = config.Omgeving(naam="test", regio="eu-west-1", afzender_email="noreply@voorbeeld.nl")
+    with pytest.raises(FileNotFoundError, match="npm run build"):
+        opbouw.bouw(app, omgeving, tmp_path)
 
 
 def test_onbekende_omgeving_wordt_geweigerd():

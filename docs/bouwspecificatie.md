@@ -10,7 +10,7 @@ Dit document werkt het pilotplan uit tot bouwniveau: sleutels in DynamoDB, de le
 | --- | --- |
 | Taal backend | Python, Lambda-runtime `python3.14` |
 | Omgeving als code | AWS CDK in Python (`aws-cdk-lib` 2.255.0) |
-| Web-app | Statische bestanden op S3 achter CloudFront. Geen paden: één pagina |
+| Web-app | React met Vite, in TypeScript. `npm run build` in `app/` schrijft statische bestanden naar `app/dist`; die staan op S3 achter CloudFront. Geen paden: één pagina |
 | API | API Gateway HTTP API, bereikbaar via CloudFront onder `/api/*` |
 | Inloggen | Cognito, eenmalige code per e-mail, alleen op uitnodiging |
 | Betalen | Mollie, iDEAL |
@@ -56,7 +56,7 @@ Zeven tabellen, alle met betalen naar gebruik en herstel naar een tijdstip. Zes 
 
 - **`leden`**: `lidId`, `naam`, `email`, `telefoon`, `afhaalpuntVoorkeur`, `volwassenBevestigdOp`, `meldingen` (lijst van abonnementen), `uitgenodigdOp`. Er wordt geen adres bewaard: leden halen af.
 - **`lijsten`**: `lijstId`, `titel`, `inleiding`, `status` (`concept`, `open`, `gesloten`), `openVan`, `openTot`, `geslotenOp`, `herinnerdOp`, `afhaalpunten` (lijst van `afhaalpuntId`, `naam`, `wanneer`, `toelichting`).
-- **`wijnen`**: `wijnId`, `soort` (`vast` of `bieding`), `naam`, `producent`, `jaargang`, `streek`, `tekst`, `foto`. Optioneel: `spijs`, `drinken`.
+- **`wijnen`**: `wijnId`, `soort` (`vast` of `bieding`), `naam`, `producent`, `jaargang`, `streek`, `tekst`, `foto`. Optioneel: `druif`, `spijs`, `drinken`.
   - Bij `vast`: `lijstId`, `volgorde`, `letter`, `prijs`, `voorraad`. De letter is die uit Marcs WhatsApp-bericht: A voor de eerste wijn van de lijst.
   - Bij `bieding`: `biedingStatus` (`open`, `gesloten`), `startbod`, `minimaleVerhoging`, `minimaalVolgendBod`, `eindtijd`, `herkomst`, `spraakbericht`, `hoogsteBod`, `hoogsteBieder`, `aantalBiedingen`.
 - **`biedingen`**: `wijnId`, `tijdstipLid` (`<tijdstip>#<lidId>`), `tijdstip`, `lidId`, `bedrag`.
@@ -211,7 +211,7 @@ wine/
 ├── pilotplan-marcs-wijnclub.md      het plan
 ├── wijnclub-prototype.html          klikbaar prototype, de specificatie van de schermen
 ├── docs/bouwspecificatie.md         dit document
-├── app/                             de web-app
+├── app/                             de web-app: React met Vite, gebouwd naar app/dist
 ├── functions/wijnclub/
 │   ├── domein/                      regels zonder AWS: geld, bestelling, bieding
 │   ├── handlers/                    één bestand per Lambda-functie
@@ -246,8 +246,17 @@ Alle versies staan vast. De Lambda-functies gebruiken alleen `boto3`, dat in de 
 | `aws-cdk-lib` | 2.255.0 | Omgeving als code |
 | `constructs` | 10.6.0 | Hoort bij CDK |
 | `aws-cdk` (npm, via `npx`) | 2.1149.0 | Het programma `cdk` |
+| `react`, `react-dom` | 19.3.1 | Web-app |
+| `vite` | 8.3.5 | Bouwen van de web-app |
+| `@vitejs/plugin-react` | 6.2.1 | Bouwen van de web-app |
+| `typescript` | 7.0.2 | Typecontrole van de web-app |
+| `@types/react`, `@types/react-dom` | 19.3.0 | Typecontrole van de web-app |
+| `lucide-react` | 1.68.0 | Iconen, dezelfde als in het ontwerp |
+| `@fontsource/barlow-condensed` | 5.3.0 | Lettertype, vanaf het eigen domein in plaats van Google Fonts |
 | `pytest` | 9.2.0 (8.4.2 op Python 3.9) | Tests |
 | `boto3` | 1.44.6 (1.42.97 op Python 3.9) | Alleen lokaal, voor tests |
+
+Van de web-app is steeds de nieuwste versie gekozen die minstens twee weken oud was. `npm audit` meldde bij het vastleggen geen kwetsbaarheden.
 
 Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan gaat dat als Lambda-laag mee.
 
@@ -258,7 +267,7 @@ Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan g
 | Zeven tabellen met indexen | Gebouwd | Week 3 |
 | Gebruikerspool met code per e-mail | Gebouwd | Week 3 |
 | HTTP API met `GET /api/aanbod` | Gebouwd | Week 3 en 4 |
-| Bucket, CloudFront, uitrol van `app/` | Gebouwd | Week 3 |
+| Bucket, CloudFront, uitrol van `app/dist` | Gebouwd | Week 3 |
 | Regels voor geld, bestelling en bieding, met tests | Gebouwd | Week 5 en 6 |
 | Regels voor afhaalpunt, betalen na het sluiten en één betaling per lid per lijst, met tests | Gebouwd | Week 5 |
 | Lijst sluiten met betaalverzoek, herinnering na 24 uur | Nog niet | Week 5 en 7 |
@@ -267,7 +276,8 @@ Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan g
 | Koppeling met Mollie | Nog niet | Week 5 |
 | Taken in EventBridge Scheduler | Nog niet | Week 5 en 6 |
 | Meldingen | Nog niet | Week 7 |
-| Web-app | Alleen een lege pagina | Week 4 tot en met 7 |
+| Web-app: opzet, gedeelde onderdelen, de schermen Aanbod en Wijn van de lijst met voorbeeldinhoud | Gebouwd | Week 4 |
+| Web-app: inloggen, de overige schermen, koppeling met de API | Nog niet | Week 4 tot en met 7 |
 
 ## 9. Open punten
 
@@ -278,5 +288,5 @@ Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan g
 - **Wie niet betaalt.** Na 48 uur verloopt de bestelling vanzelf. Of Marc dat wil, of liever zelf beslist per lid, moet hij aangeven.
 - **Meldingen op de iPhone.** Werken alleen als de app op het beginscherm staat. De precieze eisen moeten in week 7 nagezocht worden.
 - **Bedrock.** Welk model en of het in de gekozen regio beschikbaar is, wordt in week 4 gekozen.
-- **Web-app.** React of iets lichters. Het prototype is gewone HTML en JavaScript en kan als startpunt dienen.
+- **Web-app.** Gekozen: React met Vite. Het ontwerp in pen.dev is de bron voor de schermen; het prototype blijft de bron voor het gedrag.
 - **Lokale Python.** Op de machine waarop deze opzet is gemaakt staat Python 3.9, dat niet meer wordt ondersteund. De code en de tests werken ermee, maar pip installeert er oudere versies van pytest en boto3 op, met bekende kwetsbaarheden (pytest: PYSEC-2026-1845; urllib3 1.26, via boto3: meerdere). Die draaien alleen lokaal en komen niet in Lambda. Installeer Python 3.14: dan lopen de versies gelijk met Lambda en zijn de kwetsbaarheden weg. De tests zijn alleen op 3.9 gedraaid.

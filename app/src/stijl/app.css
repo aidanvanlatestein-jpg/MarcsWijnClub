@@ -1,0 +1,131 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body { font-family: var(--font); font-weight: 300; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
+button:disabled { cursor: default; }
+h1, h2, p { margin: 0; }
+img { display: block; }
+
+.app {
+  max-width: var(--breedte);
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.voorbeeld {
+  background: var(--wine);
+  color: #000;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 3px 8px;
+}
+
+/* Kopbalk */
+.kopbalk {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 20px; background: var(--bg);
+}
+.logo { display: flex; align-items: flex-end; gap: 6px; line-height: 1; }
+.logo .marc { font-size: 22px; font-weight: 300; }
+.logo .kookt { font-size: 22px; font-weight: 700; }
+.logo .club { font-size: 14px; font-weight: 500; letter-spacing: 1.5px; color: var(--wine); padding-bottom: 2px; }
+.vraag-marc {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--btn); padding: 8px 12px;
+  font-size: 14px; font-weight: 500; letter-spacing: 0.6px;
+}
+
+/* Stippellijn: streepjes van 2 bij 1 met 3 ruimte */
+.stippellijn {
+  height: 1px; width: 100%; flex: none;
+  background: repeating-linear-gradient(to right, var(--stip) 0 2px, transparent 2px 5px);
+}
+
+/* Knoppen */
+.knop {
+  display: flex; justify-content: center; align-items: center; gap: 8px;
+  width: 100%; padding: 15px 20px;
+  font-size: 18px; font-weight: 600; letter-spacing: 0.8px;
+}
+.knop-hoofd { background: var(--primary); color: var(--on-primary); }
+.knop-grijs { background: var(--btn); color: var(--ink); }
+
+/* Onderkant: hoofdknop en tabbalk blijven staan */
+.onderkant { position: sticky; bottom: 0; margin-top: auto; }
+.hoofdknop-zone { background: var(--bg); border-top: 1px solid var(--line); padding: 12px 20px; }
+
+.tabbalk {
+  display: flex; background: var(--bg); border-top: 1px solid var(--line);
+  padding: 10px 0 max(26px, env(safe-area-inset-bottom));
+}
+.tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  color: var(--dim); font-size: 13px; font-weight: 500; letter-spacing: 0.6px;
+}
+.tab[aria-current='page'] { color: var(--ink); }
+
+/* Aantal kiezen */
+.aantal { display: flex; align-items: center; border: 1px solid var(--line); }
+.aantal button { background: var(--btn); padding: 8px; display: flex; }
+.aantal button:disabled { opacity: 0.4; }
+.aantal output { width: 36px; text-align: center; font-size: 18px; font-weight: 700; color: var(--ink); }
+.aantal output.nul { color: var(--dim); }
+
+/* Aanbod */
+.inhoud { display: flex; flex-direction: column; gap: 18px; padding: 8px 20px 24px; }
+.titel { display: flex; flex-direction: column; gap: 4px; }
+.titel h1 { font-size: 32px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1.2; }
+.titel p { font-size: 17px; color: var(--muted); line-height: 1.35; }
+
+.wijn { display: flex; gap: 14px; }
+.wijn.op { opacity: 0.45; }
+.wijn-foto { width: 64px; height: 92px; flex: none; object-fit: cover; background: var(--surface); }
+.wijn-tekst { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.wijn-letter { color: var(--wine); font-size: 13px; font-weight: 500; letter-spacing: 1px; }
+.wijn-naam { font-size: 19px; font-weight: 600; line-height: 1.35; text-align: left; }
+.wijn-omschrijving { font-size: 15px; color: var(--muted); line-height: 1.35; }
+.prijs-en-aantal { display: flex; justify-content: space-between; align-items: center; padding-top: 6px; }
+.prijs { display: flex; flex-direction: column; }
+.prijs strong { font-size: 17px; font-weight: 600; }
+.prijs small { font-size: 14px; color: var(--muted); }
+.prijs small.op { color: var(--op); }
+.uitverkocht { font-size: 14px; font-weight: 600; letter-spacing: 0.8px; color: var(--muted); }
+
+.kop-sectie { display: flex; flex-direction: column; gap: 8px; }
+.kop-sectie h2 { font-size: 15px; font-weight: 500; letter-spacing: 1.2px; color: var(--muted); }
+
+.bijzondere-fles { display: flex; flex-direction: column; gap: 10px; text-align: left; width: 100%; }
+.bijzondere-fles img { width: 100%; height: 200px; object-fit: cover; background: var(--surface); }
+.bijzondere-fles .info { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+.bijzondere-fles .naam { font-size: 22px; font-weight: 700; text-transform: uppercase; display: block; }
+.bijzondere-fles .stand { font-size: 15px; color: var(--muted); display: block; }
+
+.melding { padding: 24px 20px; color: var(--muted); font-size: 17px; }
+
+/* In de lijst: hooguit twee regels, de hele tekst staat bij de wijn zelf */
+.wijn-omschrijving { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+
+/* Kopbalk terug */
+.terug { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 500; letter-spacing: 0.8px; text-transform: uppercase; }
+
+/* Wijn van de lijst */
+.wijn-groot-foto { width: 100%; height: 300px; object-fit: cover; background: var(--surface); }
+.wijn-groot { gap: 16px; padding-top: 20px; }
+.titel .wijn-groot-naam { font-size: 30px; letter-spacing: 0.4px; line-height: 1.35; }
+.titel .wijn-groot-herkomst { font-size: 16px; }
+.wijn-groot-tekst { font-size: 18px; line-height: 1.35; }
+.blok-tekst { font-size: 17px; line-height: 1.35; }
+.wijn-groot-prijs { display: flex; justify-content: space-between; align-items: flex-end; padding-top: 8px; }
+.wijn-groot-prijs strong { font-size: 24px; font-weight: 700; }
+.wijn-groot-prijs small { font-size: 16px; color: var(--muted); }
+.wijn-groot-prijs small.op { color: var(--op); }
+
+.aantal.groot { width: 100%; }
+.aantal.groot button { padding: 14px; }
+.aantal.groot output { flex: 1; width: auto; font-size: 28px; }

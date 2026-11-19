@@ -14,7 +14,7 @@ VERLENGING = timedelta(minutes=2)
 
 # Velden van een bieding die naar de web-app mogen. De hoogste bieder hoort daar niet bij.
 OPENBARE_VELDEN = (
-    "wijnId", "naam", "producent", "jaargang", "streek", "tekst", "spijs", "drinken",
+    "wijnId", "naam", "producent", "jaargang", "druif", "streek", "tekst", "spijs", "drinken",
     "foto", "herkomst", "spraakbericht", "startbod", "minimaleVerhoging",
     "minimaalVolgendBod", "hoogsteBod", "eindtijd", "aantalBiedingen", "biedingStatus",
 )
