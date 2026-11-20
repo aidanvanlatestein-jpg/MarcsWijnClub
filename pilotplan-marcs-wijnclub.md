@@ -30,6 +30,8 @@ Het plan rust op acht aannames. De eerste twee zijn op 20 november 2026 bewust o
 | Er is geen pakketverzending | Verzending vraagt verpakking, verzekering en een leeftijdscheck aan de deur |
 | Eén bouwer werkt er in deeltijd aan | De planning schuift mee |
 
+Op 20 november 2026 is ook besloten dat het fotograferen van een fles en het voorstellen van een tekst in de pilot komen, in week 4. Het stond eerder als eerste stap van onderwerp 1 op de roadmap. Marc begint met een foto, met zijn WhatsApp-bericht of met beide. De app leest het etiket, en uit een paar steekwoorden van Marc maakt ze drie tekstvoorstellen; Marc kiest er één en past hem aan. De stijl van de voorstellen levert Aidan later aan, op basis van Marcs omschrijvingen in WhatsApp.
+
 Deze punten moeten vóór de bouw rond zijn:
 
 - [ ] Marc is akkoord met de pilot en met zijn rol: wijnen invoeren, teksten controleren, afleveren
@@ -48,14 +50,14 @@ Leden hebben één startpagina, zonder tabbalk. Marc heeft drie beheerschermen. 
 | --- | --- | --- |
 | De lijst | Wijnen van Marc tegen vaste prijs, met voorraad per wijn en zijn eigen inleiding. Enkele uren open. Meerdere wijnen in één bestelling. Bijbestellen kan tot de lijst sluit, als een nieuwe bon met een eigen betaling | Staffelkorting, abonnement |
 | De bieding | Bijzondere flessen, één per keer, met eindtijd. Het hoogste bod wint | Flessen van leden, prijsvergelijking |
-| Advies | Bij elke wijn Marcs tekst. "Wat eet je erbij" en "wanneer drinken" mogen leeg blijven. Bij een bieding ook herkomst, bewaring en een spraakbericht | Algemeen wijnadvies los van het aanbod |
+| Advies | Bij elke wijn Marcs tekst. Marc schrijft hem zelf, neemt hem over uit zijn WhatsApp-bericht, of kiest uit drie voorstellen die de app maakt uit zijn steekwoorden en het etiket. "Wat eet je erbij" en "wanneer drinken" mogen leeg blijven. Bij een bieding ook herkomst, bewaring en een spraakbericht | Algemeen wijnadvies los van het aanbod. Een tekst uit een spraakbericht, en voorstellen die leren van Marcs eerdere teksten (onderwerp 1 op de roadmap) |
 | Betalen | iDEAL via Mollie. Lijst: meteen bij het bestellen, één betaling per bon. Marc houdt de flessen 15 minuten vast; daarna vervalt een onbetaalde bon en komt de voorraad terug. Namens een lid: het lid krijgt een betaallink en heeft 48 uur. Bieding: binnen 48 uur na het winnen | Credits, creditcard, betalen tussen leden, één betaling per lid voor een hele lijst |
 | Je bestellingen | Wat het lid op de lopende lijst bestelde en de fles die het won, met brengen of halen, de status en betalen. Het lid komt er via de terugblik na de avond | Een eigen collectie: eerder gekocht, een oordeel per wijn, opnieuw bestellen en flessen in bewaring. Dat is onderwerp 14 op de roadmap |
 | Levering | Brengen of halen, door Marc per avond ingesteld. Brengen: Marc brengt de flessen naar het adres van het lid, op een moment dat hij kiest. Halen: het lid haalt ze bij Marc op, op een moment en een plek die hij kiest. Ook voor een gewonnen fles kiest het lid brengen of halen | Bewaren bij Marc (onderwerp 9 op de roadmap), pakketverzending, afhaalpunten per regio |
 | Contact | Knop "Vraag Marc", naar WhatsApp met de wijn ingevuld | Chat in de app, een bot, een boekingssysteem voor diners |
 | Meldingen | Nieuwe lijst, één herinnering "nog beschikbaar" voor het sluiten, nieuwe bieding, overboden, gewonnen. Een betaallink bij een bestelling namens een lid, en één herinnering om te betalen bij een bestelling namens een lid of een gewonnen fles. "Ik ben onderweg" aan wie Marc gaat brengen. Bij elke melding legt de app vast wanneer hij verstuurd is en hoeveel leden erop tikten | Marketingberichten en geplande campagnes. Die staan op de roadmap |
 | Toegang | Alleen op uitnodiging van Marc. Inloggen met een code per e-mail, daarna eventueel met een passkey ("Face ID") | Open aanmelding |
-| Beheer | Drie schermen. De avond: wijnen op tafel zetten, iets tegen de tafel zeggen, de veiling starten en de avond sluiten. Nieuwe fles: de fles fotograferen, het etiket en het WhatsApp-bericht laten herkennen, nakijken, en kiezen tussen lijst en veiling. Afleveren: wat Marc brengt en wat er gehaald wordt, afvinken, een betaallink sturen en laten weten dat hij onderweg is. Verder: een avond met brengen en halen instellen, een bestelling namens een lid invoeren met letters en aantallen, het overzicht "nog beschikbaar" delen in WhatsApp, en het afleveradres van een lid bijhouden | Boekhouding, facturen |
+| Beheer | Drie schermen. De avond: wijnen op tafel zetten, iets tegen de tafel zeggen, de veiling starten en de avond sluiten. Nieuwe fles: de fles fotograferen, het etiket en het WhatsApp-bericht laten herkennen, nakijken, steekwoorden geven en een tekstvoorstel kiezen, en kiezen tussen lijst en veiling. Afleveren: wat Marc brengt en wat er gehaald wordt, afvinken, een betaallink sturen en laten weten dat hij onderweg is. Verder: een avond met brengen en halen instellen, een bestelling namens een lid invoeren met letters en aantallen, het overzicht "nog beschikbaar" delen in WhatsApp, en het afleveradres van een lid bijhouden | Boekhouding, facturen |
 
 De stijl volgt marckookt.com: de lijst op één scherm, een bijzondere fles met een grote foto, korte tekst in de je-vorm.
 
@@ -66,7 +68,7 @@ Marc zet wijnen op de lijst of start een bieding en deelt de link; het lid beste
 **Voor Marc**
 
 1. Hij maakt een lijst aan met een titel, een korte inleiding en een eindtijd. Per avond kiest hij of hij brengt, of leden komen halen, of beide, met het moment en bij halen de plek.
-2. Per wijn fotografeert hij de fles en plakt hij zijn WhatsApp-bericht. Naam, jaargang, tekst, aantal en prijs worden herkend; hij kijkt ze na. De wijn krijgt de volgende letter, zoals nu in de groep. Leden zien die letter niet; Marc gebruikt hem als hij namens een lid bestelt.
+2. Per wijn fotografeert hij de fles, plakt hij zijn WhatsApp-bericht, of doet hij beide. Van het etiket worden naam, producent, jaargang en streek gelezen; uit het bericht naam, jaargang, tekst, aantal en prijs. Hij kijkt ze na. Heeft hij nog geen tekst, dan typt of dicteert hij een paar steekwoorden, zoals "fris, citrus, bij asperges", en kiest hij uit drie voorstellen. Woorden die niet van hem of van het etiket komen, zijn gemarkeerd. De wijn krijgt de volgende letter, zoals nu in de groep. Leden zien die letter niet; Marc gebruikt hem als hij namens een lid bestelt.
 3. Hij kiest per wijn: op de lijst tegen vaste prijs, of als bieding met startbod en eindtijd. Bij een bieding voegt hij de herkomst toe en spreekt hij een bericht van 30 seconden in.
 4. Hij publiceert. Leden krijgen een melding en Marc deelt de link in de WhatsApp-groep.
 5. De voorraad telt automatisch af. Bestelt iemand in de groep of in een privébericht, dan typt Marc de letters en aantallen in, zoals "C2 D2". Het lid krijgt een betaallink en heeft 48 uur om te betalen.
@@ -133,7 +135,7 @@ Het lid heeft één startpagina: de aankondiging vóór de avond, het aanbod tij
 | Na een gewonnen bieding | Betalen, daarna brengen of halen kiezen. Nog niet getekend | Klaar |
 | Je bestellingen | Wat je op de lopende lijst bestelde en de fles die je won, met brengen of halen en de status: betaal vóór een tijd, betaald, gebracht of opgehaald. Is er niets besteld, dan staat dat er, met een link naar het aanbod. Nog niet getekend | Naar het aanbod. Een bon die nog open is, heeft zelf een betaalknop |
 | Marc | Zijn foto, een korte tekst, voorwaarden en privacy. Zonder tab; nog niet getekend in V4 | Vraag Marc |
-| Beheer (15 tot en met 21) | Drie schermen. De avond (`/beheer`, 20): wijnen op tafel zetten, iets tegen de tafel zeggen met snelle zinnen, de veiling eerder starten en de avond sluiten, met tellers. Nieuwe fles (`/beheer/nieuw`, 15 tot en met 19): fotograferen of de WhatsApp-tekst plakken, nakijken wat de app herkende, lijst of veiling, en klaar. Afleveren (`/beheer/afleveren`, 21): brengen, halen en klaar, een betaallink sturen en "laat weten: ik ben onderweg". Een bestelling namens een lid in de stijl van V4, en een avond plannen met de momenten van brengen en halen, zijn nog niet getekend | Zet de wijn op tafel, Zet klaar voor de avond, of Laat weten: ik ben onderweg |
+| Beheer (15 tot en met 21) | Drie schermen. De avond (`/beheer`, 20): wijnen op tafel zetten, iets tegen de tafel zeggen met snelle zinnen, de veiling eerder starten en de avond sluiten, met tellers. Nieuwe fles (`/beheer/nieuw`, 15 tot en met 19): fotograferen of de WhatsApp-tekst plakken, nakijken wat de app herkende, lijst of veiling, en klaar. Steekwoorden geven en een tekstvoorstel kiezen hoort bij nakijken (16) en is nog niet getekend. Afleveren (`/beheer/afleveren`, 21): brengen, halen en klaar, een betaallink sturen en "laat weten: ik ben onderweg". Een bestelling namens een lid in de stijl van V4, en een avond plannen met de momenten van brengen en halen, zijn nog niet getekend | Zet de wijn op tafel, Zet klaar voor de avond, of Laat weten: ik ben onderweg |
 
 "Vraag Marc" opent WhatsApp met een bericht dat al klaarstaat, inclusief de naam van de fles.
 
@@ -169,6 +171,7 @@ Dit moet Marc aanleveren voordat het prototype naar leden gaat:
 - [ ] Besluit over het lettertype: licentie voor DIN Pro Condensed of het gratis alternatief
 - [ ] Vijf tot tien eigen foto's, waaronder één portret
 - [ ] Eén echte fles met zijn advies in eigen woorden en een spraakbericht van 30 seconden
+- [ ] Tien tot twintig van zijn omschrijvingen uit WhatsApp, als voorbeeld voor de stijl van de tekstvoorstellen. Aidan maakt daar een beschrijving van de stijl van. De berichten zelf komen alleen in de openbare repository als Marc dat goed vindt
 - [ ] Zijn oordeel over het prototype, daarna een test met drie leden op hun eigen telefoon
 
 ## Architectuur op AWS
@@ -189,7 +192,7 @@ Leden en Marc gebruiken dezelfde web-app; Marc heeft daarnaast het beheerscherm.
 | Eindtijd van een bieding en vervallen bonnen | EventBridge Scheduler | Eén geplande taak per bieding, die de winnaar vaststelt en de betaallink maakt. Een taak die elke minuut draait, laat onbetaalde bestellingen vervallen en geeft de voorraad terug |
 | Live bijwerken (design-v3, nog te kiezen) | API Gateway WebSocket API + Lambda, of pollen | Nieuwe wijn, bericht en voorraad binnen 2 seconden, de stand van de veiling binnen 1 seconde. Voor de pilot kan pollen elke 3 seconden volstaan. Zie de bouwspecificatie, hoofdstuk 9 |
 | Meldingen | Web Push vanuit Lambda, e-mail via SES als terugval | Op een iPhone werkt een melding pas als de app op het beginscherm staat |
-| Bericht herkennen | Bedrock | Haalt naam, jaargang, aantal, prijs en tekst uit Marcs WhatsApp-bericht. Design-v4 laat de app ook het etiket op de foto lezen; zie de bouwspecificatie, hoofdstuk 9. Marc controleert het resultaat |
+| Bericht en etiket herkennen, tekst voorstellen | Bedrock, in een regio in de EU | Haalt naam, jaargang, aantal, prijs en tekst uit Marcs WhatsApp-bericht, en naam, producent, jaargang en streek van de foto van het etiket. Maakt drie tekstvoorstellen uit Marcs steekwoorden. Marc controleert het resultaat en kiest. Eén model dat ook afbeeldingen leest |
 | Sleutels | Secrets Manager | Mollie-sleutel en de sleutels voor meldingen |
 | Logboek en alarmen | CloudWatch | Alarm bij mislukte betaalmeldingen en mislukte sluiting van een bieding |
 | Opzet van de omgeving | AWS CDK in Python | Alles als code, in dezelfde taal als de Lambda-functies. Een privé-AWS-account dat Aidan deelt met zijn eigen andere projecten, met een aparte stack voor test en productie |
@@ -237,12 +240,12 @@ Alle tests draaien in pytest, ook de browsertests via Playwright voor Python. Zo
 
 | Laag | Wat het controleert | Wanneer | Waartegen |
 | --- | --- | --- | --- |
-| Unit-tests | Regels voor bieden (minimale verhoging, verlenging in de laatste twee minuten, eindtijd), bestelling en voorraad, het verwerken van een Mollie-melding, en het herkennen van een WhatsApp-bericht met een nagebootst taalmodel, en het tellen van een tik op een melding: één keer per lid | Elke pull request | Alleen de code, geen AWS |
+| Unit-tests | Regels voor bieden (minimale verhoging, verlenging in de laatste twee minuten, eindtijd), bestelling en voorraad, het verwerken van een Mollie-melding, het herkennen van een WhatsApp-bericht en een etiket en het controleren van tekstvoorstellen met een nagebootst taalmodel, en het tellen van een tik op een melding: één keer per lid | Elke pull request | Alleen de code, geen AWS |
 | Integratietests | Twintig gelijktijdige biedingen: precies één winnaar per bedrag. Gelijktijdige bestellingen: de voorraad komt nooit onder nul. Een bieding sluit op de eindtijd. Dezelfde Mollie-melding twee keer: één betaling | Elke merge | Teststack, met echte DynamoDB en Mollie in testmodus |
 | End-to-end-tests | Vier stromen op een telefoonscherm van 375 × 667 px en van 320 × 568 px: van de lijst bestellen en meteen betalen, een bon die niet betaald wordt en vervalt, bieden en winnen, en Marc die een wijn op de lijst zet. Bij elke stroom ook de eisen voor de telefoon die een test kan meten: tikvlakken, geen horizontaal scrollen en wat zonder scrollen in beeld moet staan | Elke merge | Teststack, via de browser |
 | Handtest op telefoons | Dezelfde stromen op een echte iPhone (in Safari en vanaf het beginscherm) en een echte Android-telefoon (in Chrome), één keer met de schermlezer aan | Elke release | Teststack |
 | Smoke-test | De site laadt, de lijst is op te vragen, inloggen werkt. Er worden geen bestellingen geplaatst | Elke release | Productie |
-| Berichten herkennen | Twintig echte aanbiedingen van Marc met de juiste naam, jaargang, aantal en prijs als antwoord. Minstens 95% van de velden moet kloppen | Bij een wijziging van prompt of model, en wekelijks | Teststack, met het echte taalmodel |
+| Herkennen en voorstellen | Twintig echte aanbiedingen van Marc met de juiste naam, jaargang, aantal en prijs als antwoord, en twintig foto's van etiketten met de juiste naam, producent, jaargang en streek. Minstens 95% van de velden moet kloppen. Tien sets steekwoorden: bij elk voorstel is met de hand nagekeken dat er geen smaak, score of prijs bij verzonnen is | Bij een wijziging van prompt of model, en wekelijks | Teststack, met het echte taalmodel |
 | Beveiliging | pip-audit en npm audit op bekende kwetsbaarheden, secret scanning op de repository. cdk-nag op de infrastructuur volgt | Elke pull request, en wekelijks | De code |
 
 **Testgegevens en inloggen in de test**
@@ -271,7 +274,7 @@ Negen soorten gegevens volstaan, elk in een eigen DynamoDB-tabel met betalen naa
 | --- | --- | --- |
 | `lid` | lidId (uit Cognito) | naam, telefoon, afleveradres (straat met huisnummer, postcode, plaats; alleen voor wie wil dat Marc brengt), brengen of halen als voorkeur, datum 18+-bevestiging, meldingsabonnementen |
 | `lijst` | lijstId | titel, inleiding, open van en tot, status, levering: brengen (van en tot) en halen (van, tot en waar), of één van de twee |
-| `wijn` | wijnId | naam, producent, jaargang, soort (vaste prijs of bieding), tekst, foto. Optioneel: druif, spijs, drinken van en tot. Bij vaste prijs: lijstId, letter, prijs, voorraad. Bij een bieding: startbod, minimale verhoging, eindtijd, herkomst, spraakbericht, hoogste bod, hoogste bieder |
+| `wijn` | wijnId | naam, producent, jaargang, soort (vaste prijs of bieding), tekst, waar de tekst vandaan komt (uit het bericht, een voorstel, een aangepast voorstel, of zelf geschreven), foto. Optioneel: druif, spijs, drinken van en tot. Bij vaste prijs: lijstId, letter, prijs, voorraad. Bij een bieding: startbod, minimale verhoging, eindtijd, herkomst, spraakbericht, hoogste bod, hoogste bieder |
 | `bod` | wijnId + tijdstip | lidId, bedrag |
 | `bestelling` | bestellingId | lidId, soort (lijst, namens, bieding), lijstId, regels (wijnId, aantal, prijs), totaal, status (open, betaald, verlopen, terugbetaald), betalen vóór, levering (brengen of halen), afgeleverd, ingevoerd door (lid of Marc). Het adres staat niet op de bestelling |
 | `betaling` | nummer van de Mollie-betaling | de bestelling waar hij bij hoort. Een betaling hoort bij precies één bestelling |
@@ -321,7 +324,8 @@ Zes punten moeten door een jurist bekeken worden voordat de pilot start. De midd
 - De app bewaart alleen wat nodig is: naam, e-mail, telefoon, brengen of halen als voorkeur, biedingen en aankopen, en een afleveradres voor wie wil dat Marc brengt. Alleen het lid zelf en de groep beheer zien dat adres; het komt niet op de bestelling en niet in het logboek. Geen geboortedatum, geen kopie van een identiteitsbewijs. Het adres kwam erbij op 20 november 2026, met de keuze voor brengen of halen.
 - Voor de tellingen van de pilot legt de app 180 dagen vast welk lid een bieding opende. Marc en de bouwer zien daarvan alleen aantallen. Dit staat in de privacyverklaring, en de grondslag hoort bij de juridische check.
 - De app legt vast op welke melding een lid tikte, om te meten welk moment werkt. Dat staat in de privacyverklaring. Na 180 dagen verdwijnt dat gegeven vanzelf. Laat toetsen of hiervoor toestemming nodig is.
-- Alle gegevens staan in een AWS-regio binnen de EU.
+- Alle gegevens staan in een AWS-regio binnen de EU. Ook het taalmodel in Bedrock draait in de EU.
+- De foto van een fles en Marcs steekwoorden gaan naar het taalmodel. De web-app haalt de locatie en andere gegevens uit de foto voordat hij wordt geüpload. Op de foto hoort alleen de fles; laat de jurist meekijken naar wat AWS met deze gegevens doet.
 - Er komt een korte privacyverklaring in de app, en een lid kan zijn gegevens laten verwijderen. Betaalgegevens blijven bij Mollie en in Marcs boekhouding zolang de fiscale bewaarplicht dat vraagt.
 - Namen, adressen en bedragen per persoon komen niet in de logbestanden.
 
@@ -337,7 +341,7 @@ Elke ruit is een voorwaarde om door te gaan. Zonder akkoord van Marc en de juris
 | --- | --- |
 | 1 en 2 | Open beslissingen rond, nulmeting gedaan, Mollie-account en AWS-account aangemaakt |
 | 3 | Omgeving als code met AWS CDK, pipeline met teststack, inloggen op uitnodiging, lege web-app online op het adres dat CloudFront geeft |
-| 4 | Beheer: de fles fotograferen, het WhatsApp-bericht plakken en herkennen, nakijken, een lijst met inleiding en met brengen en halen, wijn op de lijst zetten. Het afleveradres van een lid. De lijst en de wijnpagina voor leden |
+| 4 | Beheer: de fles fotograferen, het etiket lezen, het WhatsApp-bericht plakken en herkennen, nakijken, tekstvoorstellen uit steekwoorden (twee tot drie dagen extra), een lijst met inleiding en met brengen en halen, wijn op de lijst zetten. Het afleveradres van een lid. De lijst en de wijnpagina voor leden |
 | 5 | Bestellen met brengen of halen, voorraad en 15 minuten houdtijd, meteen betalen via Mollie in testmodus, een onbetaalde bon laten vervallen, bijbestellen als nieuwe bon. Je bestellingen |
 | 6 | Bieding: bieden, sluiten op de eindtijd, betalen binnen 48 uur, daarna brengen of halen kiezen. Vastleggen wie een bieding opent en welk bod de eindtijd verlengt |
 | 7 | Meldingen en herinneringen, met een meting per melding. Bestelling namens een lid met een betaallink, overzicht "nog beschikbaar", afleveren met brengen en halen en "ik ben onderweg", knoppen naar WhatsApp, voorwaarden en privacyverklaring, alarmen. De drie tellingen voor de roadmap opvraagbaar |
@@ -358,13 +362,30 @@ De lopende kosten blijven naar verwachting onder €10 per maand; de echte inves
 | Domeinnaam | Ongeveer €10 tot €15 per jaar, plus ongeveer een halve euro per maand als de DNS in Route 53 komt | Nog niet: de app draait voorlopig op het adres van CloudFront. Zie onderwerp 13 op de roadmap |
 | Mollie | Geen vaste kosten, ongeveer €0,30 per iDEAL-betaling | Marc betaalt dit als verkoper. Het is één betaling per bestelling, niet per fles |
 | Inloggen | Gratis op deze schaal | Met een code per e-mail. Een code per sms kost per bericht en is niet nodig |
-| Berichten herkennen via Bedrock | Enkele centen per wijn |  |
+| Bedrock: bericht en etiket herkennen, tekst voorstellen | Onder €1 per maand met een klein model, €2 tot €3 met een middelgroot model | Zie "Kosten van het taalmodel" hieronder |
 | Juridische check | Eenmalig, bedrag onbekend | Offerte vragen |
 | Bouw en beheer | Eigen uren | Geen licentiekosten |
 | GitHub Actions | Gratis | De repository is openbaar; voor openbare repositories zijn de standaardrunners van GitHub gratis |
 | Teststack | Enkele euro's per maand | Dezelfde diensten als productie, met weinig gebruik. De wekelijkse test van het taalmodel kost enkele centen |
 
 Zet in het AWS-account een budgetalarm op €20 per maand, zodat een fout in de opzet niet ongemerkt geld kost.
+
+**Kosten van het taalmodel**
+
+Bedrock rekent per token: een stukje tekst van ongeveer een halve tot driekwart woord, en een foto telt als een vast aantal tokens. Er zijn geen vaste kosten. De schatting hieronder gebruikt de prijzen die Anthropic zelf rekent, op 20 november 2026: Claude Haiku 5.5 $0,10 per miljoen tokens in en $0,50 uit, Claude Sonnet 5.5 $2 in en $10 uit. Bedrock heeft eigen prijzen, mogelijk met een toeslag voor een regio in de EU. Controleer ze op de prijspagina van Bedrock bij de keuze van het model in week 4.
+
+| Per wijn | Tokens, ruw geschat | Klein model (Haiku 5.5) | Middelgroot model (Sonnet 5.5) |
+| --- | --- | --- | --- |
+| Bericht herkennen | 1.000 in, 300 uit | minder dan $0,001 | ongeveer $0,005 |
+| Etiket lezen: een foto van 1600 px en de vraag | 2.000 in, 300 uit | minder dan $0,001 | ongeveer $0,007 |
+| Drie tekstvoorstellen, met voorbeelden van de stijl | 2.000 in, 1.500 uit, inclusief het denkwerk van het model | ongeveer $0,001 | ongeveer $0,02 |
+| Samen | | ongeveer $0,002 | ongeveer $0,03 |
+
+- **Pilot:** tien wijnen per week, waarvan Marc een deel twee of drie keer opnieuw laat voorstellen, is ruim honderd aanroepen per maand. Dat is minder dan $1 per maand met het kleine model en $2 tot $3 met het middelgrote.
+- **Teststack:** de wekelijkse test met het echte model is vijftig aanroepen: een paar cent met het kleine model, ongeveer $0,50 per keer met het middelgrote. Bij het bouwen in week 4 komt daar enkele euro's aan proberen bij.
+- **Overig in AWS:** de foto's in S3 (een paar honderd kB per wijn), de uploads en de extra Lambda-functies vallen bij dit gebruik in centen of binnen het gratis gebruik.
+- **Welk model:** begin met het kleine model en stap alleen over als de test met twintig etiketten en tien sets steekwoorden niet goed genoeg is. Het verschil is in deze pilot een paar euro per maand; de kwaliteit van de voorstellen weegt zwaarder.
+- **Onverwachte kosten:** alleen de groep `beheer` kan het model aanroepen, met een limiet per dag in de app. Het budgetalarm hierboven vangt de rest op. Omdat het account gedeeld is, krijgen alle onderdelen van de wijnclub een tag, zodat de kosten van de wijnclub apart te zien zijn.
 
 ## Succescriteria
 
@@ -458,7 +479,7 @@ Onderwerp 15 is ook geen idee: het is de lijst met verbeterpunten uit de beveili
 
 | Onderwerp | Wat het oplevert | Start als |
 | --- | --- | --- |
-| 1. Omschrijving via een taalmodel | Marc zet een fles in enkele minuten online, in zijn eigen woorden | De pilot geslaagd is en het herkennen van Marcs berichten in de pilot goed werkt |
+| 1. Omschrijving via een taalmodel | Marc zet een fles in enkele minuten online, in zijn eigen woorden. Het etiket lezen en tekstvoorstellen uit steekwoorden zitten al in de pilot; hier volgen spraak naar tekst en het leren van zijn stijl | De pilot geslaagd is en Marc in de pilot geregeld een voorstel koos |
 | 2. Assistent voor vragen van leden | Leden krijgen direct antwoord op veelgestelde vragen; Marc krijgt alleen de vragen die hem nodig hebben | Er minstens 20 flessen met goedgekeurde tekst zijn en Marc dezelfde vragen steeds terug ziet komen |
 | 3. Campagnes en het beste moment | Marc plant een reeks berichten rond een lijst of bieding en ziet welk moment de meeste bestellingen oplevert | De pilot geslaagd is en de app per melding heeft vastgelegd wanneer hij verstuurd is en wat hij opleverde |
 | 4. Terug op de lijst en op dronk | Leden komen terug voor een wijn die ze lekker vonden, en openen een fles op het goede moment | Onderwerp 14 gebouwd is en er drie maanden aan aankopen en oordelen ligt |
@@ -476,18 +497,17 @@ Onderwerp 15 is ook geen idee: het is de lijst met verbeterpunten uit de beveili
 
 **1. Omschrijving via een taalmodel**
 
-In de pilot herkent de app al naam, jaargang, aantal, prijs en tekst in Marcs WhatsApp-bericht. Daarna volgen drie stappen:
+In de pilot herkent de app al naam, jaargang, aantal, prijs en tekst in Marcs WhatsApp-bericht. Op 20 november 2026 is de eerste stap van dit onderwerp naar de pilot gehaald: Marc fotografeert de fles, de app leest het etiket, en uit zijn steekwoorden maakt ze drie tekstvoorstellen in een vaste stijl. Zie Hoe het werkt en de bouwspecificatie, hoofdstuk 5. Na de pilot volgen nog twee stappen:
 
-1. **Etiket herkennen.** Marc fotografeert het etiket; naam, producent, jaargang en streek worden ingevuld. Hij controleert ze. Design-v4 tekent dit al in het beheer van de pilot (Nieuwe fles); of het in de pilot gebouwd wordt, staat als open punt in de bouwspecificatie, hoofdstuk 9.
-2. **Van spraak naar tekst.** Marc spreekt 30 seconden in over de fles. De app schrijft daar de drie blokken van: waarom deze, wanneer drinken, wat eet je erbij.
-3. **Zijn stijl leren.** Eerder goedgekeurde teksten gaan als voorbeeld mee, zodat een nieuw concept klinkt als Marc.
+1. **Van spraak naar tekst.** Marc spreekt 30 seconden in over de fles. De app schrijft daar de drie blokken van: waarom deze, wanneer drinken, wat eet je erbij.
+2. **Zijn stijl leren.** Eerder goedgekeurde teksten gaan als voorbeeld mee, zodat een nieuw voorstel klinkt als Marc. In de pilot is de stijl nog één vaste beschrijving.
 
 Vier regels gelden daarbij:
 
 - Marc keurt elke tekst goed voordat een lid hem ziet.
 - Herkomst en bewaring worden nooit gegenereerd. Die komen alleen uit wat Marc zelf invoert.
 - Het model verzint geen scores, prijzen of smaken die Marc niet noemde.
-- We meten hoeveel tijd een fles Marc kost en welk deel van het concept hij ongewijzigd laat.
+- We meten hoeveel tijd een fles Marc kost en welk deel van het concept hij ongewijzigd laat. In de pilot legt elke wijn vast waar de tekst vandaan komt.
 
 Technisch blijft dit binnen de bestaande opzet: een taalmodel via Bedrock voor tekst en etiket, en Amazon Transcribe voor de spraak. Of Transcribe Nederlands goed genoeg herkent, moet een proef met Marcs eigen opnames uitwijzen.
 
