@@ -51,7 +51,10 @@ class DataStack(Stack):
         bestellingen.add_global_secondary_index(
             index_name="lijst-index", partition_key=_veld("lijstId"), sort_key=_veld("aangemaakt")
         )
-
+        # Open bestellingen waarvan de termijn voorbij is: die laat de taak voor verlopen vervallen.
+        bestellingen.add_global_secondary_index(
+            index_name="betaal-index", partition_key=_veld("status"), sort_key=_veld("betaalVoor")
+        )
         self._tabel("betalingen", "mollieBetalingId")
 
     def _tabel(self, naam: str, sleutel: str, sorteer: Optional[str] = None) -> dynamodb.Table:

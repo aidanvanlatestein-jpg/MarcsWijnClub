@@ -1,481 +1,436 @@
-import { Camera, Check, Pencil } from 'lucide-react'
-import { Fragment, useEffect, useState, type ReactNode } from 'react'
+import { Camera, Check, ClipboardPaste, Mic, Pencil, Send, Truck, X, ZapOff } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { LiveBalk } from '../onderdelen/Avond'
 import { BonRegels } from '../onderdelen/Bon'
 import { Blad } from '../onderdelen/Blad'
+import { Duim } from '../onderdelen/Foto'
 import { Keuze } from '../onderdelen/Keuze'
 import { Hoofdknop } from '../onderdelen/Knoppen'
 import { Kop, TerugLink } from '../onderdelen/Kop'
-import { Tabs, type TabKeuze } from '../onderdelen/Tabbalk'
-import { bedrag, euro, naamMetJaar, naarInvoer, nuUtc, tijd, vanInvoer, weekdag, weekNummer } from '../opmaak'
+import { adresRegel, bedrag, dagDatum, euro, kortTijdvak, naamMetJaar, naarInvoer, nuUtc, tijd, vanInvoer, weekdag } from '../opmaak'
 import { herkenBericht, leesEuro, leesLetters } from '../regels'
 import type { BeheerTab, Ga } from '../route'
-import { afhaalpunt, klaar, opTafel, plus, tellers, useStaat, veilingVanAvond, volgendeLetter } from '../staat'
-import type { Bestelling } from '../types'
-import { voorbeeldBericht, voorbeeldLeden, voorbeeldLedenBinnen, voorbeeldSnelleZinnen } from '../voorbeeld'
-import { LiveBalk } from '../onderdelen/Avond'
-import { Send } from 'lucide-react'
+import { gesorteerd, klaar, korteNaam, levermomenten, opTafel, plus, roepNaam, tellers, useStaat, veilingVanAvond, volgendeLetter, type Staat } from '../staat'
+import type { Bestelling, LeverSoort } from '../types'
+import { voorbeeldBericht, voorbeeldBerichten, voorbeeldEtiket, voorbeeldLeden, voorbeeldLedenBinnen, voorbeeldSnelleZinnen } from '../voorbeeld'
+import { LEVER_WOORD } from './Bestelling'
 
-function lidNaam(lidId: string): string {
-  return voorbeeldLeden.find((l) => l.lidId === lidId)?.naam ?? lidId
+function lid(lidId: string) {
+  return voorbeeldLeden.find((l) => l.lidId === lidId)
 }
 
+function lidNaam(lidId: string): string {
+  return lid(lidId)?.naam ?? lidId
+}
+
+/**
+ * Beheer (design-v4): een nieuwe fles klaarzetten (camera, nakijken, lijst of veiling, klaar), de avond
+ * presenteren, en na de avond afleveren. In de echte app alleen voor de groep beheer.
+ */
+export function Beheer({ ga, tab }: { ga: Ga; tab: BeheerTab }) {
+  if (tab === 'nieuw') return <NieuweFles ga={ga} />
+  if (tab === 'afleveren') return <Afleveren ga={ga} />
+  return <BeheerLive ga={ga} />
+}
+
+// ---- Nieuwe fles ----
+
 interface Formulier {
-  letter: string
+  producent: string
   naam: string
   jaar: string
-  aantal: string
+  druif: string
+  streek: string
   prijs: string
+  aantal: string
   tekst: string
+  spijs: string
+  drinken: string
   startbod: string
   verhoging: string
-  eindtijd: string
+  hamer: string
   herkomst: string
   bewaring: string
 }
 
-const TABS: TabKeuze<BeheerTab>[] = [
-  { id: 'wijn', label: 'WIJN' },
-  { id: 'avond', label: 'AVOND' },
-  { id: 'bestellingen', label: 'BESTELLINGEN' },
-]
+type Stap = 'foto' | 'na' | 'soort' | 'klaar'
 
-/**
- * Beheer, in drie tabs: een wijn klaarzetten uit een WhatsApp-bericht (14), de avond presenteren (15),
- * en de bestellingen met de paklijst. De hoofdknop staat onderaan, binnen bereik van de duim.
- */
-export function Beheer({ ga, tab }: { ga: Ga; tab: BeheerTab }) {
+function NieuweFles({ ga }: { ga: Ga }) {
   const [staat, dispatch] = useStaat()
   const { lijst } = staat
-  const lijstOpen = lijst.status === 'open'
-  const leeg = (): Formulier => ({
-    letter: '', naam: '', jaar: '', aantal: '', prijs: '', tekst: '',
-    startbod: '', verhoging: '10', eindtijd: naarInvoer(veilingVanAvond(staat)?.eindtijd ?? plus(lijst.begin, 90 * 60_000)), herkomst: '', bewaring: '',
-  })
+  const [stap, setStap] = useState<Stap>('foto')
+  const [foto, setFoto] = useState<string | undefined>()
+  const [plakken, setPlakken] = useState(false)
   const [bericht, setBericht] = useState(voorbeeldBericht)
   const [form, setForm] = useState<Formulier | null>(null)
-  const [soort, setSoort] = useState<'lijst' | 'bieding'>('lijst')
-  const [foto, setFoto] = useState<string | undefined>()
+  const [twijfel, setTwijfel] = useState<Set<keyof Formulier>>(new Set())
+  const [soort, setSoort] = useState<'lijst' | 'veiling'>('lijst')
+  const [spraak, setSpraak] = useState(false)
   const [fout, setFout] = useState<string | null>(null)
-  const [sluiten, setSluiten] = useState(false)
+  const [klaarGezet, setKlaarGezet] = useState<{ naam: string; kort: string; tekst: string; foto?: string; regel: string } | null>(null)
+  const dag = weekdag(lijst.begin)
 
   // Een gekozen foto blijft alleen in deze browser. Ruim het tijdelijke adres op als hij vervangen wordt.
   useEffect(() => () => {
     if (foto?.startsWith('blob:')) URL.revokeObjectURL(foto)
   }, [foto])
 
-  const herken = () => {
+  /** Lees de WhatsApp-tekst en het etiket. In de echte app doet een taalmodel dat; hier een eenvoudige regel. */
+  const herken = (metFoto: string | undefined) => {
     const h = herkenBericht(bericht)
-    const bezet = h.letter && lijst.wijnen.some((w) => w.letter === h.letter)
+    const etiket = metFoto ? voorbeeldEtiket : undefined
+    setFoto(metFoto)
     setForm({
-      ...leeg(),
-      letter: h.letter && !bezet ? h.letter : volgendeLetter(staat),
+      producent: etiket?.producent ?? '',
       naam: h.naam,
       jaar: h.jaargang ? String(h.jaargang) : '',
-      aantal: h.aantal ? String(h.aantal) : '',
+      druif: etiket?.druif ?? '',
+      streek: etiket?.streek ?? '',
       prijs: h.prijs !== undefined ? bedrag(h.prijs) : '',
+      aantal: h.aantal ? String(h.aantal) : '',
       tekst: h.tekst,
+      spijs: '',
+      drinken: '',
+      startbod: '',
+      verhoging: '10',
+      hamer: naarInvoer(veilingVanAvond(staat)?.eindtijd ?? plus(lijst.begin, 90 * 60_000)),
+      herkomst: '',
+      bewaring: '',
     })
+    // Het jaar op het etiket en in het bericht verschillen vaak: dat vraagt de app na.
+    setTwijfel(new Set(h.jaargang ? ['jaar'] : []))
+    setFout(null)
+    setStap('na')
+  }
+  const zet = (veld: keyof Formulier) => (waarde: string) => {
+    setForm((f) => (f ? { ...f, [veld]: waarde } : f))
+    setTwijfel((t) => {
+      const n = new Set(t)
+      n.delete(veld)
+      return n
+    })
+  }
+  const opnieuw = () => {
+    setStap('foto')
+    setForm(null)
+    setFoto(undefined)
+    setSoort('lijst')
+    setSpraak(false)
     setFout(null)
   }
-  const zet = (veld: keyof Formulier) => (waarde: string) => setForm((f) => (f ? { ...f, [veld]: waarde } : f))
+
+  const naarSoort = () => {
+    if (!form) return
+    const jaargang = form.jaar ? Number(form.jaar) : undefined
+    if (!form.naam.trim()) return setFout('Vul de naam van de wijn in.')
+    if (jaargang !== undefined && !(Number.isInteger(jaargang) && jaargang > 1900 && jaargang < 2100)) return setFout('Het jaar klopt niet.')
+    setFout(null)
+    setStap('soort')
+  }
 
   const opslaan = () => {
     if (!form) return
-    const naam = form.naam.trim()
+    const naam = [form.producent.trim(), form.naam.trim()].filter(Boolean).join(' ')
     const jaargang = form.jaar ? Number(form.jaar) : undefined
-    if (!naam) return setFout('Vul de naam van de wijn in.')
-    if (jaargang !== undefined && !(Number.isInteger(jaargang) && jaargang > 1900 && jaargang < 2100)) return setFout('Het jaar klopt niet.')
     if (soort === 'lijst') {
-      const letter = form.letter.trim().toUpperCase()
       const aantal = Number(form.aantal)
       const prijs = leesEuro(form.prijs)
-      if (!lijstOpen) return setFout('De avond is gesloten. Zet de wijn klaar voor de volgende avond.')
-      if (!/^[A-Z]$/.test(letter)) return setFout('De letter moet één letter zijn, zoals J.')
-      if (lijst.wijnen.some((w) => w.letter === letter)) return setFout(`Wijn ${letter} staat al op de lijst.`)
+      if (lijst.status !== 'open') return setFout('De avond is gesloten. Zet de wijn klaar voor de volgende avond.')
       if (!Number.isInteger(aantal) || aantal < 1) return setFout('Het aantal moet minstens 1 fles zijn.')
       if (!prijs) return setFout('De prijs klopt niet. Schrijf hem als 10,50.')
+      const letter = herkenBericht(bericht).letter
       dispatch({
         type: 'nieuweWijn',
         wijn: {
-          wijnId: `wijn-${letter.toLowerCase()}-${Date.now()}`, letter, naam, jaargang, tekst: form.tekst.trim(), foto,
+          wijnId: `wijn-${Date.now()}`,
+          letter: letter && !lijst.wijnen.some((w) => w.letter === letter) ? letter : volgendeLetter(staat),
+          naam, korteNaam: form.naam.trim() || undefined, producent: form.producent.trim() || undefined, jaargang,
+          druif: form.druif.trim() || undefined, streek: form.streek.trim() || undefined,
+          tekst: form.tekst.trim(), spijs: form.spijs.trim() || undefined, drinken: form.drinken.trim() || undefined, foto,
           prijs, voorraad: aantal, partij: aantal, volgorde: lijst.wijnen.reduce((m, w) => Math.max(m, w.volgorde), 0) + 1,
         },
       })
-      dispatch({ type: 'melding', melding: { kop: `Wijn ${letter} staat klaar`, tekst: `${naam}, ${aantal} flessen voor ${euro(prijs)}. Je zet hem tijdens de avond op tafel.` } })
+      setKlaarGezet({ naam: naamMetJaar({ naam, jaargang }), kort: form.naam.trim() || naam, tekst: form.tekst.trim(), foto, regel: `${euro(prijs)} / fles · ${aantal} flessen` })
     } else {
       const startbod = leesEuro(form.startbod)
       const verhoging = leesEuro(form.verhoging)
-      const eindtijd = vanInvoer(form.eindtijd)
+      const eindtijd = vanInvoer(form.hamer)
       if (!startbod) return setFout('Het startbod klopt niet. Schrijf het als 250.')
       if (!verhoging) return setFout('De minimale verhoging klopt niet.')
-      if (!eindtijd || eindtijd <= nuUtc()) return setFout('De eindtijd moet in de toekomst liggen.')
+      if (!eindtijd || eindtijd <= nuUtc()) return setFout('De hamer moet in de toekomst vallen.')
       dispatch({
         type: 'nieuweBieding',
         bieding: {
           wijnId: `bieding-${Date.now()}`, naam, jaargang, tekst: form.tekst.trim() || undefined, foto,
+          druif: form.druif.trim() || undefined, streek: form.streek.trim() || undefined,
+          spijs: form.spijs.trim() || undefined, drinken: form.drinken.trim() || undefined,
           herkomst: form.herkomst.trim() || undefined, bewaring: form.bewaring.trim() || undefined,
           startbod, minimaleVerhoging: verhoging, minimaalVolgendBod: startbod, eindtijd,
           aantalBiedingen: 0, biedingStatus: 'open', mijnBodIsHoogste: false, biedlog: [],
         },
       })
-      dispatch({ type: 'melding', melding: { kop: 'De veiling staat klaar', tekst: `${naam}, vanaf ${euro(startbod, { heel: true })}. Hij begint op de avond.` } })
+      setKlaarGezet({ naam: naamMetJaar({ naam, jaargang }), kort: form.naam.trim() || naam, tekst: form.tekst.trim(), foto, regel: `Veiling · startbod ${euro(startbod, { heel: true })}` })
     }
-    setForm(null)
-    setFoto(undefined)
-    setBericht('')
     setFout(null)
+    setStap('klaar')
     window.scrollTo(0, 0)
   }
 
-  const lijstBestellingen = staat.bestellingen.filter((b) => b.lijstId === lijst.lijstId && b.status !== 'verlopen')
-  const biedingBestellingen = staat.bestellingen.filter((b) => b.soort === 'bieding' && b.status !== 'verlopen')
-  const flessenVoor = (bs: Bestelling[]) => bs.reduce((som, b) => som + b.regels.reduce((s, r) => s + r.aantal, 0), 0)
+  if (stap === 'foto') {
+    return (
+      <main className="camera">
+        <img className="camera-beeld" src={voorbeeldEtiket.foto} alt="" />
+        <span className="camera-donker boven" aria-hidden />
+        <span className="camera-donker onder" aria-hidden />
+        <header className="camera-kop">
+          <button type="button" className="camera-knop" aria-label="Stop" onClick={() => ga({ scherm: 'beheer' })}><X size={22} aria-hidden /></button>
+          <h1>
+            <span>Nieuwe fles</span>
+            <small>Voor {dagDatum(lijst.begin).toLowerCase()}</small>
+          </h1>
+          <span className="camera-knop" aria-hidden><ZapOff size={20} /></span>
+        </header>
+        <div className="camera-kader" aria-hidden><i /><i /><i /><i /></div>
+        <p className="camera-hint">Fles rechtop, etiket naar je toe</p>
+        <div className="camera-bediening">
+          <label className="camera-zij">
+            <img src="/voorbeeld/candido.jpg" alt="" />
+            Fotorol
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(e) => {
+                const bestand = e.target.files?.[0]
+                if (!bestand) return
+                if (!bestand.type.startsWith('image/') || bestand.size > 10_000_000) return setFout('Kies een foto van hoogstens 10 MB.')
+                herken(URL.createObjectURL(bestand))
+              }}
+            />
+          </label>
+          <button type="button" className="sluiter" aria-label="Maak de foto" onClick={() => herken(voorbeeldEtiket.foto)}><span /></button>
+          <button type="button" className="camera-zij" onClick={() => setPlakken(true)}>
+            <span className="camera-plak"><ClipboardPaste size={24} aria-hidden /></span>
+            Plak tekst
+          </button>
+        </div>
+        {fout && <p className="fout" role="alert" style={{ textAlign: 'center' }}>{fout}</p>}
+        <p className="camera-voet">De app leest je WhatsApp-tekst en het etiket. Jij kijkt het na.</p>
+        <p className="uitleg-voorbeeld camera-voet">Voorbeeld: de knop maakt geen echte foto en de app leest het etiket niet echt.</p>
+        {plakken && (
+          <Blad titel="Plak je WhatsApp-bericht" onSluit={() => setPlakken(false)}>
+            <label className="sr" htmlFor="bericht">Je WhatsApp-bericht</label>
+            <textarea id="bericht" className="invoer-groot" value={bericht} onChange={(e) => setBericht(e.target.value)} placeholder="*Wijn J Soave Classico 2023* …" />
+            <Hoofdknop disabled={!bericht.trim()} onClick={() => { setPlakken(false); herken(undefined) }}>Lees het bericht</Hoofdknop>
+          </Blad>
+        )}
+      </main>
+    )
+  }
 
-  const wachten = new Set(lijstBestellingen.filter((b) => b.status === 'open').map((b) => b.lidId)).size
+  if (stap === 'klaar' && klaarGezet) {
+    const rij = [...gesorteerd(lijst.wijnen).filter((w) => !w.opTafelSinds)]
+    const veilingen = staat.biedingen.filter((b) => b.biedingStatus === 'open' && !b.geopend)
+    return (
+      <>
+        <main className="sectie" style={{ gap: 16, paddingTop: 28 }}>
+          <h1 className="eventkop goud" style={{ fontSize: 'min(110px, 28vw)' }}>Klaar.</h1>
+          <p className="tekst">De {klaarGezet.kort.split(' ')[0]} staat klaar voor {dag}. Zo zien leden hem als jij hem op tafel zet:</p>
+          <div className="klaar-kaart">
+            <Duim foto={klaarGezet.foto} breedte={72} hoogte={96} />
+            <div>
+              <p className="label goud" style={{ fontSize: 13 }}>Voor {dag}</p>
+              <strong>{klaarGezet.naam}</strong>
+              <span className="klaar-tekst">{klaarGezet.tekst}</span>
+              <span className="label" style={{ color: 'var(--ink)', fontSize: 13 }}>{klaarGezet.regel}</span>
+            </div>
+          </div>
+          <div className="beheer-blok-kop" style={{ marginTop: 6 }}>
+            <h2>Klaar voor {dag}</h2>
+            <span>{rij.length} {rij.length === 1 ? 'WIJN' : 'WIJNEN'} · {veilingen.length} {veilingen.length === 1 ? 'VEILING' : 'VEILINGEN'}</span>
+          </div>
+          <div className="klaar-rij">
+            {rij.map((w) => <Duim key={w.wijnId} foto={w.foto} breedte={44} hoogte={60} wit={w === rij.at(-1)} />)}
+            {veilingen.map((b) => <Duim key={b.wijnId} foto={b.foto} breedte={44} hoogte={60} goud />)}
+          </div>
+        </main>
+        <div className="onderkant">
+          <div className="hoofdknop-zone">
+            <Hoofdknop icoon={<Camera size={26} aria-hidden />} onClick={opnieuw}>Nog een fles</Hoofdknop>
+            <button type="button" className="tekstlink zonder-lijn gedempt midden" onClick={() => ga({ scherm: 'beheer' })}>Bekijk {dag} →</button>
+          </div>
+        </div>
+      </>
+    )
+  }
 
-  let knop: ReactNode = null
-  if (tab === 'wijn') knop = <Hoofdknop disabled={!form} onClick={opslaan}>{soort === 'lijst' ? `Zet klaar voor ${weekdag(lijst.begin)}` : 'Zet klaar als veiling'}</Hoofdknop>
-  if (tab === 'avond') return <BeheerLive ga={ga} />
+  if (!form) return null
 
+  if (stap === 'na') {
+    return (
+      <>
+        <TerugLink titel="Opnieuw" onTerug={opnieuw} rechts={<span className="stap-teller">Stap 2 van 3</span>} />
+        <main>
+          <div className="na-kop">
+            <button type="button" className="na-foto" onClick={opnieuw} aria-label="Maak de foto opnieuw">
+              <Duim foto={foto} breedte={120} hoogte={160} />
+            </button>
+            <div>
+              <p className="label goud" style={{ fontSize: 13 }}>Voor {dag}</p>
+              <h1 className="na-titel">Nieuwe fles</h1>
+              <p className="tekst klein gedempt">{foto ? 'Foto gelukt. Tik op de foto om hem opnieuw te maken.' : 'Nog geen foto. Tik op het vak om er een te maken.'}</p>
+            </div>
+          </div>
+          <div className="herkend">
+            <div className="herkend-kop">
+              <span>Herkend</span>
+              <span>{foto ? 'Etiket + WhatsApp' : 'WhatsApp'}</span>
+            </div>
+            <Veld label="Producent" waarde={form.producent} onWijzig={zet('producent')} />
+            <Veld label="Naam" waarde={form.naam} onWijzig={zet('naam')} />
+            <Veld label="Jaar" waarde={form.jaar} onWijzig={zet('jaar')} invoer="numeric" twijfel={twijfel.has('jaar')} />
+            <Veld label="Druif · streek" waarde={[form.druif, form.streek].filter(Boolean).join(' · ')} onWijzig={(w) => { const [d = '', ...r] = w.split('·'); zet('druif')(d.trim()); zet('streek')(r.join('·').trim()) }} />
+            <Veld label="Prijs per fles" waarde={form.prijs} onWijzig={zet('prijs')} invoer="decimal" voor="€" />
+            <Veld label="Aantal" waarde={form.aantal} onWijzig={zet('aantal')} invoer="numeric" na="flessen" />
+          </div>
+          <section className="sectie">
+            <div className="beheer-blok-kop">
+              <h2>Jouw tekst</h2>
+              <span>Uit je bericht</span>
+            </div>
+            <label className="sr" htmlFor="tekst">Jouw tekst</label>
+            <textarea id="tekst" className="invoer-groot wit" value={form.tekst} onChange={(e) => zet('tekst')(e.target.value)} />
+            <div className="twee-kolommen" style={{ gap: 10 }}>
+              <label className="vak-veld"><span>Erbij</span><input value={form.spijs} placeholder="Wat eet je erbij?" onChange={(e) => zet('spijs')(e.target.value)} /></label>
+              <label className="vak-veld"><span>Drinken</span><input value={form.drinken} placeholder="Nu tot …" onChange={(e) => zet('drinken')(e.target.value)} /></label>
+            </div>
+            <p className="tekst klein gedempt">Herkomst en bewaring vult de app nooit zelf in.</p>
+          </section>
+          <div style={{ height: 16 }} />
+        </main>
+        <div className="onderkant">
+          <div className="hoofdknop-zone">
+            {fout && <p className="fout" role="alert" style={{ marginBottom: 10 }}>{fout}</p>}
+            <Hoofdknop onClick={naarSoort}>Klopt, verder</Hoofdknop>
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  const opTafelNa = gesorteerd(lijst.wijnen).at(-1)
+  const plek = ['eerste', 'tweede', 'derde', 'vierde', 'vijfde', 'zesde', 'zevende', 'achtste'][lijst.wijnen.length] ?? `${lijst.wijnen.length + 1}e`
   return (
     <>
-      <Kop
-        sub="Beheer"
-        rechts={
-          <button type="button" className="tekstlink zonder-lijn" onClick={() => ga({ scherm: 'aanbod' })}>
-            Naar de app <span aria-hidden>→</span>
-          </button>
-        }
-      />
+      <TerugLink titel="Terug" onTerug={() => setStap('na')} rechts={<span className="stap-teller">Stap 3 van 3</span>} />
       <main>
-        {tab === 'wijn' && (
-          <>
-            <div className="masthead">
-              <h1>
-                <span className="groot spook">Nieuwe</span>
-                <span className="groot">Wijn</span>
-              </h1>
+        <div className="soort-kop">
+          <Duim foto={foto} breedte={56} hoogte={76} />
+          <h1>{naamMetJaar({ naam: [form.producent, form.naam].filter(Boolean).join(' '), jaargang: form.jaar ? Number(form.jaar) : undefined })}{soort === 'veiling' ? ' · 1 fles' : ''}</h1>
+        </div>
+        <div className="sectie" style={{ paddingTop: 8 }}>
+          <Keuze
+            label="Lijst of veiling"
+            gekozen={soort}
+            onKies={(id) => setSoort(id as 'lijst' | 'veiling')}
+            opties={[
+              { id: 'lijst', woord: 'Lijst', zin: 'Vaste prijs. Wie het eerst is…' },
+              { id: 'veiling', woord: 'Veiling', zin: 'Eén of enkele flessen. De hamer beslist.' },
+            ]}
+          />
+        </div>
+        {soort === 'lijst' ? (
+          <div className="rij-velden">
+            <RijVeld label="Prijs per fles" waarde={form.prijs} onWijzig={zet('prijs')} invoer="decimal" voor="€" groot />
+            <RijVeld label="Aantal flessen" waarde={form.aantal} onWijzig={zet('aantal')} invoer="numeric" groot />
+            <div className="rij-veld">
+              <span>Op tafel<small>Als {plek} wijn{opTafelNa ? `, na de ${roepNaam(opTafelNa).toLowerCase().replace(/^./, (c) => c.toUpperCase())}` : ''}</small></span>
+              <strong>{dagDatum(lijst.begin)}</strong>
             </div>
-
-            <Stap nummer="01" titel="Plak je WhatsApp-bericht">
-              <label className="sr" htmlFor="bericht">Je WhatsApp-bericht</label>
-              <textarea id="bericht" className="invoer-groot" value={bericht} onChange={(e) => setBericht(e.target.value)} placeholder="*Wijn J Soave Classico 2023* …" />
-              <div className="knoppen-rij">
-                <button type="button" className="knop-wit" disabled={!bericht.trim()} onClick={herken}>Herken →</button>
-                <span className="uitleg-voorbeeld">In de echte app leest een taalmodel het bericht. Hier een eenvoudige regel.</span>
-              </div>
-              {form && (
-                <div className="herkend">
-                  <p className="label">Herkend · kijk het na</p>
-                  {soort === 'lijst' && <Veld label="Wijn" waarde={form.letter} onWijzig={zet('letter')} hoofdletters />}
-                  <Veld label="Naam" waarde={form.naam} onWijzig={zet('naam')} />
-                  <Veld label="Jaar" waarde={form.jaar} onWijzig={zet('jaar')} invoer="numeric" />
-                  {soort === 'lijst' && <Veld label="Aantal" waarde={form.aantal} onWijzig={zet('aantal')} invoer="numeric" />}
-                  {soort === 'lijst' && <Veld label="Prijs" waarde={form.prijs} onWijzig={zet('prijs')} invoer="decimal" voor="€" />}
-                  <Veld label="Tekst" waarde={form.tekst} onWijzig={zet('tekst')} lang />
-                </div>
-              )}
-            </Stap>
-
-            <Stap nummer="02" titel="Foto">
-              <div className="fotos">
-                {foto && <img src={foto} alt="Gekozen foto" />}
-                <label className="foto-toevoegen">
-                  <Camera size={24} aria-hidden />
-                  + FOTO
-                  {/* Alleen een voorbeeld in deze browser; er wordt niets geüpload. */}
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={(e) => {
-                      const bestand = e.target.files?.[0]
-                      if (!bestand) return
-                      if (!bestand.type.startsWith('image/') || bestand.size > 10_000_000) {
-                        setFout('Kies een foto van hoogstens 10 MB.')
-                        return
-                      }
-                      setFoto(URL.createObjectURL(bestand))
-                    }}
-                  />
-                </label>
-              </div>
-            </Stap>
-
-            <Stap nummer="03" titel="Lijst of bieding?">
-              <Keuze
-                label="Lijst of bieding"
-                gekozen={soort}
-                onKies={(id) => setSoort(id as 'lijst' | 'bieding')}
-                opties={[
-                  { id: 'lijst', woord: 'Lijst', zin: lijstOpen ? `Vaste prijs, ${weekdag(lijst.begin)} vanaf ${tijd(lijst.begin)}` : 'De avond is gesloten' },
-                  { id: 'bieding', woord: 'Bieding', zin: 'Startbod, onder de hamer aan het eind' },
-                ]}
-              />
-              {soort === 'bieding' && form && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <VeldZwart label="Startbod in euro" waarde={form.startbod} onWijzig={zet('startbod')} invoer="decimal" />
-                  <VeldZwart label="Minimale verhoging in euro" waarde={form.verhoging} onWijzig={zet('verhoging')} invoer="decimal" />
-                  <VeldZwart label="Eindtijd" waarde={form.eindtijd} onWijzig={zet('eindtijd')} type="datetime-local" />
-                  <VeldZwart label="Herkomst" waarde={form.herkomst} onWijzig={zet('herkomst')} />
-                  <VeldZwart label="Bewaring" waarde={form.bewaring} onWijzig={zet('bewaring')} />
-                  <p className="uitleg-voorbeeld">Het spraakbericht van 30 seconden komt later.</p>
-                </div>
-              )}
-              {!form && <p className="tekst klein gedempt">Laat eerst je bericht herkennen.</p>}
-            </Stap>
+          </div>
+        ) : (
+          <>
+            <div className="rij-velden">
+              <h2 className="rij-velden-kop">Bieden</h2>
+              <RijVeld label="Startbod" waarde={form.startbod} onWijzig={zet('startbod')} invoer="decimal" voor="€" plaats="250" groot />
+              <RijVeld label="Minimale verhoging" waarde={form.verhoging} onWijzig={zet('verhoging')} invoer="decimal" voor="€" />
+              <label className="rij-veld">
+                <span>Hamer<small>Veiling start om {tijd(lijst.veilingBegin)}</small></span>
+                <input type="datetime-local" value={form.hamer} onChange={(e) => zet('hamer')(e.target.value)} />
+              </label>
+            </div>
+            <div className="rij-velden">
+              <h2 className="rij-velden-kop">Alleen van jou</h2>
+              <RijVeld label="Herkomst" waarde={form.herkomst} onWijzig={zet('herkomst')} plaats="Waar komt hij vandaan?" />
+              <RijVeld label="Bewaring" waarde={form.bewaring} onWijzig={zet('bewaring')} plaats="Hoe lag hij?" />
+              <button type="button" className={spraak ? 'spraak-opname aan' : 'spraak-opname'} aria-pressed={spraak} onClick={() => setSpraak((x) => !x)}>
+                <span className="mic" aria-hidden><Mic size={26} /></span>
+                <span>
+                  <strong>{spraak ? 'Opgenomen · 0:30' : 'Vertel over deze fles'}</strong>
+                  <span>Houd ingedrukt · max. 30 seconden. Leden horen jou, niet een tekst.</span>
+                </span>
+              </button>
+              <p className="uitleg-voorbeeld">Voorbeeld: er wordt niets opgenomen.</p>
+            </div>
           </>
         )}
-
-        {tab === 'bestellingen' && (
-          <section className="sectie" style={{ paddingTop: 8 }}>
-            <div style={{ borderBottom: '1px solid var(--ink)', paddingBottom: 8 }}>
-              <h1 style={{ fontSize: 'min(52px, 14vw)', fontWeight: 700, lineHeight: 1, textTransform: 'uppercase' }}>Bestellingen</h1>
-              <p className="label" style={{ marginTop: 6 }}>Week {weekNummer(lijst.openTot)} · {lijstBestellingen.length} van de lijst</p>
-            </div>
-            {lijst.afhaalpunten.map((punt) => {
-              const hier = lijstBestellingen.filter((b) => b.levering === punt.afhaalpuntId)
-              if (hier.length === 0) return null
-              return (
-                <Fragment key={punt.afhaalpuntId}>
-                  <div className="paklijst-kop">
-                    <strong>{punt.naam}</strong>
-                    <span>{punt.wanneer} · {flessenVoor(hier)} flessen</span>
-                  </div>
-                  {hier.map((b) => <BestellingRij key={b.bestellingId} bestelling={b} />)}
-                </Fragment>
-              )
-            })}
-            {biedingBestellingen.length > 0 && (
-              <>
-                <div className="paklijst-kop">
-                  <strong>Biedingen</strong>
-                  <span>{biedingBestellingen.length} {biedingBestellingen.length === 1 ? 'fles' : 'flessen'}</span>
-                </div>
-                {biedingBestellingen.map((b) => <BestellingRij key={b.bestellingId} bestelling={b} />)}
-              </>
-            )}
-            {lijstBestellingen.length === 0 && biedingBestellingen.length === 0 && <p className="tekst gedempt">Nog geen bestellingen.</p>}
-            <button type="button" className="tekstlink zonder-lijn" style={{ alignSelf: 'flex-start', marginTop: 8 }} disabled={!lijstOpen} onClick={() => ga({ scherm: 'namens' })}>
-              + Bestelling namens een lid
-            </button>
-          </section>
-        )}
-        <div style={{ height: 24 }} />
+        <div style={{ height: 16 }} />
       </main>
       <div className="onderkant">
-        {(knop || (tab === 'wijn' && fout)) && (
-          <div className="hoofdknop-zone">
-            {tab === 'wijn' && fout && <p className="fout" role="alert" style={{ marginBottom: 10 }}>{fout}</p>}
-            {knop}
-          </div>
-        )}
-        <Tabs tabs={TABS} actief={tab} onKies={(t) => ga({ scherm: 'beheer', tab: t })} label="Beheer" vrij />
+        <div className="hoofdknop-zone">
+          {fout && <p className="fout" role="alert" style={{ marginBottom: 10 }}>{fout}</p>}
+          <Hoofdknop onClick={opslaan}>Zet klaar voor {dag}</Hoofdknop>
+        </div>
       </div>
-      {sluiten && (
-        <SluitBevestiging wachten={wachten} onSluit={() => setSluiten(false)} />
-      )}
     </>
   )
 }
 
-function BestellingRij({ bestelling: b }: { bestelling: Bestelling }) {
-  const [staat, dispatch] = useStaat()
-  const regels = b.regels.map((r) => (r.letter ? `${r.aantal}× ${r.letter}` : r.naam)).join(' · ')
-  let levering = ''
-  if (b.soort === 'bieding') levering = afhaalpunt(staat, b.levering)?.naam ?? 'nog niet gekozen'
-  const status = [
-    b.status === 'betaald' ? 'Betaald' : 'Wacht op betaling',
-    levering,
-    b.ingevoerdDoor === 'beheer' ? 'door jou ingevoerd' : '',
-  ].filter(Boolean).join(' · ')
-  const klaar = Boolean(b.afgeleverdOp)
-  return (
-    <div className={klaar ? 'bestelling-rij afgevinkt' : 'bestelling-rij'}>
-      <button
-        type="button"
-        role="checkbox"
-        aria-checked={klaar}
-        aria-label={`Afgeleverd: ${lidNaam(b.lidId)}, bon ${b.bon}`}
-        className="vink-knop"
-        onClick={() => dispatch({ type: 'afgeleverd', bestellingId: b.bestellingId, ja: !klaar, nu: nuUtc() })}
-      >
-        <span>{klaar && <Check size={20} strokeWidth={3} aria-hidden />}</span>
-      </button>
-      <div>
-        <strong>{lidNaam(b.lidId)}</strong>
-        <span className="regels">{regels} · {euro(b.totaal)}</span>
-        <span className={b.status === 'betaald' ? 'status' : 'status goud'}>{status}</span>
-      </div>
-    </div>
-  )
-}
-
-function Stap({ nummer, titel, children }: { nummer: string; titel: string; children: ReactNode }) {
-  return (
-    <section className="beheer-stap">
-      <div className="beheer-stap-kop">
-        <span className="stap-nummer" aria-hidden>{nummer}</span>
-        <h2>{titel}</h2>
-      </div>
-      {children}
-    </section>
-  )
-}
-
-function Veld({ label, waarde, onWijzig, invoer, voor, lang = false, hoofdletters = false }: {
+/** Een herkend veld op wit papier: label links, de waarde rechts, met een potlood. */
+function Veld({ label, waarde, onWijzig, invoer, voor, na, twijfel = false }: {
   label: string
   waarde: string
   onWijzig: (w: string) => void
   invoer?: 'numeric' | 'decimal'
   voor?: string
-  lang?: boolean
-  hoofdletters?: boolean
+  na?: string
+  twijfel?: boolean
 }) {
   return (
-    <div className={lang ? 'veld tekst-veld' : 'veld'}>
-      <span>{label}</span>
+    <div className={twijfel ? 'veld twijfel' : 'veld'}>
+      <span>{label}{twijfel && <small>Klopt dit?</small>}</span>
       <label>
-        {voor && <b style={{ fontSize: 20 }}>{voor}</b>}
-        {lang ? (
-          <textarea aria-label={label} value={waarde} onChange={(e) => onWijzig(e.target.value)} />
-        ) : (
-          <input aria-label={label} value={waarde} inputMode={invoer} autoCapitalize={hoofdletters ? 'characters' : undefined} enterKeyHint="done" onChange={(e) => onWijzig(e.target.value)} />
-        )}
-        {!lang && <Pencil size={18} aria-hidden />}
+        {voor && <b>{voor}</b>}
+        <input aria-label={label} value={waarde} inputMode={invoer} enterKeyHint="done" onChange={(e) => onWijzig(e.target.value)} />
+        {na && waarde && <b>{na}</b>}
+        <Pencil size={16} aria-hidden />
       </label>
     </div>
   )
 }
 
-function VeldZwart({ label, waarde, onWijzig, invoer, type = 'text' }: {
+/** Een veld op zwart, zoals bij lijst of veiling: label links, de waarde groot rechts. */
+function RijVeld({ label, waarde, onWijzig, invoer, voor, plaats, groot = false }: {
   label: string
   waarde: string
   onWijzig: (w: string) => void
-  invoer?: 'decimal'
-  type?: string
+  invoer?: 'numeric' | 'decimal'
+  voor?: string
+  plaats?: string
+  groot?: boolean
 }) {
   return (
-    <label className="veld-zwart">
+    <label className={groot ? 'rij-veld groot' : 'rij-veld'}>
       <span>{label}</span>
-      <input className="invoer" type={type} value={waarde} inputMode={invoer} onChange={(e) => onWijzig(e.target.value)} />
+      <span className="rij-veld-waarde">
+        {voor && <b>{voor}</b>}
+        <input value={waarde} inputMode={invoer} placeholder={plaats} enterKeyHint="done" onChange={(e) => onWijzig(e.target.value)} />
+        <Pencil size={16} aria-hidden />
+      </span>
     </label>
   )
 }
 
-/** Bestelling namens een lid: lid kiezen, letters en aantallen zoals "G2 H1", afhaalpunt. */
-export function Namens({ ga }: { ga: Ga }) {
-  const [staat, dispatch] = useStaat()
-  const { lijst } = staat
-  const leden = voorbeeldLeden.slice(1)
-  const [lidId, setLidId] = useState<string | null>(null)
-  const [letters, setLetters] = useState('')
-  const [punt, setPunt] = useState<string | null>(lijst.afhaalpunten[0]?.afhaalpuntId ?? null)
-  const [fout, setFout] = useState<string | null>(null)
-
-  const gelezen = leesLetters(letters)
-  const regels = gelezen.regels.map((r) => ({ ...r, wijn: lijst.wijnen.find((w) => w.letter === r.letter) }))
-  let probleem = gelezen.fout
-  if (!probleem) {
-    const onbekend = regels.find((r) => !r.wijn)
-    const teVeel = regels.find((r) => r.wijn && r.aantal > r.wijn.voorraad)
-    if (onbekend) probleem = `Wijn ${onbekend.letter} staat niet op de lijst.`
-    else if (teVeel?.wijn) probleem = `Van wijn ${teVeel.letter} zijn er nog ${teVeel.wijn.voorraad}.`
-  }
-
-  const bestel = () => {
-    if (lijst.status !== 'open') return setFout('De lijst is gesloten.')
-    if (!lidId) return setFout('Kies het lid.')
-    if (!punt) return setFout('Kies een afhaalpunt.')
-    if (regels.length === 0) return setFout('Schrijf welke wijnen, zoals G2 H1.')
-    if (probleem) return setFout(probleem)
-    dispatch({
-      type: 'bestel', lidId, door: 'beheer', levering: punt, nu: nuUtc(),
-      regels: regels.map((r) => ({ wijnId: r.wijn!.wijnId, aantal: r.aantal })),
-    })
-    dispatch({ type: 'melding', melding: { kop: `Bestelling voor ${lidNaam(lidId)}`, tekst: 'Het lid betaalt als de lijst sluit, net als de anderen.' } })
-    ga({ scherm: 'beheer', tab: 'bestellingen' })
-  }
-
-  return (
-    <>
-      <Kop sub="Beheer" rechts={<span />} />
-      <TerugLink titel="Terug naar bestellingen" onTerug={() => ga({ scherm: 'beheer', tab: 'bestellingen' })} />
-      <main>
-        <div className="masthead">
-          <h1>
-            <span className="groot spook">Namens</span>
-            <span className="groot">een lid</span>
-          </h1>
-        </div>
-        <Stap nummer="01" titel="Welk lid?">
-          <div className="leden-keuze" role="radiogroup" aria-label="Lid">
-            {leden.map((l) => (
-              <button key={l.lidId} type="button" role="radio" aria-checked={l.lidId === lidId} onClick={() => setLidId(l.lidId)}>{l.naam}</button>
-            ))}
-          </div>
-        </Stap>
-        <Stap nummer="02" titel="Welke wijnen?">
-          <label className="veld-zwart">
-            <span>Letters en aantallen, zoals in WhatsApp</span>
-            <input className="invoer" value={letters} placeholder="G2 H1" autoCapitalize="characters" onChange={(e) => { setLetters(e.target.value); setFout(null) }} />
-          </label>
-          {letters.trim() && probleem && <p className="fout">{probleem}</p>}
-          {letters.trim() && !probleem && regels.length > 0 && (
-            <div className="bon-klein" style={{ display: 'block' }}>
-              <BonRegels
-                regels={regels.map((r) => ({
-                  sleutel: r.letter, aantal: r.aantal, letter: r.letter, naam: r.wijn!.naam, jaargang: r.wijn!.jaargang, prijs: r.wijn!.prijs,
-                }))}
-              />
-            </div>
-          )}
-        </Stap>
-        <Stap nummer="03" titel="Waar haalt het lid ze?">
-          <Keuze
-            label="Afhaalpunt"
-            vorm={lijst.afhaalpunten.length === 2 ? 'split' : 'banden'}
-            gekozen={punt}
-            onKies={setPunt}
-            opties={lijst.afhaalpunten.map((a) => ({ id: a.afhaalpuntId, woord: a.naam, zin: a.wanneer }))}
-          />
-          <p className="uitleg-voorbeeld">Het lid krijgt een betaalverzoek als de lijst sluit.</p>
-        </Stap>
-        <div style={{ height: 24 }} />
-      </main>
-      <div className="onderkant">
-        <div className="hoofdknop-zone">
-          {fout && <p className="fout" role="alert" style={{ marginBottom: 10 }}>{fout}</p>}
-          <Hoofdknop onClick={bestel}>Bestel{lidId ? ` voor ${lidNaam(lidId)}` : ''}</Hoofdknop>
-        </div>
-      </div>
-    </>
-  )
-}
-
-/** Sluiten is niet terug te draaien: daarom eerst een bevestiging (bouwspecificatie, M10). */
-function SluitBevestiging({ wachten, onSluit }: { wachten: number; onSluit: () => void }) {
-  const [, dispatch] = useStaat()
-  return (
-    <Blad titel="De avond sluiten?" onSluit={onSluit}>
-      <p className="tekst">
-        {wachten === 0 ? 'Er zijn nog geen bestellingen. ' : `${wachten} ${wachten === 1 ? 'lid krijgt' : 'leden krijgen'} een betaalverzoek. `}
-        Daarna kan niemand meer bestellen; wijnen die nog klaarstaan, komen niet op tafel. Een lopende veiling gaat door tot de hamer.
-        Dit kun je niet terugdraaien.
-      </p>
-      <Hoofdknop
-        onClick={() => {
-          onSluit()
-          dispatch({ type: 'sluitLijst', nu: nuUtc() })
-        }}
-      >
-        Sluit de avond
-      </Hoofdknop>
-      <button type="button" className="knop-grijs" onClick={onSluit}>
-        <span>Toch niet</span>
-      </button>
-    </Blad>
-  )
-}
+// ---- De avond presenteren ----
 
 /** Een flessenrij om naar te kijken, zonder knoppen. */
 function KleineRij({ vrij, partij }: { vrij: number; partij: number }) {
@@ -486,7 +441,7 @@ function KleineRij({ vrij, partij }: { vrij: number; partij: number }) {
   )
 }
 
-/** 15 Beheer live: Marc presenteert. Wijnen op tafel zetten, iets zeggen, de veiling starten, de avond sluiten. */
+/** Marc presenteert: wijnen op tafel zetten, iets zeggen, de veiling starten, de avond sluiten. */
 function BeheerLive({ ga }: { ga: Ga }) {
   const [staat, dispatch] = useStaat()
   const [tekst, setTekst] = useState('')
@@ -498,7 +453,6 @@ function BeheerLive({ ga }: { ga: Ga }) {
   const veiling = veilingVanAvond(staat)
   const live = lijst.fase === 'live'
   const volgende = klaarstaand[0]
-  const wachten = new Set(staat.bestellingen.filter((b) => b.lijstId === lijst.lijstId && b.status === 'open').map((b) => b.lidId)).size
 
   const stuur = (zin: string) => {
     dispatch({ type: 'bericht', tekst: zin, nu: nuUtc() })
@@ -511,8 +465,9 @@ function BeheerLive({ ga }: { ga: Ga }) {
 
   let knop: ReactNode = null
   if (lijst.fase === 'aangekondigd') knop = <Hoofdknop onClick={() => dispatch({ type: 'beginAvond', nu: nuUtc() })}>Begin de avond</Hoofdknop>
-  else if (live && volgende) knop = <Hoofdknop onClick={() => dispatch({ type: 'zetOpTafel', wijnId: volgende.wijnId, nu: nuUtc() })}>Zet wijn {volgende.letter} op tafel</Hoofdknop>
+  else if (live && volgende) knop = <Hoofdknop onClick={() => dispatch({ type: 'zetOpTafel', wijnId: volgende.wijnId, nu: nuUtc() })}>Zet de {roepNaam(volgende).toLowerCase()} op tafel</Hoofdknop>
   else if (live) knop = <Hoofdknop onClick={() => setSluiten(true)}>Sluit de avond</Hoofdknop>
+  else knop = <Hoofdknop onClick={() => ga({ scherm: 'beheer', tab: 'afleveren' })}>Naar afleveren</Hoofdknop>
 
   return (
     <>
@@ -534,23 +489,24 @@ function BeheerLive({ ga }: { ga: Ga }) {
           {klaarstaand.length === 0 && <p className="tekst klein gedempt">Alles staat op tafel.</p>}
           {klaarstaand.map((w) => (
             <div key={w.wijnId} className="beheer-wijn">
-              <span className="beheer-letter" aria-hidden>{w.letter}</span>
+              <Duim foto={w.foto} breedte={52} hoogte={64} />
               <div>
-                <strong>{naamMetJaar(w)}</strong>
+                <strong>{naamMetJaar({ naam: korteNaam(w), jaargang: w.jaargang })}</strong>
                 <span>{w.partij ?? w.voorraad} flessen · {euro(w.prijs)} · {w.foto ? 'tekst en foto klaar' : 'nog geen foto'}</span>
               </div>
-              <button type="button" className="tekstlink zonder-lijn gedempt" onClick={() => ga({ scherm: 'beheer', tab: 'wijn' })}>Bewerk</button>
+              <button type="button" className="tekstlink zonder-lijn gedempt" onClick={() => ga({ scherm: 'beheer', tab: 'nieuw' })}>Bewerk</button>
             </div>
           ))}
+          <button type="button" className="tekstlink zonder-lijn" style={{ alignSelf: 'flex-start' }} onClick={() => ga({ scherm: 'beheer', tab: 'nieuw' })}>+ Nieuwe fles</button>
         </BeheerBlok>
 
         <BeheerBlok titel="Op tafel" rechts={`${opDeTafel.length} ${opDeTafel.length === 1 ? 'WIJN' : 'WIJNEN'}`}>
           {opDeTafel.length === 0 && <p className="tekst klein gedempt">Nog niets op tafel.</p>}
           {opDeTafel.map((w) => (
             <div key={w.wijnId} className={w.voorraad === 0 ? 'beheer-wijn op-tafel op' : 'beheer-wijn op-tafel'}>
-              <span className="beheer-letter klein" aria-hidden>{w.letter}</span>
+              <Duim foto={w.foto} breedte={30} hoogte={38} />
               <div>
-                <strong>{naamMetJaar(w, { kort: true })}</strong>
+                <strong>{naamMetJaar({ naam: korteNaam(w), jaargang: w.jaargang }, { kort: true })}</strong>
                 <KleineRij vrij={w.voorraad} partij={w.partij ?? w.voorraad} />
               </div>
               <p className="beheer-rest">
@@ -589,7 +545,7 @@ function BeheerLive({ ga }: { ga: Ga }) {
             rechts={veiling.biedingStatus === 'gesloten' ? 'AFGELOPEN' : veiling.geopend ? `HAMER ${tijd(veiling.eindtijd)}` : `START OM ${tijd(lijst.veilingBegin)}`}
           >
             <div className="beheer-wijn">
-              <span className="beheer-letter goud" aria-hidden>★</span>
+              <Duim foto={veiling.foto} breedte={30} hoogte={38} goud />
               <div>
                 <strong>{naamMetJaar(veiling, { kort: true })}</strong>
                 <span>
@@ -607,19 +563,17 @@ function BeheerLive({ ga }: { ga: Ga }) {
         <div style={{ height: 24 }} />
       </main>
       <div className="onderkant">
-        {knop && (
-          <div className="hoofdknop-zone">
-            {knop}
+        <div className="hoofdknop-zone">
+          {knop}
+          <div className="beheer-links">
             {live && volgende && (
-              <button type="button" className="tekstlink zonder-lijn gedempt" style={{ width: '100%', justifyContent: 'center', marginTop: 4 }} onClick={() => setSluiten(true)}>
-                Sluit de avond
-              </button>
+              <button type="button" className="tekstlink zonder-lijn gedempt" onClick={() => setSluiten(true)}>Sluit de avond</button>
             )}
+            <button type="button" className="tekstlink zonder-lijn gedempt" onClick={() => ga({ scherm: 'beheer', tab: 'afleveren' })}>Afleveren →</button>
           </div>
-        )}
-        <Tabs tabs={TABS} actief="avond" onKies={(tab) => ga({ scherm: 'beheer', tab })} label="Beheer" vrij />
+        </div>
       </div>
-      {sluiten && <SluitBevestiging wachten={wachten} onSluit={() => setSluiten(false)} />}
+      {sluiten && <SluitBevestiging onSluit={() => setSluiten(false)} />}
     </>
   )
 }
@@ -635,3 +589,259 @@ function BeheerBlok({ titel, rechts, children }: { titel: string; rechts?: strin
     </section>
   )
 }
+
+/** Sluiten is niet terug te draaien: daarom eerst een bevestiging (bouwspecificatie, M10). */
+function SluitBevestiging({ onSluit }: { onSluit: () => void }) {
+  const [, dispatch] = useStaat()
+  return (
+    <Blad titel="De avond sluiten?" onSluit={onSluit}>
+      <p className="tekst">
+        Daarna kan niemand meer bestellen; wijnen die nog klaarstaan, komen niet op tafel. Wie net besteld heeft, kan
+        nog betalen tot zijn bon verloopt. Een lopende veiling gaat door tot de hamer. Dit kun je niet terugdraaien.
+      </p>
+      <Hoofdknop
+        onClick={() => {
+          onSluit()
+          dispatch({ type: 'sluitLijst', nu: nuUtc() })
+        }}
+      >
+        Sluit de avond
+      </Hoofdknop>
+      <button type="button" className="knop-grijs" onClick={onSluit}>
+        <span>Toch niet</span>
+      </button>
+    </Blad>
+  )
+}
+
+// ---- Afleveren ----
+
+type AfleverTab = 'brengen' | 'halen' | 'klaar'
+
+/** Na de avond: wat Marc brengt, wat leden ophalen, en wat al weg is. */
+function Afleveren({ ga }: { ga: Ga }) {
+  const [staat, dispatch] = useStaat()
+  const [tab, setTab] = useState<AfleverTab>('brengen')
+  const { lijst } = staat
+  const alle = staat.bestellingen.filter((b) => (b.lijstId === lijst.lijstId || b.soort === 'bieding') && b.status !== 'verlopen')
+  const per: Record<AfleverTab, Bestelling[]> = {
+    brengen: alle.filter((b) => !b.afgeleverdOp && b.levering !== 'halen'),
+    halen: alle.filter((b) => !b.afgeleverdOp && b.levering === 'halen'),
+    klaar: alle.filter((b) => b.afgeleverdOp),
+  }
+  const teBrengen = per.brengen.filter((b) => b.status === 'betaald' && b.levering === 'brengen')
+  const melding = (kop: string, tekst: string) => dispatch({ type: 'melding', melding: { kop, tekst } })
+
+  return (
+    <>
+      <Kop
+        sub="Beheer"
+        rechts={<button type="button" className="tekstlink zonder-lijn" onClick={() => ga({ scherm: 'beheer', tab: 'nieuw' })}>+ Nieuwe fles</button>}
+      />
+      <main>
+        <div className="masthead">
+          <h1 className="groot" style={{ fontSize: 'min(88px, 22vw)' }}>Afleveren</h1>
+          <p className="tekst gedempt">Na de avond van {weekdag(lijst.begin)}</p>
+        </div>
+        <div className="segmenten" role="tablist" aria-label="Afleveren">
+          {(['brengen', 'halen', 'klaar'] as const).map((t) => (
+            <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>
+              {t}<span>{per[t].length}</span>
+            </button>
+          ))}
+        </div>
+        <section className="sectie" style={{ paddingTop: 4, gap: 0 }} aria-label={tab}>
+          {per[tab].length === 0 && <p className="tekst gedempt" style={{ padding: '16px 0' }}>{tab === 'klaar' ? 'Nog niets afgeleverd.' : 'Niets te doen.'}</p>}
+          {per[tab].map((b) => (
+            <AfleverRij
+              key={b.bestellingId}
+              staat={staat}
+              bestelling={b}
+              onKlaar={(ja) => dispatch({ type: 'afgeleverd', bestellingId: b.bestellingId, ja, nu: nuUtc() })}
+              onBetaallink={() => melding('Betaallink gestuurd', `${lidNaam(b.lidId)} krijgt een link om ${euro(b.totaal)} te betalen, vóór ${weekdag(b.betaalVoor)} ${tijd(b.betaalVoor)}.`)}
+            />
+          ))}
+          <button type="button" className="tekstlink zonder-lijn" style={{ alignSelf: 'flex-start', marginTop: 12 }} disabled={lijst.status !== 'open'} onClick={() => ga({ scherm: 'namens' })}>
+            + Bestelling namens een lid
+          </button>
+          {lijst.status !== 'open' && <p className="tekst klein gedempt">Namens een lid bestellen kan alleen zolang de avond open is.</p>}
+        </section>
+        <div style={{ height: 16 }} />
+      </main>
+      <div className="onderkant">
+        <div className="hoofdknop-zone">
+          {tab === 'brengen' && (
+            <Hoofdknop
+              className="klein"
+              disabled={teBrengen.length === 0}
+              icoon={<Truck size={26} aria-hidden />}
+              onClick={() => melding('Laat weten: ik ben onderweg', `${teBrengen.length} ${teBrengen.length === 1 ? 'lid krijgt' : 'leden krijgen'} een melding: "${voorbeeldBerichten.onderweg}"`)}
+            >
+              Laat weten: ik ben onderweg
+            </Hoofdknop>
+          )}
+          <div className="beheer-links">
+            <button type="button" className="tekstlink zonder-lijn gedempt" onClick={() => ga({ scherm: 'beheer' })}>← De avond</button>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+function AfleverRij({ staat, bestelling: b, onKlaar, onBetaallink }: { staat: Staat; bestelling: Bestelling; onKlaar: (ja: boolean) => void; onBetaallink: () => void }) {
+  const l = lid(b.lidId)
+  const moment = staat.lijst.levering
+  const betaald = b.status === 'betaald'
+  const delen: string[] = []
+  if (b.levering === 'brengen') delen.push(adresRegel(l?.adres) || 'geen adres')
+  if (b.levering === 'halen') delen.push('ophalen')
+  if (b.soort === 'bieding') delen.push('veiling')
+  if (b.soort === 'namens') delen.push('door jou ingevoerd')
+  const vak = b.levering === 'brengen' ? moment.brengen : b.levering === 'halen' ? moment.halen : undefined
+  if (vak) delen.push(kortTijdvak(vak.van, vak.tot))
+  if (!b.levering) delen.push('brengen of halen nog niet gekozen')
+
+  let actie: ReactNode
+  if (b.afgeleverdOp) actie = <button type="button" className="knop-klein grijs" onClick={() => onKlaar(false)}>Terugzetten</button>
+  else if (!betaald) actie = <button type="button" className="knop-klein grijs" onClick={onBetaallink}>Stuur betaallink</button>
+  else actie = (
+    <button type="button" className="knop-klein" onClick={() => onKlaar(true)}>
+      {b.levering === 'halen' ? 'Opgehaald' : 'Gebracht'} <Check size={16} strokeWidth={2.5} aria-hidden />
+    </button>
+  )
+
+  return (
+    <article className={b.afgeleverdOp ? 'aflever-rij klaar' : 'aflever-rij'}>
+      <div className="aflever-boven">
+        <div>
+          <strong>{l?.naam ?? b.lidId}</strong>
+          <span>{delen.join(' · ')}</span>
+        </div>
+        <p className="aflever-bedrag">
+          <strong>{euro(b.totaal)}</strong>
+          <span className={betaald ? undefined : 'goud'}>{betaald ? 'Betaald' : 'Wacht op betaling'}</span>
+        </p>
+      </div>
+      <div className="aflever-onder">
+        <span className="aflever-flessen">
+          {b.regels.map((r) => (
+            <span key={r.wijnId}><Duim foto={r.foto} breedte={22} hoogte={28} goud={b.soort === 'bieding'} />{r.aantal}×</span>
+          ))}
+        </span>
+        {actie}
+      </div>
+    </article>
+  )
+}
+
+// ---- Namens een lid ----
+
+/** Bestelling namens een lid: lid kiezen, letters en aantallen zoals "G2 H1", brengen of halen. Het lid krijgt een betaallink. */
+export function Namens({ ga }: { ga: Ga }) {
+  const [staat, dispatch] = useStaat()
+  const { lijst } = staat
+  const leden = voorbeeldLeden.slice(1)
+  const momenten = levermomenten(staat)
+  const [lidId, setLidId] = useState<string | null>(null)
+  const [letters, setLetters] = useState('')
+  const [levering, setLevering] = useState<LeverSoort | null>(momenten[0]?.soort ?? null)
+  const [fout, setFout] = useState<string | null>(null)
+
+  const gelezen = leesLetters(letters)
+  const regels = gelezen.regels.map((r) => ({ ...r, wijn: lijst.wijnen.find((w) => w.letter === r.letter) }))
+  let probleem = gelezen.fout
+  if (!probleem) {
+    const onbekend = regels.find((r) => !r.wijn)
+    const nietOpTafel = regels.find((r) => r.wijn && !r.wijn.opTafelSinds)
+    const teVeel = regels.find((r) => r.wijn && r.aantal > r.wijn.voorraad)
+    if (onbekend) probleem = `Wijn ${onbekend.letter} staat niet op de lijst.`
+    else if (nietOpTafel?.wijn) probleem = `De ${korteNaam(nietOpTafel.wijn)} staat nog niet op tafel.`
+    else if (teVeel?.wijn) probleem = `Van de ${korteNaam(teVeel.wijn)} zijn er nog ${teVeel.wijn.voorraad}.`
+  }
+
+  const bestel = () => {
+    if (lijst.status !== 'open') return setFout('De avond is gesloten.')
+    if (!lidId) return setFout('Kies het lid.')
+    if (!levering) return setFout('Kies brengen of halen.')
+    if (levering === 'brengen' && !lid(lidId)?.adres) return setFout(`${lidNaam(lidId)} heeft geen adres. Kies halen.`)
+    if (regels.length === 0) return setFout('Schrijf welke wijnen, zoals G2 H1.')
+    if (probleem) return setFout(probleem)
+    dispatch({
+      type: 'bestel', lidId, door: 'beheer', levering, nu: nuUtc(),
+      regels: regels.map((r) => ({ wijnId: r.wijn!.wijnId, aantal: r.aantal })),
+    })
+    dispatch({ type: 'melding', melding: { kop: `Bestelling voor ${lidNaam(lidId)}`, tekst: 'Het lid krijgt een betaallink en heeft 48 uur om te betalen.' } })
+    ga({ scherm: 'beheer', tab: 'afleveren' })
+  }
+
+  return (
+    <>
+      <Kop sub="Beheer" rechts={<span />} />
+      <TerugLink titel="Terug naar afleveren" onTerug={() => ga({ scherm: 'beheer', tab: 'afleveren' })} />
+      <main>
+        <div className="masthead">
+          <h1>
+            <span className="groot spook">Namens</span>
+            <span className="groot">een lid</span>
+          </h1>
+        </div>
+        <Stap nummer="01" titel="Welk lid?">
+          <div className="leden-keuze" role="radiogroup" aria-label="Lid">
+            {leden.map((l) => (
+              <button key={l.lidId} type="button" role="radio" aria-checked={l.lidId === lidId} onClick={() => setLidId(l.lidId)}>{l.naam}</button>
+            ))}
+          </div>
+        </Stap>
+        <Stap nummer="02" titel="Welke wijnen?">
+          <label className="veld-zwart">
+            <span>Letters en aantallen, zoals in WhatsApp</span>
+            <input className="invoer" value={letters} placeholder="G2 H1" autoCapitalize="characters" onChange={(e) => { setLetters(e.target.value); setFout(null) }} />
+          </label>
+          <p className="tekst klein gedempt">{gesorteerd(lijst.wijnen).filter((w) => w.opTafelSinds).map((w) => `${w.letter} = ${korteNaam(w)}`).join(' · ')}</p>
+          {letters.trim() && probleem && <p className="fout">{probleem}</p>}
+          {letters.trim() && !probleem && regels.length > 0 && (
+            <div className="bon-klein" style={{ display: 'block' }}>
+              <BonRegels
+                regels={regels.map((r) => ({
+                  sleutel: r.letter, aantal: r.aantal, naam: korteNaam(r.wijn!), jaargang: r.wijn!.jaargang, prijs: r.wijn!.prijs,
+                }))}
+              />
+            </div>
+          )}
+        </Stap>
+        <Stap nummer="03" titel="Brengen of halen?">
+          <Keuze
+            label="Brengen of halen"
+            vorm={momenten.length === 2 ? 'split' : 'banden'}
+            gekozen={levering}
+            onKies={(id) => setLevering(id as LeverSoort)}
+            opties={momenten.map((m) => ({ id: m.soort, woord: LEVER_WOORD[m.soort], zin: m.wanneer }))}
+          />
+          {levering === 'brengen' && lidId && <p className="tekst klein gedempt">{adresRegel(lid(lidId)?.adres) || `${lidNaam(lidId)} heeft geen adres.`}</p>}
+          <p className="uitleg-voorbeeld">Het lid krijgt een betaallink en heeft 48 uur om te betalen.</p>
+        </Stap>
+        <div style={{ height: 24 }} />
+      </main>
+      <div className="onderkant">
+        <div className="hoofdknop-zone">
+          {fout && <p className="fout" role="alert" style={{ marginBottom: 10 }}>{fout}</p>}
+          <Hoofdknop onClick={bestel}>Bestel{lidId ? ` voor ${lidNaam(lidId)}` : ''}</Hoofdknop>
+        </div>
+      </div>
+    </>
+  )
+}
+
+function Stap({ nummer, titel, children }: { nummer: string; titel: string; children: ReactNode }) {
+  return (
+    <section className="beheer-stap">
+      <div className="beheer-stap-kop">
+        <span className="stap-nummer" aria-hidden>{nummer}</span>
+        <h2>{titel}</h2>
+      </div>
+      {children}
+    </section>
+  )
+}
+

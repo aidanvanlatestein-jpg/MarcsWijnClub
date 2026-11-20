@@ -4,13 +4,11 @@ import { useEffect, useState } from 'react'
 // en CloudFront maar één pagina hoeft te kennen.
 export type Route =
   | { scherm: 'welkom' }
-  | { scherm: 'tip' }
   | { scherm: 'aanbod' }
   | { scherm: 'wijn'; wijnId: string }
   | { scherm: 'bestelling' }
-  | { scherm: 'besteld'; bestellingId: string }
+  | { scherm: 'bon'; bestellingId: string }
   | { scherm: 'net-op' }
-  | { scherm: 'betaling' }
   | { scherm: 'fles'; wijnId: string }
   | { scherm: 'veiling'; wijnId: string }
   | { scherm: 'gewonnen'; wijnId: string }
@@ -19,12 +17,13 @@ export type Route =
   | { scherm: 'beheer'; tab?: BeheerTab }
   | { scherm: 'namens' }
 
-export const BEHEER_TABS = ['wijn', 'avond', 'bestellingen'] as const
+/** Beheer in design-v4: een nieuwe fles klaarzetten, de avond presenteren, afleveren. */
+export const BEHEER_TABS = ['avond', 'nieuw', 'afleveren'] as const
 export type BeheerTab = (typeof BEHEER_TABS)[number]
 
 export type Ga = (route: Route) => void
 
-const ZONDER_ID = ['welkom', 'tip', 'bestelling', 'net-op', 'betaling', 'mijn-bestelling', 'marc'] as const
+const ZONDER_ID = ['welkom', 'bestelling', 'net-op', 'mijn-bestelling', 'marc'] as const
 type ZonderId = (typeof ZONDER_ID)[number]
 
 function isZonderId(waarde: string): waarde is ZonderId {
@@ -41,19 +40,21 @@ export function leesRoute(hash: string): Route {
   const [a = '', b, c] = delen
   if (isZonderId(a)) return { scherm: a }
   if (a === 'wijn' && b) return { scherm: 'wijn', wijnId: b }
-  if (a === 'besteld' && b) return { scherm: 'besteld', bestellingId: b }
+  if ((a === 'bon' || a === 'besteld') && b) return { scherm: 'bon', bestellingId: b }
   if (a === 'veiling' && b) {
     if (c === 'gewonnen') return { scherm: 'gewonnen', wijnId: b }
     return c === 'fles' ? { scherm: 'fles', wijnId: b } : { scherm: 'veiling', wijnId: b }
   }
-  // Mijn flessen is uit de pilot; het oude adres opent wat ervan over is.
-  if (a === 'flessen') return { scherm: 'mijn-bestelling' }
-  // Oude adressen uit design-v2 blijven werken.
+  // Oude adressen uit eerdere ontwerpen blijven werken.
+  if (a === 'tip') return { scherm: 'aanbod' }
+  if (a === 'flessen' || a === 'betaling') return { scherm: 'mijn-bestelling' }
   if (a === 'bieding' && b) return c === 'gewonnen' ? { scherm: 'gewonnen', wijnId: b } : { scherm: 'fles', wijnId: b }
   if (a === 'beheer') {
     if (b === 'namens') return { scherm: 'namens' }
+    if (b === 'wijn') return { scherm: 'beheer', tab: 'nieuw' }
+    if (b === 'bestellingen') return { scherm: 'beheer', tab: 'afleveren' }
     const tab = BEHEER_TABS.find((t) => t === b)
-    return tab && tab !== 'wijn' ? { scherm: 'beheer', tab } : { scherm: 'beheer' }
+    return tab && tab !== 'avond' ? { scherm: 'beheer', tab } : { scherm: 'beheer' }
   }
   return { scherm: 'aanbod' }
 }
@@ -64,8 +65,8 @@ export function adres(route: Route): string {
       return '#/'
     case 'wijn':
       return `#/wijn/${encodeURIComponent(route.wijnId)}`
-    case 'besteld':
-      return `#/besteld/${encodeURIComponent(route.bestellingId)}`
+    case 'bon':
+      return `#/bon/${encodeURIComponent(route.bestellingId)}`
     case 'fles':
       return `#/veiling/${encodeURIComponent(route.wijnId)}/fles`
     case 'veiling':
@@ -75,7 +76,7 @@ export function adres(route: Route): string {
     case 'namens':
       return '#/beheer/namens'
     case 'beheer':
-      return route.tab && route.tab !== 'wijn' ? `#/beheer/${route.tab}` : '#/beheer'
+      return route.tab && route.tab !== 'avond' ? `#/beheer/${route.tab}` : '#/beheer'
     default:
       return `#/${route.scherm}`
   }

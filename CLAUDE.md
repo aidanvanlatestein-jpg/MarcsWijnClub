@@ -31,7 +31,8 @@ Dit project is van Aidan persoonlijk. Het heeft niets te maken met een werkgever
 | --- | --- |
 | `pilotplan-marcs-wijnclub.md` | Het plan: scope, schermen, architectuur, CI/CD, planning, succescriteria |
 | `docs/bouwspecificatie.md` | Bouwniveau: tabellen en sleutels, levensloop van een bestelling, bieding, API. Hoofdstuk 8 zegt wat al gebouwd is |
-| `wijnclub-prototype.html` | Klikbaar prototype, de specificatie van de schermen |
+| `design-v4/` | Het ontwerp sinds 20 november 2026: `DESIGN.md` en de schermen. De specificatie van de schermen; wat V4 niet tekent, staat in `design-v3/` |
+| `wijnclub-prototype.html` | Het eerste klikbare prototype, achterhaald. Het klikbare prototype is nu de web-app in `app/` |
 | `functions/wijnclub/` | Lambda-functies in Python. `domein/` bevat de regels zonder AWS |
 | `infra/` | AWS CDK in Python, vier stacks per omgeving (`test`, `prod`) |
 | `app/` | De web-app: React met Vite. Bouwt naar `app/dist` |

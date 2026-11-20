@@ -8,8 +8,8 @@ import { Bestelling } from './schermen/Bestelling'
 import { Fles, Gewonnen, Veiling } from './schermen/Bieding'
 import { Marc } from './schermen/Marc'
 import { MijnBestelling } from './schermen/MijnBestelling'
-import { Besteld, Betaling, NetOp } from './schermen/Toestanden'
-import { Welkom, Tip } from './schermen/Welkom'
+import { BonStatus, NetOp } from './schermen/Toestanden'
+import { Welkom } from './schermen/Welkom'
 import { WijnVanDeLijst } from './schermen/WijnVanDeLijst'
 import { StaatProvider, useStaat } from './staat'
 
@@ -45,20 +45,16 @@ function Scherm({ route, ga }: { route: Route; ga: Ga }) {
   switch (route.scherm) {
     case 'welkom':
       return <Welkom ga={ga} />
-    case 'tip':
-      return <Tip ga={ga} />
     case 'aanbod':
       return <Aanbod ga={ga} />
     case 'wijn':
       return <WijnVanDeLijst key={route.wijnId} wijnId={route.wijnId} ga={ga} />
     case 'bestelling':
       return <Bestelling ga={ga} />
-    case 'besteld':
-      return <Besteld bestellingId={route.bestellingId} ga={ga} />
+    case 'bon':
+      return <BonStatus key={route.bestellingId} bestellingId={route.bestellingId} ga={ga} />
     case 'net-op':
       return <NetOp ga={ga} />
-    case 'betaling':
-      return <Betaling ga={ga} />
     case 'fles':
       return <Fles key={route.wijnId} wijnId={route.wijnId} ga={ga} />
     case 'veiling':
@@ -70,7 +66,7 @@ function Scherm({ route, ga }: { route: Route; ga: Ga }) {
     case 'marc':
       return <Marc ga={ga} />
     case 'beheer':
-      return <Beheer ga={ga} tab={route.tab ?? 'wijn'} />
+      return <Beheer key={route.tab ?? 'avond'} ga={ga} tab={route.tab ?? 'avond'} />
     case 'namens':
       return <Namens ga={ga} />
   }

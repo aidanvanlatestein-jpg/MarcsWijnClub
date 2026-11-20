@@ -1,30 +1,31 @@
-// De bon op het bestelscherm en de regels die ook elders terugkomen. Zie design-v2/DESIGN.md, "Bon".
+// De bon op het bestelscherm en de regels die ook elders terugkomen. Zie design-v4/DESIGN.md, "Bon".
 import type { ReactNode } from 'react'
 import { bedrag, kortJaar } from '../opmaak'
+import { Duim } from './Foto'
 import { GrootBedrag, Stippellijn } from './Knoppen'
 
 export interface BonRegel {
   sleutel: string
   aantal: number
-  /** Leeg bij een fles uit een bieding. */
-  letter: string
   naam: string
+  foto?: string
   jaargang?: number
   prijs: number
   /** Doorgestreept: deze wijn is net op. */
   weg?: boolean
 }
 
-export function regelNaam(r: Pick<BonRegel, 'letter' | 'naam' | 'jaargang'>): string {
-  const naam = r.jaargang ? `${r.naam} ${kortJaar(r.jaargang)}` : r.naam
-  return r.letter ? `${r.letter} · ${naam}` : naam
+export function regelNaam(r: Pick<BonRegel, 'naam' | 'jaargang'>): string {
+  return r.jaargang ? `${r.naam} ${kortJaar(r.jaargang)}` : r.naam
 }
 
-export function BonRegels({ regels }: { regels: BonRegel[] }) {
+/** Met fotos: zoals op het scherm Betaald. */
+export function BonRegels({ regels, fotos = false }: { regels: BonRegel[]; fotos?: boolean }) {
   return (
-    <ul className="bon-regels" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+    <ul className={fotos ? 'bon-regels met-foto' : 'bon-regels'} style={{ listStyle: 'none', margin: 0, padding: 0 }}>
       {regels.map((r) => (
         <li key={r.sleutel} className={r.weg ? 'bon-regel weg' : 'bon-regel'}>
+          {fotos && <Duim foto={r.foto} breedte={28} hoogte={36} />}
           <span className="aantal">{r.aantal}×</span>
           <span className="naam">{regelNaam(r)}</span>
           <span className="som">{bedrag(r.aantal * r.prijs)}</span>

@@ -90,6 +90,29 @@ export function nuUtc(): string {
   return new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')
 }
 
+/** "Donderdag tussen 18:00 en 20:00" */
+export function tijdvak(van: string, tot: string): string {
+  const dag = weekdag(van)
+  return `${dag.charAt(0).toUpperCase()}${dag.slice(1)} tussen ${tijd(van)} en ${tijd(tot)}`
+}
+
+/** "do 18-20" */
+export function kortTijdvak(van: string, tot: string): string {
+  const uur = (utc: string) => deel(utc, { hour: 'numeric' })
+  return `${deel(van, { weekday: 'short' })} ${uur(van)}-${uur(tot)}`
+}
+
+/** "Dinsdag 19 nov" */
+export function dagDatum(utc: string): string {
+  const d = deel(utc, { weekday: 'long', day: 'numeric', month: 'short' })
+  return d.charAt(0).toUpperCase() + d.slice(1)
+}
+
+/** "Voorbeeldstraat 1, Roermond" */
+export function adresRegel(adres?: { straat: string; plaats: string }): string {
+  return adres ? `${adres.straat}, ${adres.plaats}` : ''
+}
+
 /** "dinsdag" */
 export function weekdag(utc: string): string {
   return deel(utc, { weekday: 'long' })

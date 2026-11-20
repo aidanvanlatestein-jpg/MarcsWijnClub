@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { nuUtc, tijd } from '../opmaak'
 import type { Ga } from '../route'
-import { beginStaat, klaar, mandjeRegels, opTafel, useStaat, veilingVanAvond } from '../staat'
+import { beginStaat, klaar, korteNaam, mandjeRegels, opTafel, useStaat, veilingVanAvond } from '../staat'
 import { Blad } from './Blad'
 
 interface Proef {
@@ -31,25 +31,31 @@ export function Voorbeeldbalk({ ga }: { ga: Ga }) {
 
   if (!staat.ingelogd) {
     proeven.push({ label: 'Sla inloggen over', uitleg: 'Meteen naar de aankondiging', doe: () => { dispatch({ type: 'inloggen' }); ga({ scherm: 'aanbod' }) } })
+  } else {
+    proeven.push({
+      label: 'Kom later terug',
+      uitleg: 'Uitloggen en opnieuw openen. Met Face ID zie je "Welkom terug", anders begint het inloggen opnieuw',
+      doe: () => { dispatch({ type: 'uitloggen' }); ga({ scherm: 'welkom' }) },
+    })
   }
   if (lijst.fase !== 'gesloten') {
     proeven.push({
       label: 'Spring naar de lopende avond',
-      uitleg: 'Marc is 22 minuten bezig: drie wijnen op tafel, wijn G staat nog klaar (scherm 03 en 15)',
+      uitleg: 'Marc is 22 minuten bezig: drie wijnen op tafel, de Chianti staat nog klaar',
       doe: () => { dispatch({ type: 'inloggen' }); dispatch({ type: 'springNaarAvond', nu: nuUtc() }); ga({ scherm: 'aanbod' }) },
     })
   }
   if (lijst.fase === 'live' && volgende) {
     proeven.push({
-      label: `Marc zet wijn ${volgende.letter} op tafel`,
+      label: `Marc zet de ${korteNaam(volgende)} op tafel`,
       uitleg: 'De wijn verschijnt onderaan de feed als nieuwste',
       doe: () => { dispatch({ type: 'zetOpTafel', wijnId: volgende.wijnId, nu: nuUtc() }); ga({ scherm: 'aanbod' }) },
     })
   }
   if (lijst.fase === 'live' && opTeKopen) {
     proeven.push({
-      label: `Een ander lid koopt wijn ${opTeKopen.letter} op`,
-      uitleg: gekozen ? 'Tik daarna op Bestel: zo zie je wat er gebeurt als een wijn net op is' : 'In de feed verschijnt "wijn is op"',
+      label: `Een ander lid koopt de ${korteNaam(opTeKopen)} op`,
+      uitleg: gekozen ? 'Tik daarna op Bestel en Betaal: zo zie je wat er gebeurt als een wijn net op is' : 'In de feed verschijnt "is op"',
       doe: () => dispatch({ type: 'anderKooptOp', wijnId: opTeKopen.wijnId, nu: nuUtc() }),
     })
   }
@@ -80,7 +86,7 @@ export function Voorbeeldbalk({ ga }: { ga: Ga }) {
   if (lijstOpen && lijst.fase === 'live') {
     proeven.push({
       label: 'Sluit de avond',
-      uitleg: 'Wie besteld heeft, krijgt een betaalverzoek. Daarna toont de app de terugblik',
+      uitleg: 'Niemand kan nog bestellen. Daarna toont de app de terugblik',
       doe: () => { dispatch({ type: 'sluitLijst', nu: nuUtc() }); ga({ scherm: 'aanbod' }) },
     })
   }
@@ -91,7 +97,9 @@ export function Voorbeeldbalk({ ga }: { ga: Ga }) {
       doe: () => dispatch({ type: 'verbinding', ja: !staat.verbinding }),
     })
   }
-  proeven.push({ label: 'Open het beheer van Marc', uitleg: 'Wijn klaarzetten, de avond presenteren, bestellingen', doe: () => ga({ scherm: 'beheer', tab: lijst.fase === 'live' ? 'avond' : 'wijn' }) })
+  proeven.push({ label: 'Marc: de avond', uitleg: 'Wijnen op tafel zetten, iets zeggen, de veiling starten', doe: () => ga({ scherm: 'beheer' }) })
+  proeven.push({ label: 'Marc: nieuwe fles', uitleg: 'Fotografeer de fles, kijk het na, lijst of veiling', doe: () => ga({ scherm: 'beheer', tab: 'nieuw' }) })
+  proeven.push({ label: 'Marc: afleveren', uitleg: 'Brengen, halen, betaallinks en "ik ben onderweg"', doe: () => ga({ scherm: 'beheer', tab: 'afleveren' }) })
   proeven.push({
     label: 'Begin opnieuw',
     uitleg: 'Alles terug naar het begin, met inloggen',
@@ -109,7 +117,7 @@ export function Voorbeeldbalk({ ga }: { ga: Ga }) {
             Alle wijnen, prijzen, leden en teksten zijn voorbeelden. Er wordt niets besteld, betaald of verstuurd.
             Hiermee laat je zien wat er gebeurt als iemand anders iets doet.
           </p>
-          <h3 className="label" style={{ marginTop: 4 }}>Open beslissingen uit design-v3</h3>
+          <h3 className="label" style={{ marginTop: 4 }}>Open beslissingen uit het ontwerp</h3>
           <div className="instellingen">
             <Schakelaar
               aan={staat.instellingen.bijnamen}

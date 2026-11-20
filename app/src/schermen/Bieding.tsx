@@ -1,21 +1,21 @@
-// De veiling (design-v3): de bijzondere fles (06), de zaal (07), het biedpaneel (08),
-// eenmaal andermaal (09), de hamerslag (10) en na de betaling (11).
+// De veiling (design-v4): de zaal, het biedpaneel, eenmaal andermaal en de hamerslag. De bijzondere
+// fles met herkomst, bewaring en spraakbericht staat niet in design-v4; dat scherm komt uit design-v3 (06).
 import { Check, Gavel, Pause, Play, X } from 'lucide-react'
 import { useEffect, useRef, useState, type KeyboardEvent, type TouchEvent } from 'react'
 import { Avatar, LiveBalk, MarcBericht } from '../onderdelen/Avond'
 import { Betalen } from '../onderdelen/Betalen'
 import { Blad } from '../onderdelen/Blad'
-import { Keuze } from '../onderdelen/Keuze'
 import { GrootBedrag, Hoofdknop, Onderkant, Stippellijn } from '../onderdelen/Knoppen'
-import { Kop, VraagMarc, ZwevendeNav } from '../onderdelen/Kop'
-import { dagEnTijd, euro, geleden, heelBedrag, klok, kortDagEnTijd, kortDatum, kortJaar, naamMetJaar, nuUtc, tijd, weekdag } from '../opmaak'
+import { Kop, ZwevendeNav } from '../onderdelen/Kop'
+import { dagEnTijd, euro, geleden, heelBedrag, klok, kortJaar, naamMetJaar, nuUtc, tijd, weekdag } from '../opmaak'
 import { terug, type Ga } from '../route'
 import {
-  afhaalpunt, betaalVoor, eersteWoord, plus, HOOGSTE_FACTOR, LAATSTE_MINUTEN, mijnBiedingBestelling, useNu, useStaat, zoekBieding,
+  eersteWoord, plus, HOOGSTE_FACTOR, LAATSTE_MINUTEN, mijnBiedingBestelling, useNu, useStaat, zoekBieding,
   type BiedingStaat,
 } from '../staat'
 import { voorbeeldBerichten, voorbeeldLedenKijken } from '../voorbeeld'
 import { Terugblik } from './Aanbod'
+import { BonStatus } from './Toestanden'
 
 /** De hogere stap naast "Bied": het eerstvolgende veelvoud van € 50 boven het minimum. */
 function hogereStap(minimum: number): number {
@@ -28,7 +28,7 @@ function titelWoorden(b: BiedingStaat): string[] {
   return woorden
 }
 
-// ---- 06 Bijzondere fles ----
+// ---- De bijzondere fles (design-v3, scherm 06) ----
 
 export function Fles({ wijnId, ga }: { wijnId: string; ga: Ga }) {
   const [staat] = useStaat()
@@ -127,13 +127,13 @@ export function Fles({ wijnId, ga }: { wijnId: string; ga: Ga }) {
           </div>
         )}
       </main>
-      <Onderkant ga={ga} tab="aanbod" knop={knop} />
+      <Onderkant ga={ga} knop={knop} />
       {bieden !== null && <Bieden bieding={b} begin={bieden} onSluit={() => setBieden(null)} />}
     </>
   )
 }
 
-// ---- 07, 09 en 10: de zaal ----
+// ---- De zaal, eenmaal andermaal en de hamerslag ----
 
 export function Veiling({ wijnId, ga }: { wijnId: string; ga: Ga }) {
   const [staat] = useStaat()
@@ -222,9 +222,9 @@ function Zaal({ bieding: b, nu, ga, onTerug }: { bieding: BiedingStaat; nu: numb
           {b.foto ? <img src={b.foto} alt="" /> : null}
           <span className="verloop-links" aria-hidden />
           <span className="kavel-tekst">
-            <span className="label goud">Kavel 1 van 1</span>
+            <span className="label goud">De veiling van vanavond</span>
             <span className="kavel-naam">{titelWoorden(b).join(' ')}</span>
-            <span className="sr">, open de bijzondere fles</span>
+            <span className="sr">, meer over deze fles</span>
           </span>
         </button>
         <section className="zaal-stand" aria-label="Stand van de veiling">
@@ -267,11 +267,10 @@ function Biedlog({ bieding: b, nu, bijnamen }: { bieding: BiedingStaat; nu: numb
           )
         }
         const jij = r.soort === 'bod' && r.bieder === 'jij'
-        const overboden = jij && !(b.mijnBodIsHoogste && b.hoogsteBod === r.bedrag)
         let wie = 'Marc opent de veiling'
         if (r.soort === 'bod') wie = jij ? 'Jij' : bijnamen ? `Bieder ${r.bieder}` : ''
         return (
-          <li key={i} className={`biedlog-bod${jij ? ' jij' : ''}${overboden ? ' overboden' : ''}`} style={{ opacity: dekking }}>
+          <li key={i} className={`biedlog-bod${jij ? ' jij' : ''}`} style={{ opacity: dekking }}>
             <strong>{euro(r.bedrag, { heel: true })}</strong>
             <span className="wie">{wie}</span>
             <span className="wanneer">{r.soort === 'open' ? tijd(r.op) : geleden(r.op, nu)}</span>
@@ -331,7 +330,7 @@ function EenmaalAndermaal({ bieding: b, rest, ga, onTerug }: { bieding: BiedingS
   )
 }
 
-/** 10: VER-KOCHT. voor de winnaar, AFGELOPEN. voor de anderen, met de terugblik op de avond. */
+/** VER-KOCHT. voor de winnaar, AFGELOPEN. voor de anderen, met de terugblik op de avond. */
 function Hamerslag({ bieding: b, ga }: { bieding: BiedingStaat; ga: Ga }) {
   const [staat, dispatch] = useStaat()
   const [betalen, setBetalen] = useState(false)
@@ -340,9 +339,9 @@ function Hamerslag({ bieding: b, ga }: { bieding: BiedingStaat; ga: Ga }) {
   const prijs = euro(b.hoogsteBod ?? b.startbod, { heel: true })
   const betaald = bestelling?.status === 'betaald'
 
-  let knop = <Hoofdknop onClick={() => ga({ scherm: 'aanbod' })}>Terug naar de avond</Hoofdknop>
+  let knop = <Hoofdknop onClick={() => ga({ scherm: 'aanbod' })}>Terug naar het aanbod</Hoofdknop>
   if (bestelling && betaald) knop = <Hoofdknop onClick={() => ga({ scherm: 'gewonnen', wijnId: b.wijnId })}>Naar je fles</Hoofdknop>
-  else if (bestelling) knop = <Hoofdknop goud onClick={() => setBetalen(true)}>Betaal {euro(bestelling.totaal, { heel: true })} met iDEAL</Hoofdknop>
+  else if (bestelling && bestelling.status === 'open') knop = <Hoofdknop goud onClick={() => setBetalen(true)}>Betaal {euro(bestelling.totaal, { heel: true })} met iDEAL</Hoofdknop>
 
   return (
     <>
@@ -352,7 +351,7 @@ function Hamerslag({ bieding: b, ga }: { bieding: BiedingStaat; ga: Ga }) {
           {bestelling ? (
             <>
               <h1 className="eventkop goud verkocht">Ver-<br />kocht.</h1>
-              <p className="tekst" style={{ fontSize: 22, fontWeight: 400 }}>De {naam} gaat naar jou. Voor {prijs}.</p>
+              <p className="tekst" style={{ fontSize: 22, fontWeight: 400 }}>De {naam} is van jou: {prijs}.</p>
               <MarcBericht groot tekst={voorbeeldBerichten.verkocht} op={plus(b.eindtijd, 60_000)} />
               <p className="uitleg-voorbeeld">Voorbeeldtekst. Marc schrijft dit bericht zelf.</p>
             </>
@@ -365,23 +364,22 @@ function Hamerslag({ bieding: b, ga }: { bieding: BiedingStaat; ga: Ga }) {
             </>
           )}
           <div style={{ marginTop: 4 }}>{knop}</div>
-          {bestelling && !betaald && (
-            <p className="tekst klein gedempt">Je hebt 48 uur. Daarna kies je een afhaalpunt.</p>
+          {bestelling && bestelling.status === 'open' && (
+            <p className="tekst klein gedempt">Je hebt 48 uur om te betalen. Daarna kies je: brengen of halen.</p>
           )}
         </div>
         <div className="vlak">
           <Terugblik />
         </div>
       </main>
-      <Onderkant ga={ga} tab="aanbod" />
       {betalen && bestelling && (
         <Betalen
           bedrag={bestelling.totaal}
           onSluit={() => setBetalen(false)}
           onKlaar={(gelukt) => {
             setBetalen(false)
-            dispatch({ type: 'betaal', bestellingIds: [bestelling.bestellingId], gelukt, nu: nuUtc() })
-            ga(gelukt ? { scherm: 'gewonnen', wijnId: b.wijnId } : { scherm: 'betaling' })
+            dispatch({ type: 'betaal', bestellingId: bestelling.bestellingId, gelukt, nu: nuUtc() })
+            ga({ scherm: 'gewonnen', wijnId: b.wijnId })
           }}
         />
       )}
@@ -535,82 +533,14 @@ function Bieden({ bieding, begin, onSluit }: { bieding: BiedingStaat; begin: num
   )
 }
 
-// ---- 11 Na de betaling ----
+// ---- Na de hamer ----
 
-/** Na een gewonnen veiling: betalen, daarna een afhaalpunt kiezen. */
+/** De gewonnen fles: betalen, en na het betalen brengen of halen kiezen. Zelfde scherm als een bon. */
 export function Gewonnen({ wijnId, ga }: { wijnId: string; ga: Ga }) {
-  const [staat, dispatch] = useStaat()
-  const [betalen, setBetalen] = useState(false)
-  const b = zoekBieding(staat, wijnId)
+  const [staat] = useStaat()
   const bestelling = mijnBiedingBestelling(staat, wijnId)
-  if (!b || !bestelling) return <Weg ga={ga} />
-
-  const betaald = bestelling.status === 'betaald'
-  const naam = naamMetJaar(b, { kort: true }).toUpperCase()
-  const opties = staat.lijst.afhaalpunten.map((a) => ({ id: a.afhaalpuntId, woord: a.naam, zin: a.wanneer }))
-  const punt = afhaalpunt(staat, bestelling.levering)
-
-  return (
-    <>
-      <Kop rechts={<VraagMarc tekst={`Hoi Marc, over de ${naamMetJaar(b)} die ik won: `} />} />
-      <main>
-        <div className="masthead">
-          <p className="label">HAMERSLAG · {kortDagEnTijd(b.eindtijd).toUpperCase()}</p>
-          <h1>
-            <span className="jouw goud" style={{ display: 'block', marginTop: 12 }}>Jouw.</span>
-            <span style={{ display: 'block', fontSize: 26, fontWeight: 700, lineHeight: 1.1, textTransform: 'uppercase', marginTop: 6 }}>
-              De {naam} is van jou. {euro(bestelling.totaal, { heel: true })}.
-            </span>
-          </h1>
-        </div>
-        <div className="betaald-rij lijn-boven lijn-onder" style={{ marginTop: 12 }}>
-          {betaald ? (
-            <>
-              <span className="stempel">Betaald</span>
-              <span className="gedempt">iDEAL · {bestelling.betaaldOp ? `${kortDatum(bestelling.betaaldOp)} ${tijd(bestelling.betaaldOp)}` : ''}</span>
-            </>
-          ) : (
-            <span className="tekst">Nog niet betaald. Betaal vóór {dagEnTijd(betaalVoor(staat, bestelling))}.</span>
-          )}
-        </div>
-        <section className="sectie">
-          <h2 className="label">Waar haal je hem op?</h2>
-          <Keuze
-            label="Afhaalpunt"
-            vorm="banden"
-            opties={opties}
-            gekozen={bestelling.levering}
-            uitgeschakeld={!betaald}
-            onKies={(id) => dispatch({ type: 'leveringBieding', bestellingId: bestelling.bestellingId, levering: id })}
-          />
-          {!betaald && <p className="tekst klein gedempt">Na het betalen kies je een afhaalpunt.</p>}
-          {betaald && punt && <p className="tekst klein gedempt">Je haalt hem op in {punt.naam}, {punt.wanneer.toLowerCase()}.</p>}
-        </section>
-      </main>
-      <Onderkant
-        ga={ga}
-        tab="aanbod"
-        knop={
-          betaald ? (
-            <Hoofdknop disabled={!bestelling.levering} onClick={() => ga({ scherm: 'mijn-bestelling' })}>Klaar</Hoofdknop>
-          ) : (
-            <Hoofdknop goud onClick={() => setBetalen(true)}>Betaal {euro(bestelling.totaal, { heel: true })} met iDEAL</Hoofdknop>
-          )
-        }
-      />
-      {betalen && (
-        <Betalen
-          bedrag={bestelling.totaal}
-          onSluit={() => setBetalen(false)}
-          onKlaar={(gelukt) => {
-            setBetalen(false)
-            dispatch({ type: 'betaal', bestellingIds: [bestelling.bestellingId], gelukt, nu: nuUtc() })
-            if (!gelukt) ga({ scherm: 'betaling' })
-          }}
-        />
-      )}
-    </>
-  )
+  if (!bestelling) return <Weg ga={ga} />
+  return <BonStatus bestellingId={bestelling.bestellingId} ga={ga} />
 }
 
 function Weg({ ga }: { ga: Ga }) {
@@ -618,7 +548,7 @@ function Weg({ ga }: { ga: Ga }) {
     <>
       <Kop />
       <main className="sectie"><p className="tekst">Deze fles staat niet (meer) in de club.</p></main>
-      <Onderkant ga={ga} tab="aanbod" />
+      <Onderkant ga={ga} knop={<Hoofdknop onClick={() => ga({ scherm: 'aanbod' })}>Naar het aanbod</Hoofdknop>} />
     </>
   )
 }

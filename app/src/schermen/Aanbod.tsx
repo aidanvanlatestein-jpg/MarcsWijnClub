@@ -1,27 +1,33 @@
-import { ArrowRight, Bell, Check } from 'lucide-react'
+import { ArrowDown, ArrowRight, Bell, Check } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Avatar, Gebeurtenis, LiveBalk, MarcBericht } from '../onderdelen/Avond'
+import { Duim } from '../onderdelen/Foto'
 import { Flessenrij } from '../onderdelen/Flessenrij'
 import { Hoofdknop, Onderkant, Prijs } from '../onderdelen/Knoppen'
 import { Woordmerk } from '../onderdelen/Kop'
 import { datumLang, euro, flessen, minutenTussen, naamMetJaar, tijd, weekdag } from '../opmaak'
 import type { Ga } from '../route'
 import {
-  betaalverzoek, gesorteerd, LID, lopendeVeiling, mijnBiedingBestelling, mijnLijstBestellingen, nieuwste, tellers, useNu, useStaat, veilingVanAvond,
+  gesorteerd, korteNaam, LID, lopendeVeiling, mijnBiedingBestelling, mijnLijstBestellingen, nieuwste, tellers, useNu, useStaat, veilingVanAvond,
   type Staat,
 } from '../staat'
 import type { FeedItem, Wijn } from '../types'
 import { voorbeeldBerichten, voorbeeldLedenBinnen } from '../voorbeeld'
 
-/** "/": de aankondiging (02), de avond zelf (03), of na afloop de terugblik met "Niets open." */
+/** "/": de aankondiging, het aanbod tijdens de avond, of na afloop de terugblik met "Niets open." */
 export function Aanbod({ ga }: { ga: Ga }) {
   const [staat] = useStaat()
   if (staat.lijst.fase === 'aangekondigd') return <Aankondiging ga={ga} />
-  if (staat.lijst.fase === 'live') return <DeAvond ga={ga} />
+  if (staat.lijst.fase === 'live') return <HetAanbod ga={ga} />
   return <NaAfloop ga={ga} />
 }
 
-// ---- 02 Aankondiging ----
+/** "ROOD · ITALIË" */
+export function soortEnLand(w: Pick<Wijn, 'kleur' | 'land'>): string {
+  return [w.kleur, w.land].filter(Boolean).join(' · ').toUpperCase()
+}
+
+// ---- Aankondiging ----
 
 function Aankondiging({ ga }: { ga: Ga }) {
   const [staat, dispatch] = useStaat()
@@ -54,8 +60,8 @@ function Aankondiging({ ga }: { ga: Ga }) {
             {wijnen.map((w) => (
               <li key={w.wijnId}>
                 <button type="button" onClick={() => ga({ scherm: 'wijn', wijnId: w.wijnId })}>
-                  <span className="sam-letter" aria-hidden>{w.letter}</span>
-                  <span className="sam-naam"><span className="sr">Wijn {w.letter}: </span>{naamMetJaar(w)}</span>
+                  <Duim foto={w.foto} />
+                  <span className="sam-naam">{naamMetJaar({ naam: korteNaam(w), jaargang: w.jaargang })}</span>
                   <span className="sam-aantal">{w.partij ?? w.voorraad} fl</span>
                   <span className="sam-prijs">{euro(w.prijs)}</span>
                 </button>
@@ -63,8 +69,8 @@ function Aankondiging({ ga }: { ga: Ga }) {
             ))}
             {veiling && (
               <li>
-                <button type="button" onClick={() => ga({ scherm: 'fles', wijnId: veiling.wijnId })}>
-                  <span className="sam-letter goud" aria-hidden>★</span>
+                <button type="button" onClick={() => ga({ scherm: 'veiling', wijnId: veiling.wijnId })}>
+                  <Duim foto={veiling.foto} goud />
                   <span className="sam-naam">
                     <span className="label goud" style={{ display: 'block', fontSize: 13 }}>{veiling.geopend ? 'Veiling · loopt nu' : 'Veiling'}</span>
                     {naamMetJaar(veiling)} · 1 fles
@@ -81,7 +87,6 @@ function Aankondiging({ ga }: { ga: Ga }) {
       </main>
       <Onderkant
         ga={ga}
-        tab="aanbod"
         knop={
           <Hoofdknop
             aria-pressed={staat.herinnering}
@@ -96,9 +101,9 @@ function Aankondiging({ ga }: { ga: Ga }) {
   )
 }
 
-// ---- 03 De avond ----
+// ---- Het aanbod (live) ----
 
-function DeAvond({ ga }: { ga: Ga }) {
+function HetAanbod({ ga }: { ga: Ga }) {
   const [staat, dispatch] = useStaat()
   const nu = useNu(15_000)
   const { lijst } = staat
@@ -137,7 +142,7 @@ function DeAvond({ ga }: { ga: Ga }) {
     <>
       <LiveBalk tekst={`BIJ MARC · LIVE SINDS ${tijd(lijst.begin)}`} rechts={`${voorbeeldLedenBinnen} LEDEN BINNEN`} />
       <main>
-        <h1 className="sr">De avond bij Marc</h1>
+        <h1 className="sr">Het aanbod: de avond bij Marc</h1>
         <p className="uitleg-voorbeeld" style={{ padding: '10px var(--marge) 0' }}>
           Voorbeeld: de berichten van Marc in deze feed zijn verzonnen.
         </p>
@@ -170,15 +175,11 @@ function DeAvond({ ga }: { ga: Ga }) {
               setNieuw(false)
             }}
           >
-            Nieuw van Marc ↓
+            Nieuw van Marc <ArrowDown size={18} aria-hidden />
           </button>
         )}
         {veiling && veiling.biedingStatus === 'open' && (
-          <button
-            type="button"
-            className="straks"
-            onClick={() => ga(veiling.geopend ? { scherm: 'veiling', wijnId: veiling.wijnId } : { scherm: 'fles', wijnId: veiling.wijnId })}
-          >
+          <button type="button" className="straks" onClick={() => ga({ scherm: 'veiling', wijnId: veiling.wijnId })}>
             {veiling.geopend ? (
               <span className="straks-tekst"><strong className="goud" style={{ fontSize: 18 }}>De veiling is begonnen</strong></span>
             ) : (
@@ -191,7 +192,7 @@ function DeAvond({ ga }: { ga: Ga }) {
           </button>
         )}
       </main>
-      <Onderkant ga={ga} tab="aanbod" bon />
+      <Onderkant ga={ga} bon />
     </>
   )
 }
@@ -225,7 +226,7 @@ function FeedRegel({ item, staat, nu, nieuwste, onKies, onOpen }: {
   )
 }
 
-/** Een wijn in de feed. De nieuwste heeft een gouden rand en een grote foto. */
+/** Een wijn in de feed: foto links. De nieuwste heeft een gouden rand en een grote foto. */
 function FeedWijn({ wijn, nieuwste, levendig, gekozen, onKies, onOpen }: {
   wijn: Wijn
   nieuwste: boolean
@@ -238,28 +239,27 @@ function FeedWijn({ wijn, nieuwste, levendig, gekozen, onKies, onOpen }: {
   const partij = wijn.partij ?? wijn.voorraad
   const weg = Math.max(0, partij - wijn.voorraad)
   const groot = nieuwste && !op
-  const naam = (
-    <h2>
-      <button type="button" className="feed-naam" onClick={onOpen}>
-        <span className="sr">Wijn {wijn.letter}: </span>{naamMetJaar(wijn)}
-      </button>
-    </h2>
-  )
+  const meta = [soortEnLand(wijn), tijd(wijn.opTafelSinds!)].filter(Boolean).join(' · ')
   return (
-    <article className={`feed-wijn${groot ? ' nieuwste' : ''}${op ? ' op' : ''}`} aria-label={`Wijn ${wijn.letter}`}>
+    <article className={`feed-wijn${groot ? ' nieuwste' : ''}${op ? ' op' : ''}`} aria-label={naamMetJaar(wijn)}>
       {groot && (
         <div className="feed-foto">
           {wijn.foto ? <img src={wijn.foto} alt="" /> : null}
           <span className="verloop" aria-hidden />
-          {levendig && <span className="net-op-tafel">Net op tafel · {tijd(wijn.opTafelSinds!)}</span>}
-          <span className="feed-foto-letter" aria-hidden>{wijn.letter}</span>
+          <span className={levendig ? 'net-op-tafel' : 'net-op-tafel rustig'}>{levendig ? `Net op tafel · ${meta}` : meta}</span>
         </div>
       )}
       <div className="feed-wijn-binnen">
-        {!groot && <span className="feed-letter" aria-hidden>{wijn.letter}</span>}
+        {!groot && (
+          <button type="button" className="feed-duim" onClick={onOpen} tabIndex={-1} aria-hidden>
+            <Duim foto={wijn.foto} breedte={86} hoogte={100} />
+          </button>
+        )}
         <div className="feed-wijn-tekst">
-          {!groot && <p className="feed-wanneer">Wijn {wijn.letter} · {tijd(wijn.opTafelSinds!)}</p>}
-          {naam}
+          {!groot && <p className="feed-wanneer">{meta}</p>}
+          <h2>
+            <button type="button" className="feed-naam" onClick={onOpen}>{naamMetJaar(wijn)}</button>
+          </h2>
           <p className="feed-omschrijving">{wijn.tekst}</p>
           <div className="feed-prijs-rij">
             <Prijs centen={wijn.prijs} />
@@ -267,7 +267,7 @@ function FeedWijn({ wijn, nieuwste, levendig, gekozen, onKies, onOpen }: {
               {op ? `OP${wijn.opSinds ? ` · IN ${minutenTussen(wijn.opTafelSinds!, wijn.opSinds)} MIN` : ''}` : `NOG ${wijn.voorraad} VAN ${partij}`}
             </span>
           </div>
-          {!op && <Flessenrij vrij={wijn.voorraad} weg={weg} gekozen={gekozen} onKies={onKies} letter={wijn.letter} naam={wijn.naam} />}
+          {!op && <Flessenrij vrij={wijn.voorraad} weg={weg} gekozen={gekozen} onKies={onKies} naam={naamMetJaar(wijn)} />}
         </div>
       </div>
     </article>
@@ -278,23 +278,21 @@ function FeedWijn({ wijn, nieuwste, levendig, gekozen, onKies, onOpen }: {
 
 function NaAfloop({ ga }: { ga: Ga }) {
   const [staat] = useStaat()
-  const verzoek = betaalverzoek(staat)
+  const iets = staat.bestellingen.some((b) => b.lidId === LID && b.status !== 'verlopen')
   return (
     <>
       <main>
         <NietsOpen />
         <NaarLopendeVeiling ga={ga} />
         <Terugblik />
+        {iets && (
+          <div className="sectie">
+            <button type="button" className="tekstlink" style={{ alignSelf: 'flex-start' }} onClick={() => ga({ scherm: 'mijn-bestelling' })}>
+              Je bestellingen →
+            </button>
+          </div>
+        )}
       </main>
-      <Onderkant
-        ga={ga}
-        tab="aanbod"
-        knop={
-          verzoek.bedrag > 0 ? (
-            <Hoofdknop goud onClick={() => ga({ scherm: 'mijn-bestelling' })}>Betaal {euro(verzoek.bedrag)} met iDEAL</Hoofdknop>
-          ) : undefined
-        }
-      />
     </>
   )
 }
@@ -312,7 +310,7 @@ function NaarLopendeVeiling({ ga }: { ga: Ga }) {
   )
 }
 
-/** Toestand: geen avond gepland (scherm 16). */
+/** Toestand: geen avond gepland. */
 export function NietsOpen() {
   return (
     <div className="masthead" style={{ paddingTop: 24, paddingBottom: 28 }}>
@@ -327,7 +325,9 @@ export function NietsOpen() {
 export function Terugblik() {
   const [staat] = useStaat()
   const t = tellers(staat)
-  const mijn = mijnLijstBestellingen(staat).reduce((som, b) => som + b.regels.reduce((x, r) => x + r.aantal, 0), 0)
+  const mijn = mijnLijstBestellingen(staat)
+    .filter((b) => b.status === 'betaald')
+    .reduce((som, b) => som + b.regels.reduce((x, r) => x + r.aantal, 0), 0)
   // De fles die het lid won; anders de veiling van de avond. Zo klopt de terugblik ook als er een nieuwe ronde loopt.
   const veiling = staat.biedingen.find((b) => mijnBiedingBestelling(staat, b.wijnId)) ?? veilingVanAvond(staat)
   const gewonnen = veiling && mijnBiedingBestelling(staat, veiling.wijnId)
@@ -347,8 +347,8 @@ export function Terugblik() {
       <ul className="terugblik-wijnen">
         {wijnen.map((w) => (
           <li key={w.wijnId}>
-            <span className="sam-letter" aria-hidden>{w.letter}</span>
-            <span className="sam-naam">{w.naam}</span>
+            <Duim foto={w.foto} />
+            <span className="sam-naam">{korteNaam(w)}</span>
             <span className="label" style={{ color: w.voorraad > 0 ? 'var(--ink)' : 'var(--muted)', fontSize: 13 }}>
               {w.voorraad > 0
                 ? `NOG ${w.voorraad} OVER`
@@ -359,10 +359,7 @@ export function Terugblik() {
           </li>
         ))}
       </ul>
-      {slot && <p className="tekst klein gedempt">{slot} Tot de volgende keer.</p>}
-      {staat.lijst.status === 'gesloten' && staat.bestellingen.some((b) => b.lidId === LID && b.status === 'betaald') && (
-        <p className="tekst klein gedempt">Je hebt betaald: {euro(staat.bestellingen.filter((b) => b.lidId === LID && b.status === 'betaald').reduce((s, b) => s + b.totaal, 0))}.</p>
-      )}
+      <p className="tekst klein gedempt">{slot ? `${slot} ` : ''}Tot de volgende avond.</p>
     </section>
   )
 }

@@ -6,7 +6,8 @@ Een besloten web-app waarin leden van Marcs WhatsApp-groep wijn kopen: van de li
 | --- | --- |
 | [pilotplan-marcs-wijnclub.md](pilotplan-marcs-wijnclub.md) | Wat er komt, voor wie, planning en succescriteria |
 | [docs/bouwspecificatie.md](docs/bouwspecificatie.md) | Hoe het in elkaar zit: tabellen, levensloop van een bestelling, API, indeling |
-| [wijnclub-prototype.html](wijnclub-prototype.html) | Klikbaar prototype van alle schermen. Open het in een browser |
+| [design-v4/DESIGN.md](design-v4/DESIGN.md) | Het ontwerp sinds 20 november 2026, met de schermen in `design-v4/schermen/`: de specificatie van de schermen. Wat V4 niet tekent, staat in `design-v3/` |
+| [wijnclub-prototype.html](wijnclub-prototype.html) | Het eerste klikbare prototype, van vóór de ontwerpen. Achterhaald: het klikbare prototype is nu de web-app in `app/` |
 
 ## Wat er staat
 
@@ -15,7 +16,7 @@ Een besloten web-app waarin leden van Marcs WhatsApp-groep wijn kopen: van de li
 | `functions/wijnclub/domein` | De regels voor geld, bestelling en bieding, zonder AWS |
 | `functions/wijnclub/handlers` | Eén bestand per Lambda-functie. Nu alleen `GET /api/aanbod` |
 | `infra` | De omgeving als code, in AWS CDK met Python: vier stacks |
-| `app` | De web-app. Nu een lege pagina |
+| `app` | De web-app. Nu een klikbaar prototype van de schermen uit `design-v4`, nog zonder koppeling met de API |
 | `tests` | Tests voor de functies en voor de stacks |
 
 Dit is de basis van week 3 uit het plan, plus de regels van week 5 en 6. Hoofdstuk 8 van de bouwspecificatie zegt wat er nog niet is.

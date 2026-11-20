@@ -3,9 +3,16 @@
 Eén regel bepaalt alles: een bestelling blijft open tot betaalVoor, en alleen
 een geslaagde betaling of het verstrijken van die tijd verandert de status.
 
-Bestellen van de lijst is bindend en kost niets. Betalen kan zodra de lijst
-gesloten is, in één betaling voor alle open bestellingen van het lid op die
-lijst. De termijn is 48 uur na het sluiten.
+Elke bestelling wordt apart betaald, met iDEAL via Mollie. Van de lijst betaalt
+het lid meteen bij het bestellen: Marc houdt de flessen 15 minuten vast. De
+voorraad gaat bij het bestellen omlaag en komt terug als de bestelling verloopt.
+Bijbestellen is een nieuwe bestelling, die ook apart betaald wordt. Wat Marc
+namens een lid invoert, is te betalen tot 48 uur na het invoeren; een gewonnen
+bieding tot 48 uur na het sluiten van de bieding.
+
+Levering is brengen (Marc brengt aan huis) of halen (het lid haalt bij Marc).
+Per lijst stelt Marc in welke van de twee hij aanbiedt, wanneer, en bij halen
+waar. Brengen kan alleen als het lid een afleveradres heeft.
 """
 from __future__ import annotations
 
@@ -13,7 +20,7 @@ import hashlib
 import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Mapping, Optional, Sequence
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from . import dynamo, geld, tijd
 
@@ -28,11 +35,19 @@ BIEDING = "bieding"
 
 SOORTEN = (LIJST, NAMENS, BIEDING)
 
+BRENGEN = "brengen"
+HALEN = "halen"
+
+LEVERINGEN = (BRENGEN, HALEN)
+
+# Zo lang houdt Marc de flessen vast voor wie van de lijst bestelt.
+HOUDTIJD = timedelta(minutes=15)
+# Voor een bestelling namens een lid en een gewonnen bieding.
 BETAALTERMIJN = timedelta(hours=48)
-LIJST_GESLOTEN = "gesloten"
 
 MAX_REGELS = 25
 MAX_AANTAL = 24
+MAX_WAAR = 200
 
 # Statussen waarbij een betaling bij Mollie nog kan slagen.
 MOLLIE_LOPEND = ("open", "pending", "authorized")
@@ -86,32 +101,111 @@ def valideer_regels(regels: Any) -> List[Dict[str, Any]]:
     return schoon
 
 
-def betaal_voor(*, soort: str, aangemaakt: datetime, lijst_sluit: Optional[datetime]) -> datetime:
-    """Tot wanneer betaald kan worden.
+def betaal_voor(*, soort: str, aangemaakt: datetime) -> datetime:
+    """Tot wanneer betaald kan worden, gerekend vanaf het ontstaan van de bestelling.
 
-    Van de lijst: 48 uur na het sluiten van de lijst, ook voor wat Marc namens
-    een lid invoert. Bij een bieding: 48 uur na het sluiten van de bieding, het
-    moment waarop de bestelling ontstaat.
+    Van de lijst: 15 minuten, zo lang houdt Marc de flessen vast. Namens een lid:
+    48 uur, want het lid betaalt pas als het Marcs betaallink opent. Bij een
+    bieding: 48 uur na het sluiten van de bieding, het moment waarop de
+    bestelling ontstaat. Het sluiten van de lijst speelt geen rol.
     """
-    if soort == BIEDING:
+    if soort == LIJST:
+        return aangemaakt + HOUDTIJD
+    if soort in (NAMENS, BIEDING):
         return aangemaakt + BETAALTERMIJN
-    if lijst_sluit is None:
-        raise OngeldigeBestelling("geen_lijst")
-    return lijst_sluit + BETAALTERMIJN
+    raise OngeldigeBestelling("onbekende_soort")
 
 
-def valideer_levering(*, soort: str, levering: Optional[str], afhaalpunten: Sequence[str]) -> None:
-    """Levering is altijd een afhaalpunt van de lijst, ook voor een fles uit een bieding.
+def _is_tijd(waarde: Any) -> bool:
+    if not isinstance(waarde, str):
+        return False
+    try:
+        tijd.lees(waarde)
+    except ValueError:
+        return False
+    return True
 
-    Bij een bieding kiest de winnaar pas na het betalen; daar mag levering leeg zijn.
-    Bewaren bij Marc is uit de pilot gehaald en staat op de roadmap.
+
+def valideer_lijst_levering(levering: Any) -> Dict[str, Dict[str, str]]:
+    """Controleert wat Marc per lijst instelt en geeft alleen de bekende velden terug.
+
+    De vorm is `{"brengen": {"van", "tot"}, "halen": {"van", "tot", "waar"}}`.
+    Wat Marc niet aanbiedt, ontbreekt; minstens één van de twee moet er zijn.
+    `van` en `tot` zijn UTC-tekst, `waar` is waar het lid ophaalt.
+    """
+    if not isinstance(levering, dict):
+        raise OngeldigeBestelling("geen_levering_aangeboden")
+    schoon: Dict[str, Dict[str, str]] = {}
+    for soort in LEVERINGEN:
+        keuze = levering.get(soort)
+        if keuze is None:
+            continue
+        if not isinstance(keuze, dict):
+            raise OngeldigeBestelling("ongeldige_levering")
+        van, tot = keuze.get("van"), keuze.get("tot")
+        if not _is_tijd(van) or not _is_tijd(tot) or van >= tot:
+            raise OngeldigeBestelling("ongeldig_moment")
+        schoon[soort] = {"van": van, "tot": tot}
+        if soort == HALEN:
+            waar = keuze.get("waar")
+            if not isinstance(waar, str) or not waar.strip() or len(waar) > MAX_WAAR:
+                raise OngeldigeBestelling("geen_ophaalplek")
+            schoon[soort]["waar"] = waar.strip()
+    if not schoon:
+        raise OngeldigeBestelling("geen_levering_aangeboden")
+    return schoon
+
+
+def openbare_levering(levering: Any) -> Dict[str, Dict[str, str]]:
+    """Wat een lid van de levering van een lijst ziet: alleen brengen en halen, met hun velden."""
+    if not isinstance(levering, dict):
+        return {}
+    velden = {BRENGEN: ("van", "tot"), HALEN: ("van", "tot", "waar")}
+    zichtbaar: Dict[str, Dict[str, str]] = {}
+    for soort in LEVERINGEN:
+        keuze = levering.get(soort)
+        if isinstance(keuze, dict):
+            zichtbaar[soort] = {veld: keuze[veld] for veld in velden[soort] if veld in keuze}
+    return zichtbaar
+
+
+def aangeboden(levering: Any) -> Tuple[str, ...]:
+    """Welke levering een lijst aanbiedt, in vaste volgorde: brengen, halen."""
+    if not isinstance(levering, dict):
+        return ()
+    return tuple(soort for soort in LEVERINGEN if isinstance(levering.get(soort), dict))
+
+
+def valideer_levering(
+    *, soort: str, levering: Optional[str], aangeboden: Sequence[str], heeft_adres: bool
+) -> None:
+    """Levering is brengen of halen, en alleen wat de lijst aanbiedt.
+
+    `aangeboden` komt uit de lijst (zie `aangeboden`), `heeft_adres` uit het lid;
+    beide uit de opslag, nooit uit de aanvraag. Brengen kan alleen naar een
+    afleveradres. Bij een bieding kiest de winnaar pas na het betalen; daar mag
+    levering bij het aanmaken leeg zijn. Bewaren bij Marc is uit de pilot gehaald
+    en staat op de roadmap.
     """
     if levering is None:
         if soort != BIEDING:
-            raise OngeldigeBestelling("geen_afhaalpunt")
+            raise OngeldigeBestelling("geen_levering")
         return
-    if levering not in afhaalpunten:
-        raise OngeldigeBestelling("onbekend_afhaalpunt")
+    if levering not in LEVERINGEN:
+        raise OngeldigeBestelling("onbekende_levering")
+    if levering not in aangeboden:
+        raise OngeldigeBestelling("levering_niet_aangeboden")
+    if levering == BRENGEN and not heeft_adres:
+        raise OngeldigeBestelling("geen_adres")
+
+
+def mag_levering_kiezen(bestelling: Mapping[str, Any]) -> bool:
+    """De winnaar van een bieding kiest brengen of halen na het betalen, tot de fles er is."""
+    return (
+        bestelling.get("soort") == BIEDING
+        and bestelling.get("status") == BETAALD
+        and not bestelling.get("afgeleverdOp")
+    )
 
 
 def nieuwe_bestelling(
@@ -125,18 +219,19 @@ def nieuwe_bestelling(
     levering: Optional[str],
     ingevoerd_door: str,
     aangemaakt: datetime,
-    lijst_sluit: Optional[datetime] = None,
-    afhaalpunten: Sequence[str] = (),
+    aangeboden: Sequence[str] = (),
+    heeft_adres: bool = False,
 ) -> Dict[str, Any]:
     """Bouwt de bestelling op. Naam en prijs komen uit de opslag, nooit uit de aanvraag.
 
-    `lijst_sluit` is de eindtijd van de lijst en `afhaalpunten` zijn de punten
-    die Marc voor die lijst heeft ingesteld; beide komen uit de opslag.
+    `aangeboden` is de levering die Marc voor de lijst heeft ingesteld en
+    `heeft_adres` zegt of het lid een afleveradres heeft; beide komen uit de
+    opslag. Het adres zelf komt niet op de bestelling.
     """
     if soort not in SOORTEN:
         raise OngeldigeBestelling("onbekende_soort")
-    valideer_levering(soort=soort, levering=levering, afhaalpunten=afhaalpunten)
-    termijn = betaal_voor(soort=soort, aangemaakt=aangemaakt, lijst_sluit=lijst_sluit)
+    valideer_levering(soort=soort, levering=levering, aangeboden=aangeboden, heeft_adres=heeft_adres)
+    termijn = betaal_voor(soort=soort, aangemaakt=aangemaakt)
     volledig = []
     for regel in regels:
         wijn = wijnen.get(regel["wijnId"])
@@ -320,9 +415,9 @@ def betaald_wijziging(
 ) -> Dict[str, Any]:
     """Zet de bestelling op betaald, alleen als hij nog open is, en onthoudt met welke betaling.
 
-    Faalt de voorwaarde, dan was de bestelling al betaald of verlopen. Vraag dan
-    per bestelling aan `besluit_na_melding` of het dezelfde melding was of een
-    tweede betaling.
+    Een betaling hoort bij precies één bestelling. Faalt de voorwaarde, dan was
+    de bestelling al betaald of verlopen. Lees hem dan opnieuw en vraag aan
+    `besluit_na_melding` of het dezelfde melding was of een tweede betaling.
     """
     return {
         "TableName": tabellen["bestellingen"],
@@ -339,48 +434,14 @@ def betaald_wijziging(
     }
 
 
-def mag_betalen(*, soort: str, status: str, lijst_status: Optional[str]) -> bool:
-    """Een bestelling van de lijst is pas te betalen als de lijst gesloten is.
+def mag_betalen(*, status: str, betaal_voor: str, nu: datetime) -> bool:
+    """Een bestelling is te betalen zolang hij open is en de termijn niet voorbij.
 
-    Tot die tijd kan het lid bijbestellen; daarna gaat alles in één betaling.
+    Elke bestelling wordt apart betaald, ook als de lijst nog open staat. Een
+    betaling die vlak voor betaalVoor start, kan nog slagen: daarvoor wacht
+    `besluit_op_termijn`.
     """
-    if status != OPEN:
-        return False
-    if soort == BIEDING:
-        return True
-    return lijst_status == LIJST_GESLOTEN
-
-
-def betaalverzoek(bestellingen: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
-    """Eén betaling voor alle open bestellingen van een lid op dezelfde lijst.
-
-    Ook wat het lid bijbestelde en wat Marc namens hem invoerde telt mee.
-    """
-    open_staand = [bestelling for bestelling in bestellingen if bestelling["status"] == OPEN]
-    return {
-        "bestellingIds": [bestelling["bestellingId"] for bestelling in open_staand],
-        "bedrag": sum(int(bestelling["totaal"]) for bestelling in open_staand),
-    }
-
-
-def betaald_transactie(
-    *, tabellen: Mapping[str, str], bestelling_ids: Sequence[str], betaling_id: str, nu: datetime
-) -> List[Dict[str, Any]]:
-    """Zet alle bestellingen van één betaling op betaald: alles of niets.
-
-    Faalt de transactie op een voorwaarde, dan was er al iets betaald of
-    verlopen. Lees de bestellingen dan opnieuw en vraag per bestelling aan
-    `besluit_na_melding` wat er moet gebeuren: niets bij dezelfde melding,
-    `controleNodig` bij een tweede betaling.
-    """
-    if not bestelling_ids:
-        raise OngeldigeBestelling("geen_bestellingen")
-    if len(set(bestelling_ids)) != len(bestelling_ids):
-        raise OngeldigeBestelling("dubbele_bestelling")
-    return [
-        {"Update": betaald_wijziging(tabellen=tabellen, bestelling_id=bestelling_id, betaling_id=betaling_id, nu=nu)}
-        for bestelling_id in bestelling_ids
-    ]
+    return status == OPEN and tijd.iso(nu) < betaal_voor
 
 
 def verloop_transactie(

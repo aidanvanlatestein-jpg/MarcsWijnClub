@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -6,8 +6,11 @@ from wijnclub.domein import bestelling as b
 from wijnclub.domein import dynamo
 
 NU = datetime(2026, 11, 19, 15, 40, tzinfo=timezone.utc)
-SLUIT = datetime(2026, 11, 19, 21, 0, tzinfo=timezone.utc)
-AFHAALPUNTEN = ("punt-roermond", "punt-utrecht")
+BEIDE = (b.BRENGEN, b.HALEN)
+LIJST_LEVERING = {
+    "brengen": {"van": "2026-11-26T17:00:00Z", "tot": "2026-11-26T19:00:00Z"},
+    "halen": {"van": "2026-11-28T09:00:00Z", "tot": "2026-11-28T12:00:00Z", "waar": "Bij Marc, voorbeeldadres"},
+}
 TABELLEN = {"lijsten": "t-lijsten", "wijnen": "t-wijnen", "bestellingen": "t-bestellingen"}
 WIJNEN = {
     "a": {"naam": "Verdejo 2023", "prijs": 950},
@@ -15,13 +18,13 @@ WIJNEN = {
 }
 
 
-def maak(soort=b.LIJST, regels=None, levering="punt-utrecht", bestelling_id="b-1"):
+def maak(soort=b.LIJST, regels=None, levering=b.HALEN, bestelling_id="b-1", heeft_adres=False):
     bieding = soort == b.BIEDING
     return b.nieuwe_bestelling(
         bestelling_id=bestelling_id, lid_id="lid-1", soort=soort, lijst_id=None if bieding else "lijst-1",
         regels=regels or [{"wijnId": "a", "aantal": 1}, {"wijnId": "d", "aantal": 2}],
         wijnen=WIJNEN, levering=None if bieding else levering, ingevoerd_door="lid", aangemaakt=NU,
-        lijst_sluit=None if bieding else SLUIT, afhaalpunten=AFHAALPUNTEN,
+        aangeboden=() if bieding else BEIDE, heeft_adres=heeft_adres,
     )
 
 
@@ -76,13 +79,30 @@ def test_nieuwe_bestelling_neemt_prijs_uit_de_opslag():
     assert bestelling["totaal"] == 950 + 2 * 1150
     assert bestelling["status"] == b.OPEN
     assert bestelling["voorraadGereserveerd"] is True
-    assert bestelling["levering"] == "punt-utrecht"
+    assert bestelling["levering"] == "halen"
     assert bestelling["regels"][1] == {"wijnId": "d", "naam": "Negroamaro 2022", "aantal": 2, "prijs": 1150}
 
 
-def test_van_de_lijst_betaal_je_tot_48_uur_na_het_sluiten():
-    assert maak()["betaalVoor"] == "2026-11-21T21:00:00Z"
-    assert maak(soort=b.NAMENS)["betaalVoor"] == "2026-11-21T21:00:00Z"
+def test_van_de_lijst_houdt_marc_de_flessen_15_minuten_vast():
+    bestelling = maak()
+    assert bestelling["betaalVoor"] == "2026-11-19T15:55:00Z"
+    assert bestelling["voorraadGereserveerd"] is True
+
+
+def test_bijbestellen_is_een_nieuwe_bestelling_met_een_eigen_houdtijd():
+    later = b.nieuwe_bestelling(
+        bestelling_id="b-2", lid_id="lid-1", soort=b.LIJST, lijst_id="lijst-1",
+        regels=[{"wijnId": "a", "aantal": 2}], wijnen=WIJNEN, levering=b.HALEN, ingevoerd_door="lid",
+        aangemaakt=NU + timedelta(minutes=30), aangeboden=BEIDE,
+    )
+    assert later["betaalVoor"] == "2026-11-19T16:25:00Z"
+    assert later["totaal"] == 1900
+
+
+def test_namens_een_lid_betaal_je_tot_48_uur_na_het_invoeren():
+    bestelling = maak(soort=b.NAMENS)
+    assert bestelling["betaalVoor"] == "2026-11-21T15:40:00Z"
+    assert bestelling["voorraadGereserveerd"] is True
 
 
 def test_bieding_heeft_48_uur_en_geen_voorraad():
@@ -92,79 +112,167 @@ def test_bieding_heeft_48_uur_en_geen_voorraad():
     assert bestelling["levering"] is None
 
 
-def test_zonder_eindtijd_van_de_lijst_geen_bestelling():
+def test_het_sluiten_van_de_lijst_telt_niet_mee_voor_de_termijn():
+    assert b.betaal_voor(soort=b.LIJST, aangemaakt=NU) == NU + timedelta(minutes=15)
+    assert b.betaal_voor(soort=b.NAMENS, aangemaakt=NU) == NU + timedelta(hours=48)
+    assert b.betaal_voor(soort=b.BIEDING, aangemaakt=NU) == NU + timedelta(hours=48)
+
+
+def test_onbekende_soort_heeft_geen_termijn():
     with pytest.raises(b.OngeldigeBestelling) as fout:
-        b.betaal_voor(soort=b.LIJST, aangemaakt=NU, lijst_sluit=None)
-    assert fout.value.code == "geen_lijst"
+        b.betaal_voor(soort="bewaren", aangemaakt=NU)
+    assert fout.value.code == "onbekende_soort"
 
 
 @pytest.mark.parametrize(
-    "soort, levering, code",
+    "soort, levering, aangeboden, heeft_adres, code",
     [
-        (b.LIJST, None, "geen_afhaalpunt"),
-        (b.NAMENS, None, "geen_afhaalpunt"),
-        (b.LIJST, "punt-onbekend", "onbekend_afhaalpunt"),
-        (b.LIJST, "brengen", "onbekend_afhaalpunt"),
-        (b.BIEDING, "punt-onbekend", "onbekend_afhaalpunt"),
-        # Bewaren bij Marc is uit de pilot: ook een gewonnen fles gaat naar een afhaalpunt.
-        (b.LIJST, "bewaren", "onbekend_afhaalpunt"),
-        (b.BIEDING, "bewaren", "onbekend_afhaalpunt"),
+        (b.LIJST, None, BEIDE, True, "geen_levering"),
+        (b.NAMENS, None, BEIDE, True, "geen_levering"),
+        (b.LIJST, "punt-utrecht", BEIDE, True, "onbekende_levering"),
+        (b.LIJST, "Brengen", BEIDE, True, "onbekende_levering"),
+        # Bewaren bij Marc is uit de pilot: ook een gewonnen fles wordt gebracht of gehaald.
+        (b.LIJST, "bewaren", BEIDE, True, "onbekende_levering"),
+        (b.BIEDING, "bewaren", BEIDE, True, "onbekende_levering"),
+        (b.LIJST, b.BRENGEN, (b.HALEN,), True, "levering_niet_aangeboden"),
+        (b.LIJST, b.HALEN, (b.BRENGEN,), True, "levering_niet_aangeboden"),
+        (b.NAMENS, b.HALEN, (), True, "levering_niet_aangeboden"),
+        (b.LIJST, b.BRENGEN, BEIDE, False, "geen_adres"),
+        (b.NAMENS, b.BRENGEN, (b.BRENGEN,), False, "geen_adres"),
+        (b.BIEDING, b.BRENGEN, BEIDE, False, "geen_adres"),
     ],
 )
-def test_levering_moet_een_afhaalpunt_van_de_lijst_zijn(soort, levering, code):
+def test_levering_weigert(soort, levering, aangeboden, heeft_adres, code):
     with pytest.raises(b.OngeldigeBestelling) as fout:
-        b.valideer_levering(soort=soort, levering=levering, afhaalpunten=AFHAALPUNTEN)
+        b.valideer_levering(soort=soort, levering=levering, aangeboden=aangeboden, heeft_adres=heeft_adres)
     assert fout.value.code == code
 
 
 @pytest.mark.parametrize(
-    "soort, levering",
-    [(b.LIJST, "punt-roermond"), (b.NAMENS, "punt-utrecht"), (b.BIEDING, None), (b.BIEDING, "punt-utrecht")],
+    "soort, levering, aangeboden, heeft_adres",
+    [
+        (b.LIJST, b.BRENGEN, BEIDE, True),
+        (b.LIJST, b.HALEN, BEIDE, False),
+        (b.LIJST, b.HALEN, (b.HALEN,), False),
+        (b.NAMENS, b.BRENGEN, (b.BRENGEN,), True),
+        # De winnaar van een bieding kiest pas na het betalen.
+        (b.BIEDING, None, (), False),
+        (b.BIEDING, b.HALEN, BEIDE, False),
+        (b.BIEDING, b.BRENGEN, BEIDE, True),
+    ],
 )
-def test_geldige_levering(soort, levering):
-    b.valideer_levering(soort=soort, levering=levering, afhaalpunten=AFHAALPUNTEN)
+def test_geldige_levering(soort, levering, aangeboden, heeft_adres):
+    b.valideer_levering(soort=soort, levering=levering, aangeboden=aangeboden, heeft_adres=heeft_adres)
+
+
+def test_brengen_zonder_adres_geeft_geen_bestelling():
+    with pytest.raises(b.OngeldigeBestelling) as fout:
+        maak(levering=b.BRENGEN, heeft_adres=False)
+    assert fout.value.code == "geen_adres"
+
+
+def test_het_adres_komt_niet_op_de_bestelling():
+    bestelling = maak(levering=b.BRENGEN, heeft_adres=True)
+    assert bestelling["levering"] == "brengen"
+    assert "adres" not in bestelling
+
+
+def test_wat_de_lijst_aanbiedt():
+    assert b.aangeboden(LIJST_LEVERING) == (b.BRENGEN, b.HALEN)
+    assert b.aangeboden({"halen": LIJST_LEVERING["halen"]}) == (b.HALEN,)
+    assert b.aangeboden({"bewaren": {}}) == ()
+    assert b.aangeboden(None) == ()
+
+
+def test_marc_stelt_brengen_en_halen_in():
+    schoon = b.valideer_lijst_levering(dict(LIJST_LEVERING, bewaren={"van": "2026-11-26T17:00:00Z"}))
+    assert schoon == LIJST_LEVERING
+
+
+def test_marc_kan_alleen_halen_aanbieden():
+    schoon = b.valideer_lijst_levering({"halen": dict(LIJST_LEVERING["halen"], waar="  Bij Marc  ", intern="x")})
+    assert schoon == {"halen": dict(LIJST_LEVERING["halen"], waar="Bij Marc")}
 
 
 @pytest.mark.parametrize(
-    "soort, status, lijst_status, verwacht",
+    "levering, code",
     [
-        (b.LIJST, b.OPEN, "open", False),
-        (b.LIJST, b.OPEN, "gesloten", True),
-        (b.NAMENS, b.OPEN, "open", False),
-        (b.NAMENS, b.OPEN, "gesloten", True),
-        (b.BIEDING, b.OPEN, None, True),
-        (b.LIJST, b.BETAALD, "gesloten", False),
-        (b.LIJST, b.VERLOPEN, "gesloten", False),
+        (None, "geen_levering_aangeboden"),
+        ({}, "geen_levering_aangeboden"),
+        ({"bewaren": {}}, "geen_levering_aangeboden"),
+        ({"brengen": "donderdag"}, "ongeldige_levering"),
+        ({"brengen": {"van": "2026-11-26T17:00:00Z"}}, "ongeldig_moment"),
+        ({"brengen": {"van": "donderdag 18:00", "tot": "2026-11-26T19:00:00Z"}}, "ongeldig_moment"),
+        ({"brengen": {"van": "2026-11-26T19:00:00Z", "tot": "2026-11-26T17:00:00Z"}}, "ongeldig_moment"),
+        ({"halen": {"van": "2026-11-28T09:00:00Z", "tot": "2026-11-28T12:00:00Z"}}, "geen_ophaalplek"),
+        ({"halen": {"van": "2026-11-28T09:00:00Z", "tot": "2026-11-28T12:00:00Z", "waar": "  "}}, "geen_ophaalplek"),
+        ({"halen": {"van": "2026-11-28T09:00:00Z", "tot": "2026-11-28T12:00:00Z", "waar": "x" * 201}}, "geen_ophaalplek"),
     ],
 )
-def test_betalen_kan_pas_als_de_lijst_gesloten_is(soort, status, lijst_status, verwacht):
-    assert b.mag_betalen(soort=soort, status=status, lijst_status=lijst_status) is verwacht
-
-
-def test_een_betaalverzoek_telt_alle_open_bestellingen_van_de_lijst():
-    eerste = maak()
-    bijbesteld = maak(regels=[{"wijnId": "a", "aantal": 2}], bestelling_id="b-2")
-    namens = maak(soort=b.NAMENS, regels=[{"wijnId": "d", "aantal": 1}], bestelling_id="b-3")
-    al_betaald = dict(maak(bestelling_id="b-4"), status=b.BETAALD)
-    verzoek = b.betaalverzoek([eerste, bijbesteld, namens, al_betaald])
-    assert verzoek == {"bestellingIds": ["b-1", "b-2", "b-3"], "bedrag": 3250 + 1900 + 1150}
-
-
-def test_betaald_transactie_zet_alle_bestellingen_tegelijk_op_betaald():
-    stappen = b.betaald_transactie(tabellen=TABELLEN, bestelling_ids=["b-1", "b-2"], betaling_id="tr_1", nu=NU)
-    assert [stap["Update"]["Key"] for stap in stappen] == [
-        {"bestellingId": {"S": "b-1"}},
-        {"bestellingId": {"S": "b-2"}},
-    ]
-    assert all(stap["Update"]["ExpressionAttributeValues"][":betaling"] == {"S": "tr_1"} for stap in stappen)
-    assert all(stap["Update"]["ConditionExpression"] == "#status = :open" for stap in stappen)
-
-
-@pytest.mark.parametrize("ids, code", [([], "geen_bestellingen"), (["b-1", "b-1"], "dubbele_bestelling")])
-def test_betaald_transactie_weigert(ids, code):
+def test_marc_stelt_een_ongeldige_levering_in(levering, code):
     with pytest.raises(b.OngeldigeBestelling) as fout:
-        b.betaald_transactie(tabellen=TABELLEN, bestelling_ids=ids, betaling_id="tr_1", nu=NU)
+        b.valideer_lijst_levering(levering)
     assert fout.value.code == code
+
+
+def test_een_lid_ziet_alleen_brengen_en_halen():
+    opgeslagen = {
+        "brengen": dict(LIJST_LEVERING["brengen"], intern="x"),
+        "halen": LIJST_LEVERING["halen"],
+        "bewaren": {"van": "2026-11-26T17:00:00Z"},
+    }
+    assert b.openbare_levering(opgeslagen) == LIJST_LEVERING
+    assert b.openbare_levering(None) == {}
+
+
+@pytest.mark.parametrize(
+    "status, betaal_voor, verwacht",
+    [
+        (b.OPEN, "2026-11-19T15:55:00Z", True),
+        # De houdtijd is voorbij: niet meer te betalen.
+        (b.OPEN, "2026-11-19T15:40:00Z", False),
+        (b.OPEN, "2026-11-19T15:39:59Z", False),
+        (b.BETAALD, "2026-11-19T15:55:00Z", False),
+        (b.VERLOPEN, "2026-11-19T15:55:00Z", False),
+        (b.TERUGBETAALD, "2026-11-21T15:40:00Z", False),
+    ],
+)
+def test_betalen_kan_zolang_de_bestelling_open_is(status, betaal_voor, verwacht):
+    assert b.mag_betalen(status=status, betaal_voor=betaal_voor, nu=NU) is verwacht
+
+
+def test_betalen_kan_meteen_na_het_bestellen_ook_als_de_lijst_nog_open_staat():
+    for soort in b.SOORTEN:
+        bestelling = maak(soort=soort)
+        assert b.mag_betalen(status=bestelling["status"], betaal_voor=bestelling["betaalVoor"], nu=NU) is True
+
+
+def test_na_15_minuten_is_een_bestelling_van_de_lijst_niet_meer_te_betalen():
+    bestelling = maak()
+    assert b.mag_betalen(status=b.OPEN, betaal_voor=bestelling["betaalVoor"], nu=NU + timedelta(minutes=14, seconds=59))
+    assert not b.mag_betalen(status=b.OPEN, betaal_voor=bestelling["betaalVoor"], nu=NU + timedelta(minutes=15))
+
+
+def test_namens_is_na_15_minuten_nog_wel_te_betalen():
+    bestelling = maak(soort=b.NAMENS)
+    assert b.mag_betalen(status=b.OPEN, betaal_voor=bestelling["betaalVoor"], nu=NU + timedelta(hours=47, minutes=59))
+    assert not b.mag_betalen(status=b.OPEN, betaal_voor=bestelling["betaalVoor"], nu=NU + timedelta(hours=48))
+
+
+@pytest.mark.parametrize(
+    "bestelling, verwacht",
+    [
+        ({"soort": b.BIEDING, "status": b.BETAALD}, True),
+        ({"soort": b.BIEDING, "status": b.BETAALD, "levering": b.HALEN}, True),
+        # Eerst betalen, dan kiezen.
+        ({"soort": b.BIEDING, "status": b.OPEN}, False),
+        ({"soort": b.BIEDING, "status": b.BETAALD, "afgeleverdOp": "2026-11-26T18:10:00Z"}, False),
+        ({"soort": b.LIJST, "status": b.BETAALD}, False),
+        ({"soort": b.NAMENS, "status": b.BETAALD}, False),
+    ],
+)
+def test_de_winnaar_kiest_levering_na_het_betalen(bestelling, verwacht):
+    assert b.mag_levering_kiezen(bestelling) is verwacht
 
 
 def test_onbekende_wijn_wordt_geweigerd():
@@ -178,7 +286,7 @@ def test_een_bieding_is_niet_van_de_lijst_te_bestellen():
         b.nieuwe_bestelling(
             bestelling_id="b-1", lid_id="lid-1", soort=b.LIJST, lijst_id="lijst-1",
             regels=[{"wijnId": "barolo", "aantal": 1}], wijnen={"barolo": {"naam": "Barolo", "soort": "bieding"}},
-            levering="punt-utrecht", ingevoerd_door="lid", aangemaakt=NU, lijst_sluit=SLUIT, afhaalpunten=AFHAALPUNTEN,
+            levering=b.HALEN, ingevoerd_door="lid", aangemaakt=NU, aangeboden=BEIDE,
         )
     assert fout.value.code == "onbekende_wijn"
 
@@ -285,12 +393,32 @@ def test_betaald_wijziging_gaat_alleen_door_als_de_bestelling_open_is():
     assert wijziging["ExpressionAttributeValues"][":betaling"] == {"S": "tr_1"}
 
 
+def test_na_de_houdtijd_zonder_betaling_verloopt_de_bestelling():
+    bestelling = maak()
+    na_houdtijd = NU + timedelta(minutes=15)
+    assert not b.mag_betalen(status=bestelling["status"], betaal_voor=bestelling["betaalVoor"], nu=na_houdtijd)
+    assert b.besluit_op_termijn(bestelling["status"], []) == b.VERLOOP
+    stappen = b.verloop_transactie(tabellen=TABELLEN, bestelling=bestelling, nu=na_houdtijd)
+    assert stappen[0]["Update"]["ExpressionAttributeValues"][":nu"] == {"S": "2026-11-19T15:55:00Z"}
+    assert [stap["Update"]["Key"] for stap in stappen[1:]] == [{"wijnId": {"S": "a"}}, {"wijnId": {"S": "d"}}]
+
+
+def test_een_betaling_die_vlak_voor_het_einde_van_de_houdtijd_start_mag_nog_slagen():
+    # Een iDEAL-betaling loopt bij Mollie tot 15 minuten na het starten: de taak wacht.
+    assert b.besluit_op_termijn(b.OPEN, ["open"]) == b.WACHT
+
+
 def test_verloop_geeft_voorraad_terug():
     stappen = b.verloop_transactie(tabellen=TABELLEN, bestelling=maak(), nu=NU)
     assert len(stappen) == 3
     assert stappen[0]["Update"]["ConditionExpression"] == "#status = :open"
     assert stappen[2]["Update"]["UpdateExpression"] == "SET voorraad = voorraad + :aantal"
     assert stappen[2]["Update"]["ExpressionAttributeValues"][":aantal"] == {"N": "2"}
+
+
+def test_verloop_namens_geeft_voorraad_terug():
+    stappen = b.verloop_transactie(tabellen=TABELLEN, bestelling=maak(soort=b.NAMENS), nu=NU)
+    assert len(stappen) == 3
 
 
 def test_verloop_van_een_bieding_geeft_geen_voorraad_terug():
