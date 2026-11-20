@@ -105,8 +105,10 @@ def test_zonder_eindtijd_van_de_lijst_geen_bestelling():
         (b.NAMENS, None, "geen_afhaalpunt"),
         (b.LIJST, "punt-onbekend", "onbekend_afhaalpunt"),
         (b.LIJST, "brengen", "onbekend_afhaalpunt"),
-        (b.LIJST, b.BEWAREN, "bewaren_alleen_bij_bieding"),
         (b.BIEDING, "punt-onbekend", "onbekend_afhaalpunt"),
+        # Bewaren bij Marc is uit de pilot: ook een gewonnen fles gaat naar een afhaalpunt.
+        (b.LIJST, "bewaren", "onbekend_afhaalpunt"),
+        (b.BIEDING, "bewaren", "onbekend_afhaalpunt"),
     ],
 )
 def test_levering_moet_een_afhaalpunt_van_de_lijst_zijn(soort, levering, code):
@@ -117,7 +119,7 @@ def test_levering_moet_een_afhaalpunt_van_de_lijst_zijn(soort, levering, code):
 
 @pytest.mark.parametrize(
     "soort, levering",
-    [(b.LIJST, "punt-roermond"), (b.NAMENS, "punt-utrecht"), (b.BIEDING, None), (b.BIEDING, b.BEWAREN), (b.BIEDING, "punt-utrecht")],
+    [(b.LIJST, "punt-roermond"), (b.NAMENS, "punt-utrecht"), (b.BIEDING, None), (b.BIEDING, "punt-utrecht")],
 )
 def test_geldige_levering(soort, levering):
     b.valideer_levering(soort=soort, levering=levering, afhaalpunten=AFHAALPUNTEN)

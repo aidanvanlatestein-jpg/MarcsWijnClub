@@ -14,7 +14,7 @@ from telefoon_metingen import buiten_beeld, geen_overtredingen, scherm_klopt
 
 # Schermen die zonder voorbereiding te openen zijn. Beheer staat in het prototype open voor iedereen.
 # "avond" is het aanbod tijdens de lopende avond; dat zet de test klaar met een proefactie.
-SCHERMEN = ["#/", "avond", "#/flessen", "#/marc", "#/beheer", "#/beheer/avond", "#/beheer/bestellingen"]
+SCHERMEN = ["#/", "avond", "#/mijn-bestelling", "#/marc", "#/beheer", "#/beheer/avond", "#/beheer/bestellingen"]
 
 
 def inloggen(pagina):
@@ -128,6 +128,60 @@ def test_bon_zonder_scrollen(gewone_telefoon):
     """M4 en M10: het afhaalpunt, het totaal en Bestel staan in beeld zonder te scrollen."""
     _naar_de_bon(gewone_telefoon)
     assert buiten_beeld(gewone_telefoon, "[role=radiogroup]", ".bon-totaal-rij", ".onderkant .hoofdknop") == []
+
+
+# In het prototype loopt er altijd een veiling: de instelling "De veiling loopt altijd" in de voorbeeldbalk staat aan.
+LOPENDE_VEILINGEN = """() => {
+  const sleutel = Object.keys(sessionStorage).find((k) => k.startsWith('wijnclub'));
+  return JSON.parse(sessionStorage.getItem(sleutel)).biedingen
+    .filter((b) => b.biedingStatus === 'open' && b.geopend).map((b) => b.wijnId);
+}"""
+
+
+def test_bieden(telefoon):
+    """Bieden kan zonder voorbereiding: een bod vraagt een bevestiging (M10) en daarna sta je bovenaan."""
+    inloggen(telefoon)
+    telefoon.goto(telefoon.adres + "/#/veiling/bieding-1")
+    bied = telefoon.locator(".onderkant .hoofdknop")
+    expect(bied).to_be_enabled()
+    bied.click()
+    paneel = telefoon.get_by_role("dialog")
+    expect(paneel.get_by_role("radiogroup", name="Kies je bod")).to_be_visible()
+    # M4: het gekozen bod, de melding dat het bindend is en Bevestig staan in beeld, ook op 320 x 568.
+    bevestig = paneel.get_by_role("button", name=re.compile("^Bevestig", re.I))
+    expect(bevestig).to_be_in_viewport(ratio=1)
+    expect(paneel.locator(".trede.gekozen")).to_be_in_viewport(ratio=1)
+    bevestig.click()
+    expect(paneel).to_have_count(0)
+    expect(bied).to_be_disabled()
+    expect(bied).to_contain_text(re.compile("bovenaan", re.I))
+
+
+def test_veiling_loopt_altijd(gewone_telefoon):
+    """Voor het testen: er loopt altijd precies één veiling, en na de hamer begint er een nieuwe."""
+    pagina = gewone_telefoon
+    inloggen(pagina)
+    assert pagina.evaluate(LOPENDE_VEILINGEN) == ["bieding-1"]
+    pagina.locator(".voorbeeld").click()
+    pagina.get_by_role("dialog").get_by_role("button", name=re.compile("Laat de hamer vallen", re.I)).click()
+    pagina.wait_for_function(f"() => {{ const nu = ({LOPENDE_VEILINGEN})(); return nu.length === 1 && nu[0] !== 'bieding-1'; }}")
+    # De afgelopen ronde blijft staan, en vanaf het aanbod is de nieuwe te bereiken.
+    nieuw = pagina.evaluate(LOPENDE_VEILINGEN)[0]
+    pagina.goto(pagina.adres + "/#/veiling/" + nieuw)
+    expect(pagina.locator(".onderkant .hoofdknop")).to_be_enabled()
+
+
+def test_mijn_bestelling(telefoon):
+    """Wat je bestelt staat onder Bestelling. Het oude adres van Mijn flessen komt daar ook uit."""
+    _naar_de_bon(telefoon)
+    telefoon.get_by_role("radiogroup", name="Afhaalpunt").get_by_role("radio").first.click()
+    telefoon.locator(".onderkant .hoofdknop").click()
+    expect(telefoon).to_have_url(re.compile(r"#/besteld/"))
+    telefoon.goto(telefoon.adres + "/#/flessen")
+    expect(telefoon.get_by_role("list", name="Voortgang")).to_have_count(1)
+    assert geen_overtredingen(scherm_klopt(telefoon)) == {}
+    telefoon.get_by_role("navigation", name="Hoofdmenu").get_by_role("button", name=re.compile("Bestelling", re.I)).click()
+    expect(telefoon).to_have_url(re.compile(r"#/mijn-bestelling$"))
 
 
 def test_terugknop_sluit_paneel(telefoon):

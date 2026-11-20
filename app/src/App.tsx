@@ -6,8 +6,8 @@ import { Aanbod } from './schermen/Aanbod'
 import { Beheer, Namens } from './schermen/Beheer'
 import { Bestelling } from './schermen/Bestelling'
 import { Fles, Gewonnen, Veiling } from './schermen/Bieding'
-import { Flessen } from './schermen/Flessen'
 import { Marc } from './schermen/Marc'
+import { MijnBestelling } from './schermen/MijnBestelling'
 import { Besteld, Betaling, NetOp } from './schermen/Toestanden'
 import { Welkom, Tip } from './schermen/Welkom'
 import { WijnVanDeLijst } from './schermen/WijnVanDeLijst'
@@ -65,8 +65,8 @@ function Scherm({ route, ga }: { route: Route; ga: Ga }) {
       return <Veiling key={route.wijnId} wijnId={route.wijnId} ga={ga} />
     case 'gewonnen':
       return <Gewonnen wijnId={route.wijnId} ga={ga} />
-    case 'flessen':
-      return <Flessen ga={ga} />
+    case 'mijn-bestelling':
+      return <MijnBestelling ga={ga} />
     case 'marc':
       return <Marc ga={ga} />
     case 'beheer':

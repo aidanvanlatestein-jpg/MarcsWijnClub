@@ -104,6 +104,22 @@ def test_pull_request_neemt_geen_rol_van_cdk_aan(sjabloon):
     assert "lookup-role" not in tekst
 
 
+def test_onveranderlijk_onderwerp_met_vaste_ids():
+    app = cdk.App(context=VLAGGEN)
+    stack = github_stack.GitHubStack(
+        app, "Wijnclub-GitHub", repo="eigenaar@1/wijnclub@2", env=cdk.Environment(region="eu-west-1")
+    )
+    verklaring = rollen(Template.from_stack(stack))[github_stack.ROL_TEST]["AssumeRolePolicyDocument"]["Statement"][0]
+    onderwerp = verklaring["Condition"]["StringEquals"]["token.actions.githubusercontent.com:sub"]
+    assert onderwerp == "repo:eigenaar@1/wijnclub@2:ref:refs/heads/main"
+
+
+def test_cdk_json_gebruikt_het_onveranderlijke_onderwerp():
+    context = json.loads((Path(__file__).resolve().parents[2] / "infra" / "cdk.json").read_text())["context"]
+    eigenaar, naam = context["github_repo"].split("/")
+    assert "@" in eigenaar and "@" in naam
+
+
 @pytest.mark.parametrize("repo", ["", "wijnclub", "a/b/c"])
 def test_ongeldige_repository_stopt_de_synthese(repo):
     app = cdk.App(context={**VLAGGEN, "github_repo": repo})

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import { Blad } from './Blad'
 
-// "Vraag Marc", "Open aan tafel" en "Zet hem klaar" openen WhatsApp met een bericht dat al klaarstaat.
+// "Vraag Marc" opent WhatsApp met een bericht dat al klaarstaat.
 // Marcs nummer komt uit de configuratie, niet uit de code. In het prototype is er geen nummer:
 // dan laat de app het bericht zien en kies je in WhatsApp zelf een gesprek.
 

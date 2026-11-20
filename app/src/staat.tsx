@@ -7,16 +7,16 @@
 // staat eerst klaar en verschijnt pas in de feed als Marc hem op tafel zet. De bijzondere fles
 // gaat aan het eind van de avond onder de hamer.
 import { createContext, useContext, useEffect, useReducer, useRef, type ReactNode } from 'react'
-import type { Bestelling, Bieding, Eerder, Fase, FeedItem, Lijst, LogItem, Oordeel, Regel, Wijn } from './types'
+import type { Bestelling, Bieding, Fase, FeedItem, Lijst, LogItem, Regel, Wijn } from './types'
 import { dagEnTijd, euro, tijd } from './opmaak'
 import {
-  voorbeeldBerichten, voorbeeldBestellingen, voorbeeldBiedingen, voorbeeldEerder, voorbeeldLid, voorbeeldLijst, voorbeeldOordelen,
+  voorbeeldBerichten, voorbeeldBestellingen, voorbeeldBiedingen, voorbeeldLid, voorbeeldLijst,
 } from './voorbeeld'
 
 /** Het lid dat in het prototype is ingelogd. In de echte app komt het lid uit het token. */
 export const LID = voorbeeldLid.lidId
 
-const OPSLAG = 'wijnclub-voorbeeld-3'
+const OPSLAG = 'wijnclub-voorbeeld-4'
 const MINUUT = 60_000
 const UUR = 60 * MINUUT
 const BETAALTERMIJN = 48 * UUR
@@ -71,7 +71,14 @@ export interface Instellingen {
   bijnamen: boolean
   /** Live-stip, NET OP TAFEL en de klok in de laatste twee minuten. Uit: zo rustig als het plan. */
   levendig: boolean
+  /**
+   * Alleen om te testen, geen open beslissing: er staat altijd een veiling open, ook vóór en na de
+   * avond. Valt de hamer, dan begint er een nieuwe. Uit: de veiling begint op de avond, zoals het plan.
+   */
+  veilingAltijd: boolean
 }
+
+const STANDAARD_INSTELLINGEN: Instellingen = { bijnamen: true, levendig: true, veilingAltijd: true }
 
 export interface Staat {
   versie: 3
@@ -84,8 +91,6 @@ export interface Staat {
   mandje: Record<string, number>
   /** Het afhaalpunt van voorkeur: het laatst gekozen afhaalpunt. */
   levering: string | null
-  oordelen: Record<string, Oordeel>
-  eerder: Eerder[]
   volgendeBon: number
   volgendId: number
   betaling: Betaalpoging | null
@@ -111,7 +116,6 @@ export type Actie =
   | { type: 'anderBiedt'; wijnId: string; nu: string }
   | { type: 'sluitBieding'; wijnId: string; nu: string }
   | { type: 'leveringBieding'; bestellingId: string; levering: string }
-  | { type: 'oordeel'; wijnId: string; oordeel: Oordeel | null }
   | { type: 'anderKooptOp'; wijnId: string; nu: string }
   | { type: 'afgeleverd'; bestellingId: string; ja: boolean; nu: string }
   | { type: 'nieuweWijn'; wijn: Wijn }
@@ -183,8 +187,6 @@ export function beginStaat(): Staat {
     feed: [],
     mandje: {},
     levering: null,
-    oordelen: { ...voorbeeldOordelen },
-    eerder: voorbeeldEerder.map((e) => ({ ...e })),
     volgendeBon: 144,
     volgendId: 1,
     betaling: null,
@@ -192,7 +194,7 @@ export function beginStaat(): Staat {
     herinnering: false,
     marcTypt: false,
     verbinding: true,
-    instellingen: { bijnamen: true, levendig: true },
+    instellingen: { ...STANDAARD_INSTELLINGEN },
   }
 }
 
@@ -204,6 +206,11 @@ export function zoekWijn(s: Staat, wijnId: string): Wijn | undefined {
 
 export function zoekBieding(s: Staat, wijnId: string): BiedingStaat | undefined {
   return s.biedingen.find((b) => b.wijnId === wijnId)
+}
+
+/** De veiling die nu loopt: open en de zaal is open. */
+export function lopendeVeiling(s: Staat): BiedingStaat | undefined {
+  return s.biedingen.find((b) => b.biedingStatus === 'open' && b.geopend)
 }
 
 /** De veiling van deze avond: de eerste bieding die nog open is, anders de laatste. */
@@ -411,6 +418,34 @@ function sluitBieding(s: Staat, wijnId: string, nu: string): Staat {
   }
 }
 
+/**
+ * Voor het testen (instelling `veilingAltijd`): zorgt dat er altijd een veiling loopt. Een veiling
+ * die klaarstaat gaat meteen open, ook vóór de avond. Is de hamer gevallen, dan begint er een nieuwe
+ * ronde met dezelfde voorbeeldfles onder een eigen nummer; de afgelopen ronde blijft staan, met de
+ * winnaar en de betaling.
+ */
+function houdVeilingGaande(s: Staat, nu: string): Staat {
+  if (!s.instellingen.veilingAltijd || lopendeVeiling(s)) return s
+  const klaar = s.biedingen.find((b) => b.biedingStatus === 'open')
+  if (klaar) return openVeiling(s, klaar.wijnId, nu)
+  const vorige = s.biedingen.at(-1)
+  if (!vorige) return s
+  const ronde: BiedingStaat = {
+    ...vorige,
+    wijnId: `bieding-r${s.volgendId}`,
+    biedingStatus: 'open',
+    hoogsteBod: undefined,
+    mijnBod: undefined,
+    mijnBodIsHoogste: false,
+    minimaalVolgendBod: vorige.startbod,
+    aantalBiedingen: 0,
+    geopend: nu,
+    eindtijd: plus(nu, VEILING_DUUR),
+    biedlog: [{ soort: 'open', op: nu, bedrag: vorige.startbod }],
+  }
+  return { ...s, biedingen: [...s.biedingen, ronde], volgendId: s.volgendId + 1 }
+}
+
 /** Een avond die al 22 minuten loopt, zoals op scherm 03 en 15. */
 function lopendeAvond(s: Staat, nu: string): Staat {
   const begin = heleMinuut(plus(nu, -22 * MINUUT))
@@ -421,7 +456,6 @@ function lopendeAvond(s: Staat, nu: string): Staat {
     ingelogd: s.ingelogd,
     tipGezien: s.tipGezien,
     instellingen: s.instellingen,
-    oordelen: s.oordelen,
     herinnering: s.herinnering,
     lijst: {
       ...basis.lijst,
@@ -452,6 +486,12 @@ function lopendeAvond(s: Staat, nu: string): Staat {
 }
 
 function reducer(s: Staat, a: Actie): Staat {
+  const na = stap(s, a)
+  // Acties zonder tijdstip (een instelling, opnieuw beginnen) vangt de klok binnen een seconde op.
+  return 'nu' in a ? houdVeilingGaande(na, a.nu) : na
+}
+
+function stap(s: Staat, a: Actie): Staat {
   switch (a.type) {
     case 'inloggen':
       return { ...s, ingelogd: true }
@@ -542,18 +582,14 @@ function reducer(s: Staat, a: Actie): Staat {
     case 'sluitBieding':
       return sluitBieding(s, a.wijnId, a.nu)
     case 'leveringBieding':
+      // Een gewonnen fles gaat naar een afhaalpunt van de lijst; bewaren bij Marc is uit de pilot.
+      if (!afhaalpunt(s, a.levering)) return s
       return {
         ...s,
         bestellingen: s.bestellingen.map((b) =>
           b.bestellingId === a.bestellingId && b.soort === 'bieding' ? { ...b, levering: a.levering } : b,
         ),
       }
-    case 'oordeel': {
-      const oordelen = { ...s.oordelen }
-      if (a.oordeel) oordelen[a.wijnId] = a.oordeel
-      else delete oordelen[a.wijnId]
-      return { ...s, oordelen }
-    }
     case 'anderKooptOp': {
       const w = zoekWijn(s, a.wijnId)
       if (!w || w.voorraad <= 0 || s.lijst.status !== 'open' || !w.opTafelSinds) return s
@@ -661,6 +697,7 @@ function reducer(s: Staat, a: Actie): Staat {
 
 /** Moet de klok iets doen? Zo hoeft niet elke seconde de hele app opnieuw te tekenen. */
 function teDoen(s: Staat, nu: string): boolean {
+  if (s.instellingen.veilingAltijd && !lopendeVeiling(s) && s.biedingen.length > 0) return true
   return s.biedingen.some(
     (b) => b.biedingStatus === 'open' && ((!b.geopend && s.lijst.fase === 'live' && nu >= s.lijst.veilingBegin) || (b.geopend && nu >= b.eindtijd)),
   )
@@ -679,19 +716,20 @@ function laad(): Staat {
     if (ruw) {
       const s = JSON.parse(ruw) as Staat
       if (s && s.versie === 3 && s.lijst && Array.isArray(s.bestellingen) && Array.isArray(s.feed)) {
-        return {
+        return houdVeilingGaande({
           ...s,
           melding: null,
           marcTypt: false,
+          instellingen: { ...STANDAARD_INSTELLINGEN, ...s.instellingen },
           lijst: { ...s.lijst, wijnen: s.lijst.wijnen.map(zonderTijdelijkeFoto) },
           biedingen: s.biedingen.map(zonderTijdelijkeFoto),
-        }
+        }, iso(new Date()))
       }
     }
   } catch {
     // Geen opslag beschikbaar of onleesbaar: begin opnieuw.
   }
-  return beginStaat()
+  return houdVeilingGaande(beginStaat(), iso(new Date()))
 }
 
 type Waarde = readonly [Staat, (actie: Actie) => void]

@@ -14,7 +14,6 @@ import {
   afhaalpunt, betaalVoor, eersteWoord, plus, HOOGSTE_FACTOR, LAATSTE_MINUTEN, mijnBiedingBestelling, useNu, useStaat, zoekBieding,
   type BiedingStaat,
 } from '../staat'
-import { BEWAREN } from '../types'
 import { voorbeeldBerichten, voorbeeldLedenKijken } from '../voorbeeld'
 import { Terugblik } from './Aanbod'
 
@@ -367,7 +366,7 @@ function Hamerslag({ bieding: b, ga }: { bieding: BiedingStaat; ga: Ga }) {
           )}
           <div style={{ marginTop: 4 }}>{knop}</div>
           {bestelling && !betaald && (
-            <p className="tekst klein gedempt">Je hebt 48 uur. Daarna kies je: bewaren bij Marc of ophalen bij een afhaalpunt.</p>
+            <p className="tekst klein gedempt">Je hebt 48 uur. Daarna kies je een afhaalpunt.</p>
           )}
         </div>
         <div className="vlak">
@@ -538,7 +537,7 @@ function Bieden({ bieding, begin, onSluit }: { bieding: BiedingStaat; begin: num
 
 // ---- 11 Na de betaling ----
 
-/** Na een gewonnen veiling: betalen, daarna bewaren bij Marc of een afhaalpunt. */
+/** Na een gewonnen veiling: betalen, daarna een afhaalpunt kiezen. */
 export function Gewonnen({ wijnId, ga }: { wijnId: string; ga: Ga }) {
   const [staat, dispatch] = useStaat()
   const [betalen, setBetalen] = useState(false)
@@ -548,10 +547,7 @@ export function Gewonnen({ wijnId, ga }: { wijnId: string; ga: Ga }) {
 
   const betaald = bestelling.status === 'betaald'
   const naam = naamMetJaar(b, { kort: true }).toUpperCase()
-  const opties = [
-    { id: BEWAREN, woord: 'Bewaar', zin: b.bewaring ? `Bij Marc. ${b.bewaring} Haal hem wanneer je wilt.` : 'Bij Marc. Haal hem wanneer je wilt.' },
-    ...staat.lijst.afhaalpunten.map((a) => ({ id: a.afhaalpuntId, woord: a.naam, zin: a.wanneer })),
-  ]
+  const opties = staat.lijst.afhaalpunten.map((a) => ({ id: a.afhaalpuntId, woord: a.naam, zin: a.wanneer }))
   const punt = afhaalpunt(staat, bestelling.levering)
 
   return (
@@ -578,16 +574,16 @@ export function Gewonnen({ wijnId, ga }: { wijnId: string; ga: Ga }) {
           )}
         </div>
         <section className="sectie">
-          <h2 className="label">Wat doen we met de fles?</h2>
+          <h2 className="label">Waar haal je hem op?</h2>
           <Keuze
-            label="Wat doen we met de fles"
+            label="Afhaalpunt"
             vorm="banden"
             opties={opties}
             gekozen={bestelling.levering}
             uitgeschakeld={!betaald}
             onKies={(id) => dispatch({ type: 'leveringBieding', bestellingId: bestelling.bestellingId, levering: id })}
           />
-          {!betaald && <p className="tekst klein gedempt">Na het betalen kies je wat er met de fles gebeurt.</p>}
+          {!betaald && <p className="tekst klein gedempt">Na het betalen kies je een afhaalpunt.</p>}
           {betaald && punt && <p className="tekst klein gedempt">Je haalt hem op in {punt.naam}, {punt.wanneer.toLowerCase()}.</p>}
         </section>
       </main>
@@ -596,7 +592,7 @@ export function Gewonnen({ wijnId, ga }: { wijnId: string; ga: Ga }) {
         tab="aanbod"
         knop={
           betaald ? (
-            <Hoofdknop disabled={!bestelling.levering} onClick={() => ga({ scherm: 'flessen' })}>Klaar</Hoofdknop>
+            <Hoofdknop disabled={!bestelling.levering} onClick={() => ga({ scherm: 'mijn-bestelling' })}>Klaar</Hoofdknop>
           ) : (
             <Hoofdknop goud onClick={() => setBetalen(true)}>Betaal {euro(bestelling.totaal, { heel: true })} met iDEAL</Hoofdknop>
           )

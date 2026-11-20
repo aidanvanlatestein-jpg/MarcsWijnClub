@@ -93,9 +93,9 @@ Drie gelijke kolommen: AANBOD, FLESSEN en MARC, zonder iconen.
 
 ### Kop
 
-Links het woordmerk "MARC" (300), "KOOKT" (700) en "WIJNCLUB" (goud, 12 px, spatiëring 1.5). Rechts een tekstlink "VRAAG MARC ↗" met een witte onderlijn van 1 px.
+Links het woordmerk "MARC" (300), "KOOKT" (700) en "WIJNCLUB" (goud, 12 px, spatiëring 1.5). Rechts de tekstlink VRAAG MARC: een lijnicoon `message-circle` (lucide, 15 px, lijndikte 1.5) vóór de tekst, met een witte onderlijn van 1 px.
 
-Op een scherm met een foto bovenaan vervangt een zwevende navigatie deze kop: twee zwarte vlakken met "← TITEL" en "VRAAG MARC ↗".
+Op een scherm met een foto bovenaan vervangt een zwevende navigatie deze kop: twee zwarte vlakken met "← TITEL" en het chaticoon met "VRAAG MARC".
 
 ### Hoofdknop
 
@@ -105,7 +105,7 @@ Er is één uitzondering: **BETAAL MET IDEAL** is goud. Dat is de enige plek waa
 
 ### Tekstlink
 
-Hoofdletters met de pijl `↗` (gaat naar buiten, bijvoorbeeld WhatsApp) of `→` (gaat binnen de app verder).
+Hoofdletters met een lijnicoon van lucide (lijndikte 1.5, 0,95× de tekstgrootte, dezelfde kleur als de tekst, 6 px ertussen). `message-circle` vóór de tekst bij alles wat WhatsApp met Marc opent; `arrow-up-right` achter de tekst bij andere links naar buiten (Mail, opnieuw sturen); `→` achter de tekst bij links binnen de app. Gebruik nooit de tekens ↗ of ↓: die tonen op iOS als emoji.
 
 ### Flessenrij (kernonderdeel)
 
@@ -271,7 +271,7 @@ Marcs nummer komt uit de configuratie, niet uit de code.
 | Betaald | Bon met de stempel BETAALD, een zin van Marc en "NAAR MIJN FLESSEN". Zie 11 |
 | Overboden | Pushmelding plus "OVERBODEN · HOOGSTE BOD" in goud op de bijzondere fles. Je eigen bod staat doorgestreept. Zie 11 |
 | Betaling mislukt of afgebroken | Bon zonder stempel, met de kop "NIET BETAALD" in wit, "Je flessen houd ik nog tot 16:07 voor je vast" en de hoofdknop "PROBEER OPNIEUW". Nog niet getekend; volg de stijl van "wijn net op" |
-| Fout van de server | Algemene tekst, geen technische details (pilotplan): "Er ging iets mis. Probeer het zo nog eens, of vraag het Marc." met VRAAG MARC ↗ |
+| Fout van de server | Algemene tekst, geen technische details (pilotplan): "Er ging iets mis. Probeer het zo nog eens, of vraag het Marc." met de link VRAAG MARC (chaticoon) |
 | Geen toegang | Wie niet is uitgenodigd, ziet scherm 01 met de tekst "Deze club is alleen op uitnodiging van Marc." en geen invoervelden |
 
 ## Beweging

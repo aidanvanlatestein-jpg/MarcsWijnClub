@@ -60,7 +60,7 @@ export function Voorbeeldbalk({ ga }: { ga: Ga }) {
       doe: () => { dispatch({ type: 'openVeiling', wijnId: lopend.wijnId, nu: nuUtc() }); ga({ scherm: 'veiling', wijnId: lopend.wijnId }) },
     })
   }
-  if (lopend && lijst.fase !== 'aangekondigd') {
+  if (lopend && (lopend.geopend || lijst.fase !== 'aangekondigd')) {
     proeven.push({
       label: 'Een ander lid biedt hoger',
       uitleg: lopend.mijnBodIsHoogste ? 'Je krijgt een melding dat je overboden bent' : 'Er komt een bod bij in de biedlog',
@@ -122,6 +122,15 @@ export function Voorbeeldbalk({ ga }: { ga: Ga }) {
               onWissel={(aan) => dispatch({ type: 'instelling', naam: 'levendig', aan })}
               label="Live-stip, Net op tafel en de klok"
               uitleg="Uit: zo rustig als het plan, zonder klok in de laatste twee minuten"
+            />
+          </div>
+          <h3 className="label">Voor het testen</h3>
+          <div className="instellingen">
+            <Schakelaar
+              aan={staat.instellingen.veilingAltijd}
+              onWissel={(aan) => dispatch({ type: 'instelling', naam: 'veilingAltijd', aan })}
+              label="De veiling loopt altijd"
+              uitleg="Aan: er staat altijd een veiling open, ook vóór en na de avond. Na de hamer begint er een nieuwe. Uit: de veiling begint op de avond, zoals het plan"
             />
           </div>
           <h3 className="label">Wat er gebeurt</h3>

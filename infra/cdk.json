@@ -4,7 +4,7 @@
     "omgeving": "test",
     "regio": "eu-west-1",
     "afzender_email": "",
-    "github_repo": "aidanvanlatestein-jpg/MarcsWijnClub",
+    "github_repo": "aidanvanlatestein-jpg@257543070/MarcsWijnClub@1464434143",
     "@aws-cdk-containers/ecs-service-extensions:enableDefaultLogDriver": true,
     "@aws-cdk/aws-apigateway:authorizerChangeDeploymentLogicalId": true,
     "@aws-cdk/aws-apigateway:disableCloudWatchRole": true,

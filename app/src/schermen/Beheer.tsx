@@ -10,7 +10,7 @@ import { bedrag, euro, naamMetJaar, naarInvoer, nuUtc, tijd, vanInvoer, weekdag,
 import { herkenBericht, leesEuro, leesLetters } from '../regels'
 import type { BeheerTab, Ga } from '../route'
 import { afhaalpunt, klaar, opTafel, plus, tellers, useStaat, veilingVanAvond, volgendeLetter } from '../staat'
-import { BEWAREN, type Bestelling } from '../types'
+import type { Bestelling } from '../types'
 import { voorbeeldBericht, voorbeeldLeden, voorbeeldLedenBinnen, voorbeeldSnelleZinnen } from '../voorbeeld'
 import { LiveBalk } from '../onderdelen/Avond'
 import { Send } from 'lucide-react'
@@ -282,7 +282,7 @@ function BestellingRij({ bestelling: b }: { bestelling: Bestelling }) {
   const [staat, dispatch] = useStaat()
   const regels = b.regels.map((r) => (r.letter ? `${r.aantal}× ${r.letter}` : r.naam)).join(' · ')
   let levering = ''
-  if (b.soort === 'bieding') levering = b.levering === BEWAREN ? 'bewaren' : afhaalpunt(staat, b.levering)?.naam ?? 'nog niet gekozen'
+  if (b.soort === 'bieding') levering = afhaalpunt(staat, b.levering)?.naam ?? 'nog niet gekozen'
   const status = [
     b.status === 'betaald' ? 'Betaald' : 'Wacht op betaling',
     levering,

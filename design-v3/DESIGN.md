@@ -96,7 +96,7 @@ Eén familie: **Barlow Condensed** (Google Fonts), met de gewichten 300, 400, 50
 ### Uit V2, ongewijzigd
 
 - **Tabs:** AANBOD, FLESSEN en MARC, alleen tekst. Bovenaan een balk van 2 px, goud als de tab actief is.
-- **Kop:** het woordmerk MARC (300) + KOOKT (700) + WIJNCLUB (goud), en rechts de tekstlink "VRAAG MARC ↗".
+- **Kop:** het woordmerk MARC (300) + KOOKT (700) + WIJNCLUB (goud), en rechts de tekstlink VRAAG MARC met een lijnicoon `message-circle` (lucide, 15 px, lijndikte 1.5) vóór de tekst. Andere links naar buiten krijgen `arrow-up-right` achter de tekst. Gebruik nooit de tekens ↗ of ↓ in tekst: die tonen op iOS als emoji.
 - **Hoofdknop:** wit, over de volle breedte, met het label links en een pijl rechts. Uitzondering: BETAAL … MET IDEAL is goud.
 - **Flessenrij:**
   - Eén fles per beschikbare fles. Gekozen is wit, vrij is omlijnd, weg is `--line-soft`.
@@ -238,7 +238,7 @@ Wie niet won, ziet dezelfde terugblik met de kop "AFGELOPEN." in wit en "De Baro
 - **02 Aankondiging:** de foto bovenaan is een sfeerfoto van Marc (nu `crop_1582137194svoorpaginaslide3.jpg`). Tik op een wijn in de samenvatting om alvast de wijnpagina (04) te zien, zonder bestellen.
 - **03 De avond:**
   - Bij openen scrolt de feed naar de nieuwste wijn.
-  - Nieuwe items schuiven onderaan in, zonder dat de pagina verspringt waar de gebruiker zit. Is de gebruiker omhoog gescrold, dan verschijnt een tekstknop "NIEUW VAN MARC ↓".
+  - Nieuwe items schuiven onderaan in, zonder dat de pagina verspringt waar de gebruiker zit. Is de gebruiker omhoog gescrold, dan verschijnt een tekstknop "NIEUW VAN MARC" met het icoon `arrow-down` erachter.
   - De balk "20:00 · De veiling van … begint" staat onder de feed tot de veiling begint. Daarna wordt het "DE VEILING IS BEGONNEN →".
 - **07 De veiling:** de stand toont boven het bedrag "OVERBODEN · HOOGSTE BOD" (goud) als jij overboden bent, "JIJ BENT DE HOOGSTE" (goud) als je bovenaan staat, en anders "HOOGSTE BOD".
 - **15 Beheer live:**
