@@ -14,19 +14,23 @@ from telefoon_metingen import buiten_beeld, geen_overtredingen, scherm_klopt
 
 # Schermen die zonder voorbereiding te openen zijn. Beheer staat in het prototype open voor iedereen.
 # "avond" is het aanbod tijdens de lopende avond; dat zet de test klaar met een proefactie.
-SCHERMEN = ["#/", "avond", "#/mijn-bestelling", "#/marc", "#/beheer", "#/beheer/avond", "#/beheer/bestellingen"]
+SCHERMEN = ["#/", "avond", "#/mijn-bestelling", "#/marc", "#/beheer", "#/beheer/nieuw", "#/beheer/afleveren", "#/beheer/namens"]
 
 
-def inloggen(pagina):
-    """De eerste login zoals een lid hem doet: code, 18 jaar, akkoord, en daarna de tip voor het beginscherm."""
+def inloggen(pagina, face_id=False):
+    """De eerste login zoals een lid hem doet (design-v4): e-mailadres, de code, 18 of ouder, en Face ID of niet."""
     pagina.goto(pagina.adres + "/#/welkom")
+    # Opnieuw laden: stond het inloggen al open op een latere stap, dan begint het weer bij het e-mailadres.
+    pagina.reload()
+    pagina.locator("#email").fill("lid-1@voorbeeld.nl")
+    pagina.get_by_role("button", name=re.compile("Stuur mij een code", re.I)).click()
     pagina.locator("#code").fill("123456")
-    pagina.get_by_role("checkbox", name=re.compile("18 jaar", re.I)).click()
-    pagina.get_by_role("checkbox", name=re.compile("akkoord", re.I)).click()
-    pagina.get_by_role("button", name=re.compile("Kom binnen", re.I)).click()
-    expect(pagina).to_have_url(re.compile(r"#/tip$"))
-    pagina.locator(".onderkant .hoofdknop").click()
-    expect(pagina).not_to_have_url(re.compile(r"#/(welkom|tip)$"))
+    pagina.get_by_role("button", name=re.compile("Ja, kom binnen", re.I)).click()
+    if face_id:
+        pagina.get_by_role("button", name=re.compile("Gebruik Face ID", re.I)).click()
+    else:
+        pagina.get_by_role("button", name=re.compile("Niet nu", re.I)).click()
+    expect(pagina).not_to_have_url(re.compile(r"#/welkom$"))
 
 
 def naar_de_avond(pagina):
@@ -39,14 +43,19 @@ def naar_de_avond(pagina):
 
 def meer_knop(pagina):
     """De plusknop van de eerste wijn die nog te koop is."""
-    knop = pagina.get_by_role("button", name=re.compile(r"^Eén fles meer van wijn ")).first
+    knop = pagina.get_by_role("button", name=re.compile(r"^Eén fles meer van ")).first
     expect(knop).to_be_visible(timeout=15_000)
     return knop
 
 
 def test_eerste_login(telefoon):
-    """M1, M2, M5 en M6 op het eerste scherm dat een lid ziet."""
+    """M1, M2, M5 en M6 op de schermen van het inloggen."""
     telefoon.goto(telefoon.adres + "/#/welkom")
+    assert geen_overtredingen(scherm_klopt(telefoon)) == {}
+    email = telefoon.locator("#email")
+    assert email.evaluate("e => parseFloat(getComputedStyle(e).fontSize)") >= 16
+    assert email.get_attribute("autocomplete") == "email"
+    telefoon.get_by_role("button", name=re.compile("Stuur mij een code", re.I)).click()
     assert geen_overtredingen(scherm_klopt(telefoon)) == {}
     code = telefoon.locator("#code")
     # M6: geen inzoomen op een iPhone, het cijfertoetsenbord, en de code uit de mail invullen.
@@ -89,23 +98,53 @@ def _naar_de_bon(pagina):
     naar_de_avond(pagina)
     meer_knop(pagina).click()
     pagina.goto(pagina.adres + "/#/bestelling")
-    expect(pagina.get_by_role("radiogroup", name="Afhaalpunt")).to_be_visible()
+    expect(pagina.get_by_role("radiogroup", name="Brengen of halen")).to_be_visible()
+
+
+def _betaal(pagina, gelukt=True):
+    """De betaalpagina van Mollie staat in het prototype in een paneel; daar kies je wat er gebeurt."""
+    paneel = pagina.get_by_role("dialog")
+    expect(paneel).to_be_visible()
+    paneel.get_by_role("button", name=re.compile("lukt$" if gelukt else "mislukt", re.I)).click()
+    expect(paneel).to_have_count(0)
 
 
 def test_bestellen(telefoon):
-    """M10: zonder afhaalpunt geen bestelling, en dubbel tikken geeft één bestelling."""
+    """M10: zonder brengen of halen geen bestelling; daarna meteen betalen, en de bon is betaald."""
     _naar_de_bon(telefoon)
     assert geen_overtredingen(scherm_klopt(telefoon)) == {}
-    bestel = telefoon.locator(".onderkant .hoofdknop")
-    punten = telefoon.get_by_role("radiogroup", name="Afhaalpunt").get_by_role("radio")
+    betaal = telefoon.locator(".onderkant .hoofdknop")
+    keuzes = telefoon.get_by_role("radiogroup", name="Brengen of halen").get_by_role("radio")
     if telefoon.locator("[role=radio][aria-checked=true]").count() == 0:
-        expect(bestel).to_be_disabled()
-    punten.last.click()
-    expect(bestel).to_be_enabled()
+        expect(betaal).to_be_disabled()
+    keuzes.last.click()
+    expect(betaal).to_be_enabled()
     assert geen_overtredingen(scherm_klopt(telefoon)) == {}
-    bestel.dblclick()
-    expect(telefoon).to_have_url(re.compile(r"#/besteld/"))
+    betaal.dblclick()
+    expect(telefoon).to_have_url(re.compile(r"#/bon/"))
+    _betaal(telefoon)
+    expect(telefoon.locator("h1")).to_contain_text(re.compile("Betaald", re.I))
     assert geen_overtredingen(scherm_klopt(telefoon)) == {}
+
+
+def test_niet_betaald_en_vervallen(gewone_telefoon):
+    """Mislukt de betaling, dan houdt Marc de flessen vast tot de termijn. Daarna vervalt de bon en komt de voorraad terug."""
+    pagina = gewone_telefoon
+    _naar_de_bon(pagina)
+    pagina.get_by_role("radiogroup", name="Brengen of halen").get_by_role("radio").first.click()
+    pagina.locator(".onderkant .hoofdknop").click()
+    _betaal(pagina, gelukt=False)
+    expect(pagina.locator("h1")).to_contain_text(re.compile("Niet betaald", re.I))
+    expect(pagina.locator(".onderkant .hoofdknop")).to_contain_text(re.compile("opnieuw", re.I))
+    # Zet de termijn in het verleden, zoals na 15 minuten; de klok van het prototype laat de bon dan vervallen.
+    pagina.evaluate("""() => {
+      const sleutel = Object.keys(sessionStorage).find((k) => k.startsWith('wijnclub'));
+      const s = JSON.parse(sessionStorage.getItem(sleutel));
+      for (const b of s.bestellingen) if (b.status === 'open' && b.lidId === 'lid-1') b.betaalVoor = '2000-01-01T00:00:00Z';
+      sessionStorage.setItem(sleutel, JSON.stringify(s));
+    }""")
+    pagina.reload()
+    expect(pagina.locator("h1")).to_contain_text(re.compile("Vervallen", re.I), timeout=5_000)
 
 
 def test_dubbel_tikken_geeft_een_bestelling(gewone_telefoon):
@@ -118,14 +157,14 @@ def test_dubbel_tikken_geeft_een_bestelling(gewone_telefoon):
       return JSON.parse(sessionStorage.getItem(sleutel)).bestellingen.length;
     }"""
     voor = pagina.evaluate(tel)
-    pagina.get_by_role("radiogroup", name="Afhaalpunt").get_by_role("radio").first.click()
+    pagina.get_by_role("radiogroup", name="Brengen of halen").get_by_role("radio").first.click()
     pagina.locator(".onderkant .hoofdknop").dblclick()
-    expect(pagina).to_have_url(re.compile(r"#/besteld/"))
+    expect(pagina).to_have_url(re.compile(r"#/bon/"))
     assert pagina.evaluate(tel) == voor + 1
 
 
 def test_bon_zonder_scrollen(gewone_telefoon):
-    """M4 en M10: het afhaalpunt, het totaal en Bestel staan in beeld zonder te scrollen."""
+    """M4 en M10: brengen of halen, het totaal en Betaal staan in beeld zonder te scrollen."""
     _naar_de_bon(gewone_telefoon)
     assert buiten_beeld(gewone_telefoon, "[role=radiogroup]", ".bon-totaal-rij", ".onderkant .hoofdknop") == []
 
@@ -172,16 +211,29 @@ def test_veiling_loopt_altijd(gewone_telefoon):
 
 
 def test_mijn_bestelling(telefoon):
-    """Wat je bestelt staat onder Bestelling. Het oude adres van Mijn flessen komt daar ook uit."""
+    """Wat je bestelt staat onder Je bestellingen. Het oude adres van Mijn flessen komt daar ook uit."""
     _naar_de_bon(telefoon)
-    telefoon.get_by_role("radiogroup", name="Afhaalpunt").get_by_role("radio").first.click()
+    telefoon.get_by_role("radiogroup", name="Brengen of halen").get_by_role("radio").first.click()
     telefoon.locator(".onderkant .hoofdknop").click()
-    expect(telefoon).to_have_url(re.compile(r"#/besteld/"))
+    _betaal(telefoon)
     telefoon.goto(telefoon.adres + "/#/flessen")
-    expect(telefoon.get_by_role("list", name="Voortgang")).to_have_count(1)
+    expect(telefoon).to_have_url(re.compile(r"#/flessen$"))
+    expect(telefoon.locator(".bon-rij")).to_have_count(1)
     assert geen_overtredingen(scherm_klopt(telefoon)) == {}
-    telefoon.get_by_role("navigation", name="Hoofdmenu").get_by_role("button", name=re.compile("Bestelling", re.I)).click()
-    expect(telefoon).to_have_url(re.compile(r"#/mijn-bestelling$"))
+    telefoon.locator(".bon-rij").click()
+    expect(telefoon).to_have_url(re.compile(r"#/bon/"))
+
+
+def test_terugkomen_met_face_id(gewone_telefoon):
+    """Wie Face ID koos, komt de volgende keer met één tik binnen."""
+    pagina = gewone_telefoon
+    inloggen(pagina, face_id=True)
+    pagina.locator(".voorbeeld").click()
+    pagina.get_by_role("dialog").get_by_role("button", name=re.compile("Kom later terug", re.I)).click()
+    expect(pagina.locator("h1")).to_contain_text(re.compile("Welkom terug", re.I))
+    assert geen_overtredingen(scherm_klopt(pagina)) == {}
+    pagina.get_by_role("button", name=re.compile("^Kom binnen", re.I)).click()
+    expect(pagina).not_to_have_url(re.compile(r"#/welkom$"))
 
 
 def test_terugknop_sluit_paneel(telefoon):
@@ -202,3 +254,20 @@ def test_terugknop_sluit_paneel(telefoon):
     telefoon.wait_for_function("() => !(history.state && history.state.blad)")
     telefoon.go_back()
     expect(telefoon).not_to_have_url(re.compile(r"#/marc$"))
+
+
+def test_nieuwe_fles(telefoon):
+    """Marc zet een fles klaar: foto, nakijken, lijst, klaar. Elke stap voldoet aan M1, M2 en M5."""
+    telefoon.goto(telefoon.adres + "/#/beheer/nieuw")
+    telefoon.get_by_role("button", name="Maak de foto").click()
+    expect(telefoon.get_by_role("textbox", name="Naam")).to_have_value(re.compile("Soave", re.I))
+    assert geen_overtredingen(scherm_klopt(telefoon)) == {}
+    telefoon.get_by_role("button", name=re.compile("Klopt, verder", re.I)).click()
+    expect(telefoon.get_by_role("radiogroup", name="Lijst of veiling")).to_be_visible()
+    assert geen_overtredingen(scherm_klopt(telefoon)) == {}
+    telefoon.get_by_role("radio", name=re.compile("Veiling", re.I)).click()
+    assert geen_overtredingen(scherm_klopt(telefoon)) == {}
+    telefoon.get_by_role("radio", name=re.compile("Lijst", re.I)).click()
+    telefoon.get_by_role("button", name=re.compile("Zet klaar voor", re.I)).click()
+    expect(telefoon.locator("h1")).to_contain_text(re.compile("Klaar", re.I))
+    assert geen_overtredingen(scherm_klopt(telefoon)) == {}

@@ -1,21 +1,32 @@
 // De vorm van de gegevens in de web-app. Aanbod volgt GET /api/aanbod, zoals
 // functions/wijnclub/handlers/aanbod.py die teruggeeft. Bedragen zijn hele centen, tijden UTC-tekst.
 
-export interface Afhaalpunt {
-  afhaalpuntId: string
-  naam: string
-  wanneer: string
-  toelichting?: string
+/** Hoe een lid zijn flessen krijgt (design-v4): Marc brengt ze, of het lid haalt ze op. */
+export type LeverSoort = 'brengen' | 'halen'
+
+/** Wat Marc per lijst aanbiedt, zoals GET /api/aanbod het geeft. Wat hij niet aanbiedt, ontbreekt. */
+export interface Levering {
+  brengen?: { van: string; tot: string }
+  halen?: { van: string; tot: string; waar: string }
 }
 
 export interface Wijn {
   wijnId: string
+  /**
+   * Marcs letter uit WhatsApp. Leden zien hem niet meer (design-v4); Marc gebruikt hem nog bij
+   * een bestelling namens een lid, zoals "G2 H1".
+   */
   letter: string
   naam: string
+  /** Korter, voor lijsten en de bon: "Janasse Côtes du Rhône" in plaats van de volle naam. */
+  korteNaam?: string
   producent?: string
   jaargang?: number
+  /** "rood", "wit", "rosé". Dit veld zit nog niet in de API; zie de open punten in docs/bouwspecificatie.md. */
+  kleur?: string
   druif?: string
   streek?: string
+  land?: string
   tekst: string
   spijs?: string
   drinken?: string
@@ -26,7 +37,7 @@ export interface Wijn {
   /** Het aantal flessen waarmee de wijn op de lijst kwam. De flessenrij tekent daarmee wat al weg is.
    *  Dit veld zit nog niet in de API; zie de open punten in docs/bouwspecificatie.md. */
   partij?: number
-  /** Wanneer Marc de wijn op tafel zette (V3). Leeg: hij staat klaar maar is nog niet zichtbaar in de feed. */
+  /** Wanneer Marc de wijn op tafel zette. Leeg: hij staat klaar maar is nog niet zichtbaar in de feed. */
   opTafelSinds?: string
   /** Wanneer de laatste fles weg was. */
   opSinds?: string
@@ -38,7 +49,8 @@ export interface Lijst {
   inleiding?: string
   openVan: string
   openTot: string
-  afhaalpunten: Afhaalpunt[]
+  /** Brengen, halen of allebei. */
+  levering: Levering
   wijnen: Wijn[]
 }
 
@@ -54,7 +66,7 @@ export interface Bieding {
   spijs?: string
   drinken?: string
   herkomst?: string
-  /** Hoe de fles bewaard is. In de API hoort dit nu nog bij herkomst. */
+  /** Hoe de fles bewaard is. */
   bewaring?: string
   spraakbericht?: string
   foto?: string
@@ -77,6 +89,8 @@ export interface Lid {
   lidId: string
   naam: string
   email?: string
+  /** Het afleveradres, alleen voor brengen. Alleen het lid zelf en de groep beheer zien het. */
+  adres?: { straat: string; postcode: string; plaats: string }
 }
 
 export interface Regel {
@@ -85,6 +99,7 @@ export interface Regel {
   letter: string
   naam: string
   jaargang?: number
+  foto?: string
   aantal: number
   prijs: number
 }
@@ -100,19 +115,21 @@ export interface Bestelling {
   lijstId?: string
   regels: Regel[]
   totaal: number
+  /** Open tot betaald of verlopen. Een bestelling van de lijst wacht 15 minuten op de betaling. */
   status: BestelStatus
-  /** Een afhaalpuntId, of nog niet gekozen (bij een gewonnen bieding). */
-  levering: string | null
+  betaalVoor: string
+  /** Brengen of halen. Bij een gewonnen bieding kiest het lid pas na het betalen. */
+  levering: LeverSoort | null
   ingevoerdDoor: 'lid' | 'beheer'
   aangemaakt: string
   betaaldOp?: string
   afgeleverdOp?: string
 }
 
-/** Fase van een avond bij Marc (design-v3). Zie docs/bouwspecificatie.md, hoofdstuk 3. */
+/** Fase van een avond bij Marc. Zie docs/bouwspecificatie.md, hoofdstuk 3. */
 export type Fase = 'aangekondigd' | 'live' | 'gesloten'
 
-/** Wat er in de feed van De avond staat. Een gebeurtenis bevat nooit een lidId. */
+/** Wat er in de feed van het aanbod staat. Een gebeurtenis bevat nooit een lidId. */
 export type FeedItem =
   | { id: string; op: string; soort: 'bericht'; tekst: string }
   | { id: string; op: string; soort: 'wijn'; wijnId: string }

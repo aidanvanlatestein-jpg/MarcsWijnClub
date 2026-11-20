@@ -19,7 +19,10 @@ def gevuld(monkeypatch):
     monkeypatch.setattr(opslag, "open_lijsten", lambda nu: [
         {"lijstId": "lijst-1", "titel": "Week 47", "inleiding": "Voor het gewone glas.", "status": "open",
          "openTot": "2026-11-22T19:00:00Z", "intern": "x",
-         "afhaalpunten": [{"afhaalpuntId": "punt-utrecht", "naam": "Utrecht", "wanneer": "2026-11-28"}]},
+         "levering": {
+             "brengen": {"van": "2026-11-26T17:00:00Z", "tot": "2026-11-26T19:00:00Z", "intern": "x"},
+             "halen": {"van": "2026-11-28T09:00:00Z", "tot": "2026-11-28T12:00:00Z", "waar": "Bij Marc, voorbeeldadres"},
+         }},
     ])
     monkeypatch.setattr(opslag, "wijnen_van_lijst", lambda lijst_id: [
         {"wijnId": "d", "letter": "D", "naam": "Negroamaro", "prijs": Decimal("1150"), "voorraad": Decimal("12"),
@@ -38,8 +41,21 @@ def test_aanbod_geeft_lijst_en_biedingen(gevuld):
     lijst = inhoud["lijsten"][0]
     assert lijst["wijnen"] == [{"wijnId": "d", "letter": "D", "naam": "Negroamaro", "prijs": 1150, "voorraad": 12}]
     assert lijst["inleiding"] == "Voor het gewone glas."
-    assert lijst["afhaalpunten"] == [{"afhaalpuntId": "punt-utrecht", "naam": "Utrecht", "wanneer": "2026-11-28"}]
+    assert lijst["levering"] == {
+        "brengen": {"van": "2026-11-26T17:00:00Z", "tot": "2026-11-26T19:00:00Z"},
+        "halen": {"van": "2026-11-28T09:00:00Z", "tot": "2026-11-28T12:00:00Z", "waar": "Bij Marc, voorbeeldadres"},
+    }
+    assert "afhaalpunten" not in lijst
     assert inhoud["biedingen"][0]["hoogsteBod"] == 24000
+
+
+def test_een_lijst_met_alleen_halen_toont_alleen_halen(monkeypatch, gevuld):
+    monkeypatch.setattr(opslag, "open_lijsten", lambda nu: [
+        {"lijstId": "lijst-2", "titel": "Week 48", "status": "open", "openTot": "2026-11-29T19:00:00Z",
+         "levering": {"halen": {"van": "2026-12-05T09:00:00Z", "tot": "2026-12-05T12:00:00Z", "waar": "Bij Marc"}}},
+    ])
+    lijst = json.loads(aanbod.handler(aanvraag(), None)["body"])["lijsten"][0]
+    assert lijst["levering"] == {"halen": {"van": "2026-12-05T09:00:00Z", "tot": "2026-12-05T12:00:00Z", "waar": "Bij Marc"}}
 
 
 def test_aanbod_geeft_de_druif_mee_als_die_er_is(monkeypatch, gevuld):

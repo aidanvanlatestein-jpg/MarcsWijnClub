@@ -28,7 +28,7 @@ function grootte(woord: string, vorm: 'split' | 'banden'): string {
   return `min(${px}px, calc((50vw - 53px) * ${(px / 134.5).toFixed(3)}))`
 }
 
-/** Een keuze die werkt als een radiogroep: BRENG of HAAL, LIJST of BIEDING, een afhaalpunt. */
+/** Een keuze die werkt als een radiogroep: BRENG of HAAL, LIJST of VEILING. */
 export function Keuze({ label, opties, gekozen, onKies, vorm = 'split', uitgeschakeld = false }: Props) {
   const toets = (e: KeyboardEvent<HTMLDivElement>) => {
     const richting = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0

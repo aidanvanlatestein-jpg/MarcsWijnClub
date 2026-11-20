@@ -55,7 +55,28 @@ def test_indexen_uit_de_bouwspecificatie(test):
         for tabel in test["data"].find_resources("AWS::DynamoDB::Table").values()
         for index in tabel["Properties"].get("GlobalSecondaryIndexes", [])
     )
-    assert namen == ["bieding-index", "lid-index", "lid-index", "lijst-index", "lijst-index", "status-index"]
+    assert namen == [
+        "betaal-index", "bieding-index", "lid-index", "lid-index", "lijst-index", "lijst-index", "status-index",
+    ]
+
+
+def test_open_bestellingen_zijn_te_vinden_op_betaalvoor(test):
+    # De taak voor verlopen zoekt open bestellingen waarvan betaalVoor voorbij is.
+    test["data"].has_resource_properties(
+        "AWS::DynamoDB::Table",
+        {
+            "KeySchema": [{"AttributeName": "bestellingId", "KeyType": "HASH"}],
+            "GlobalSecondaryIndexes": Match.array_with([
+                Match.object_like({
+                    "IndexName": "betaal-index",
+                    "KeySchema": [
+                        {"AttributeName": "status", "KeyType": "HASH"},
+                        {"AttributeName": "betaalVoor", "KeyType": "RANGE"},
+                    ],
+                })
+            ]),
+        },
+    )
 
 
 def test_tabellen_blijven_staan_in_prod_en_verdwijnen_in_test(test, prod):

@@ -6,20 +6,19 @@ import { terug, type Ga } from '../route'
 import { useStaat, zoekWijn } from '../staat'
 
 /**
- * 04 Wijn van de lijst: foto, Marcs tekst, erbij en drinken, prijs en de flessenrij. Vanuit de
+ * Wijn (design-v4): foto, naam, Marcs tekst, erbij en drinken, prijs en de flessenrij. Vanuit de
  * aankondiging is de wijn alvast te bekijken; bestellen kan pas als Marc hem op tafel zet.
  */
 export function WijnVanDeLijst({ wijnId, ga }: { wijnId: string; ga: Ga }) {
   const [staat, dispatch] = useStaat()
   const wijn = zoekWijn(staat, wijnId)
-  const naarKaart = () => terug(() => ga({ scherm: 'aanbod' }))
+  const naarAanbod = () => terug(() => ga({ scherm: 'aanbod' }))
 
   if (!wijn || staat.lijst.status !== 'open') {
     return (
       <>
-        <TerugLink titel="Terug naar de avond" onTerug={() => ga({ scherm: 'aanbod' })} />
+        <TerugLink titel="Het aanbod" onTerug={() => ga({ scherm: 'aanbod' })} />
         <main className="sectie"><p className="tekst">Deze wijn staat niet (meer) op de lijst.</p></main>
-        <Onderkant ga={ga} tab="aanbod" />
       </>
     )
   }
@@ -28,7 +27,8 @@ export function WijnVanDeLijst({ wijnId, ga }: { wijnId: string; ga: Ga }) {
   const opTafel = Boolean(wijn.opTafelSinds)
   const op = wijn.voorraad <= 0
   const partij = wijn.partij ?? wijn.voorraad
-  const herkomst = [wijn.druif, wijn.producent, wijn.streek].filter(Boolean).join(' · ')
+  const streek = [wijn.streek, wijn.land].filter(Boolean).join(', ')
+  const herkomst = [wijn.kleur, wijn.druif, streek].filter(Boolean).join(' · ')
   const kies = (aantal: number) => dispatch({ type: 'mandje', wijnId: wijn.wijnId, aantal })
 
   return (
@@ -37,12 +37,10 @@ export function WijnVanDeLijst({ wijnId, ga }: { wijnId: string; ga: Ga }) {
         <div className="foto-kop">
           {wijn.foto ? <img src={wijn.foto} alt="" /> : null}
           <span className="verloop" aria-hidden />
-          <ZwevendeNav titel={`Wijn ${wijn.letter}`} onTerug={naarKaart} vraag={`Hoi Marc, een vraag over wijn ${wijn.letter}, ${naamMetJaar(wijn)}: `} />
-          <span className="reuzenletter-groot" aria-hidden style={{ opacity: op ? 0.4 : 1 }}>{wijn.letter}</span>
+          <ZwevendeNav titel="Het aanbod" onTerug={naarAanbod} vraag={`Hoi Marc, een vraag over de ${naamMetJaar(wijn)}: `} />
         </div>
         <div className="wijn-inhoud">
           <h1 className="naam-groot">
-            <span className="sr">Wijn {wijn.letter}: </span>
             {wijn.naam}
             {wijn.jaargang ? <span className="jaar">{wijn.jaargang}</span> : null}
           </h1>
@@ -86,10 +84,12 @@ export function WijnVanDeLijst({ wijnId, ga }: { wijnId: string; ga: Ga }) {
               {staat.lijst.fase === 'aangekondigd' ? `Komt vanavond op tafel · vanaf ${tijd(staat.lijst.begin)}` : 'Marc zet deze wijn straks op tafel'}
             </p>
           )}
-          {opTafel && <Flessenrij groot vrij={wijn.voorraad} weg={Math.max(0, partij - wijn.voorraad)} gekozen={gekozen} onKies={kies} letter={wijn.letter} naam={wijn.naam} />}
+          {opTafel && (
+            <Flessenrij groot uitleg vrij={wijn.voorraad} weg={Math.max(0, partij - wijn.voorraad)} gekozen={gekozen} onKies={kies} naam={naamMetJaar(wijn)} />
+          )}
         </div>
       </main>
-      <Onderkant ga={ga} tab="aanbod" bon />
+      <Onderkant ga={ga} bon />
     </>
   )
 }

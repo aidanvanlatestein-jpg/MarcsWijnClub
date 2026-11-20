@@ -3,7 +3,6 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { bedrag, euro, flessen, heelBedrag } from '../opmaak'
 import type { Ga } from '../route'
 import { mandjeRegels, useStaat } from '../staat'
-import { Tabbalk, type Tab } from './Tabbalk'
 
 interface HoofdknopProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Goud alleen waar geld weggaat: betalen. */
@@ -67,15 +66,20 @@ function Keukenbon({ onBestel }: { onBestel: () => void }) {
   )
 }
 
-/** Wat onderaan blijft staan: de keukenbon of de hoofdknop, en de tabs. */
-export function Onderkant({ ga, tab, knop, bon = false }: { ga: Ga; tab?: Tab; knop?: ReactNode; bon?: boolean }) {
+/** Wat onderaan blijft staan: de keukenbon of de hoofdknop. Design-v4 heeft geen tabbalk meer. */
+export function Onderkant({ ga, knop, bon = false, onder }: { ga: Ga; knop?: ReactNode; bon?: boolean; onder?: ReactNode }) {
   const [staat] = useStaat()
   const toonBon = bon && staat.lijst.status === 'open' && mandjeRegels(staat).length > 0
+  if (!toonBon && !knop && !onder) return null
   return (
     <div className="onderkant">
       {toonBon && <Keukenbon onBestel={() => ga({ scherm: 'bestelling' })} />}
-      {knop && <div className="hoofdknop-zone">{knop}</div>}
-      {tab && <Tabbalk actief={tab} onKies={(t) => ga({ scherm: t })} />}
+      {(knop || onder) && (
+        <div className="hoofdknop-zone">
+          {knop}
+          {onder}
+        </div>
+      )}
     </div>
   )
 }

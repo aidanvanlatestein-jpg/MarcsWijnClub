@@ -1,135 +1,174 @@
+import { ArrowUpRight, CircleCheck, ScanFace } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { Hoofdknop, Onderkant } from '../onderdelen/Knoppen'
-import { Kop } from '../onderdelen/Kop'
+import { Hoofdknop } from '../onderdelen/Knoppen'
+import { Woordmerk } from '../onderdelen/Kop'
 import type { Ga } from '../route'
 import { useStaat } from '../staat'
 import { voorbeeldLid } from '../voorbeeld'
+import { Avatar } from '../onderdelen/Avond'
+import { ClubBlad, type Pagina } from './Marc'
 
 const LENGTE = 6
+/** De code die "Open mail" in het voorbeeld invult. Elke code van zes cijfers werkt. */
+const VOORBEELDCODE = '482917'
+
+type Stap = 'email' | 'code' | 'achttien' | 'faceid'
 
 /**
- * 01 Eerste login. In de echte app stuurt Cognito de code per e-mail; hier werkt elke code
- * van zes cijfers. Inloggen wordt niet zelf gebouwd.
+ * Inloggen (design-v4): e-mailadres, de code uit de mail, 18 of ouder, en daarna eventueel Face ID.
+ * Wie Face ID koos, ziet de volgende keer "Welkom terug". In de echte app doet Cognito dit met een
+ * eenmalige code per e-mail en een passkey; inloggen wordt niet zelf gebouwd.
  */
 export function Welkom({ ga }: { ga: Ga }) {
-  const [, dispatch] = useStaat()
+  const [staat, dispatch] = useStaat()
+  const [stap, setStap] = useState<Stap | null>(staat.faceId ? null : 'email')
+  const [email, setEmail] = useState(voorbeeldLid.email ?? '')
   const [code, setCode] = useState('')
-  const [achttien, setAchttien] = useState(false)
-  const [akkoord, setAkkoord] = useState(false)
-  const [opnieuw, setOpnieuw] = useState(false)
-  const [focus, setFocus] = useState(false)
+  const [nee, setNee] = useState(false)
+  const [pagina, setPagina] = useState<Pagina | null>(null)
   const invoer = useRef<HTMLInputElement>(null)
-  const klaar = code.length === LENGTE && achttien && akkoord
+  const binnen = (faceId?: boolean) => {
+    dispatch({ type: 'inloggen', faceId })
+    ga({ scherm: 'aanbod' })
+  }
 
-  const binnen = () => {
-    if (!klaar) return
-    dispatch({ type: 'inloggen' })
-    ga({ scherm: 'tip' })
+  if (stap === null) return <Terugkomen onBinnen={() => binnen()} onAnder={() => setStap('email')} />
+
+  const voortgang = stap === 'email' ? 1 : stap === 'code' ? 2 : 3
+  const zetCode = (waarde: string) => {
+    const schoon = waarde.replace(/\D/g, '').slice(0, LENGTE)
+    setCode(schoon)
+    // Je gaat automatisch verder zodra de code klopt. In het voorbeeld klopt elke code van zes cijfers.
+    if (schoon.length === LENGTE) window.setTimeout(() => setStap('achttien'), 350)
   }
 
   return (
-    <main className="sectie" style={{ gap: 22, paddingTop: 'clamp(20px, 5dvh, 48px)' }}>
-      <h1 className="logo-groot">
-        <span className="marc">Marc</span>
-        <span className="kookt">Kookt</span>
-        <small>Wijnclub · op uitnodiging</small>
-      </h1>
-      <p className="tekst" style={{ fontSize: 19, lineHeight: '25px' }}>
-        Welkom, {voorbeeldLid.naam}. Ik heb je een code gemaild op {voorbeeldLid.email}.
-      </p>
-
-      <div className="code" onClick={() => invoer.current?.focus()}>
-        <label className="sr" htmlFor="code">Code uit de e-mail, zes cijfers</label>
-        <input
-          id="code"
-          ref={invoer}
-          value={code}
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          maxLength={LENGTE}
-          onFocus={() => setFocus(true)}
-          onBlur={() => setFocus(false)}
-          // Plakken van een hele code vult alle vakken; alles behalve cijfers valt weg.
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, LENGTE))}
-          onKeyDown={(e) => e.key === 'Enter' && binnen()}
-        />
-        {Array.from({ length: LENGTE }, (_, i) => (
-          <span key={i} className={focus && i === Math.min(code.length, LENGTE - 1) ? 'code-vak actief' : 'code-vak'} aria-hidden>
-            <span className={code[i] ? undefined : 'leeg'}>{code[i] ?? '–'}</span>
-            <i />
-          </span>
-        ))}
+    <main className="login">
+      <div className="login-kop">
+        <Woordmerk />
+        {stap !== 'faceid' && (
+          <div className="login-voortgang" role="progressbar" aria-label="Stap" aria-valuemin={1} aria-valuemax={3} aria-valuenow={voortgang}>
+            {[1, 2, 3].map((i) => <span key={i} className={i <= voortgang ? 'klaar' : undefined} />)}
+          </div>
+        )}
       </div>
 
-      <button type="button" className="tekstlink gedempt" style={{ alignSelf: 'flex-start' }} onClick={() => setOpnieuw(true)}>
-        {opnieuw ? 'Nieuwe code verstuurd' : 'Geen code? Stuur opnieuw'} <span aria-hidden>↗</span>
-      </button>
+      {stap === 'email' && (
+        <form className="login-stap" onSubmit={(e) => { e.preventDefault(); if (email.includes('@')) setStap('code') }}>
+          <div className="marc-bericht">
+            <Avatar maat={40} />
+            <p className="tekst">Marc heeft je uitgenodigd voor zijn wijnclub.</p>
+          </div>
+          <label className="login-vraag" htmlFor="email">Welk e-mailadres gaf je aan Marc?</label>
+          <input
+            id="email"
+            className="login-invoer"
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <Hoofdknop type="submit" disabled={!email.includes('@')}>Stuur mij een code</Hoofdknop>
+          <p className="tekst klein gedempt">Geen wachtwoord nodig. Je krijgt een code van 6 cijfers in je mail.</p>
+        </form>
+      )}
 
-      <div style={{ borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
-        <Vinkje aan={achttien} onWissel={() => setAchttien((a) => !a)}>Ik ben 18 jaar of ouder</Vinkje>
-        <Vinkje aan={akkoord} onWissel={() => setAkkoord((a) => !a)}>Ik ga akkoord met de clubvoorwaarden en de privacyverklaring</Vinkje>
-      </div>
+      {stap === 'code' && (
+        <div className="login-stap">
+          <h1 className="login-vraag">De code staat in je mail</h1>
+          <p className="tekst gedempt">Gestuurd naar {email}. Tik hieronder op de code, dan vult je telefoon hem in.</p>
+          <div className="login-code" onClick={() => invoer.current?.focus()}>
+            <label className="sr" htmlFor="code">Code uit de e-mail, zes cijfers</label>
+            <input
+              id="code"
+              ref={invoer}
+              value={code}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={LENGTE}
+              autoFocus
+              onChange={(e) => zetCode(e.target.value)}
+            />
+            <span className={code ? 'login-cijfers' : 'login-cijfers leeg'} aria-hidden>
+              {(code.padEnd(LENGTE, '·')).replace(/^(.{3})/, '$1 ')}
+            </span>
+            {code.length === LENGTE && <span className="login-ingevuld"><CircleCheck size={18} aria-hidden /> Ingevuld</span>}
+          </div>
+          <div className="login-links">
+            <button type="button" className="tekstlink zonder-lijn" onClick={() => zetCode(VOORBEELDCODE)}>
+              Open mail <ArrowUpRight size={16} aria-hidden />
+            </button>
+            <button type="button" className="tekstlink zonder-lijn gedempt" onClick={() => { setCode(''); setStap('email') }}>
+              Ander adres / opnieuw
+            </button>
+          </div>
+          <p className="tekst klein gedempt">Je gaat automatisch verder zodra de code klopt.</p>
+          <p className="uitleg-voorbeeld">Voorbeeld: er gaat geen mail weg. Elke code van zes cijfers werkt; Open mail vult er een in.</p>
+        </div>
+      )}
 
-      <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 24 }}>
-        <Hoofdknop disabled={!klaar} onClick={binnen}>Kom binnen</Hoofdknop>
-        <p className="uitleg-voorbeeld">
-          Daarna: zet de wijnclub op je beginscherm en zet meldingen aan. Voorbeeld: elke code van zes cijfers werkt.
-        </p>
-      </div>
+      {stap === 'achttien' && (
+        <div className="login-stap vol">
+          <h1 className="login-groot">Welkom, {voorbeeldLid.naam}.</h1>
+          <p className="tekst">Ik verkoop wijn, dus ik moet het even vragen:</p>
+          <p className="login-vraag">Ben je 18 of ouder?</p>
+          {nee && <p className="tekst goud" role="alert">Dan kan ik je helaas geen wijn verkopen. Tot over een paar jaar!</p>}
+          <div className="login-onder">
+            <Hoofdknop onClick={() => setStap('faceid')}>Ja, kom binnen</Hoofdknop>
+            <button type="button" className="knop-grijs midden" onClick={() => setNee(true)}>Nee</button>
+            <p className="login-voet">
+              Met ‘Ja’ ga je akkoord met de{' '}
+              <button type="button" onClick={() => setPagina('voorwaarden')}>clubvoorwaarden</button> en de{' '}
+              <button type="button" onClick={() => setPagina('privacy')}>privacyverklaring</button>.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {stap === 'faceid' && (
+        <div className="login-stap vol">
+          <div className="login-faceid">
+            <span className="faceid-vak" aria-hidden><ScanFace size={64} strokeWidth={1.5} /></span>
+            <h1 className="login-vraag" style={{ textAlign: 'center' }}>Voortaan zonder code?</h1>
+            <p className="tekst" style={{ textAlign: 'center' }}>
+              Dan kom je de volgende keer binnen met Face ID, net als bij je bank. Werkt alleen op deze telefoon.
+            </p>
+          </div>
+          <div className="login-onder">
+            <Hoofdknop icoon={<ScanFace size={26} aria-hidden />} onClick={() => binnen(true)}>Ja, gebruik Face ID</Hoofdknop>
+            <button type="button" className="tekstlink zonder-lijn gedempt midden" onClick={() => binnen(false)}>Niet nu</button>
+            <p className="uitleg-voorbeeld" style={{ textAlign: 'center' }}>In de echte app een passkey via Cognito; op Android heet het ontgrendelen met je vingerafdruk of gezicht.</p>
+          </div>
+        </div>
+      )}
+      {pagina && <ClubBlad pagina={pagina} onSluit={() => setPagina(null)} />}
     </main>
   )
 }
 
-function Vinkje({ aan, onWissel, children }: { aan: boolean; onWissel: () => void; children: string }) {
+/** Terugkomen met Face ID: één tik. */
+function Terugkomen({ onBinnen, onAnder }: { onBinnen: () => void; onAnder: () => void }) {
+  const [staat] = useStaat()
+  const { lijst } = staat
+  const veiling = staat.biedingen.some((b) => b.biedingStatus === 'open')
+  let zin = 'Er is nu niets open. Je krijgt een melding bij de volgende avond.'
+  if (lijst.status === 'open') zin = `Vanavond bij Marc: ${lijst.wijnen.length} wijnen${veiling ? ' en een veiling' : ''}.`
   return (
-    <button type="button" role="checkbox" aria-checked={aan} className="vinkje-rij" onClick={onWissel}>
-      <span className="vinkje" aria-hidden>{aan ? '✓' : ''}</span>
-      <span>{children}</span>
-    </button>
-  )
-}
-
-/** Eenmalige tip na het inloggen: op het beginscherm zetten en meldingen aanzetten. */
-export function Tip({ ga }: { ga: Ga }) {
-  const [, dispatch] = useStaat()
-  const verder = () => {
-    dispatch({ type: 'tipGezien' })
-    ga({ scherm: 'aanbod' })
-  }
-  return (
-    <>
-      <Kop />
-      <main>
-        <div className="masthead">
-          <h1>
-            <span className="groot spook">Nog</span>
-            <span className="groot">één ding</span>
-          </h1>
+    <main className="terugkomen">
+      <div className="terugkomen-foto">
+        <img src="/marc/sfeer.jpg" alt="" />
+        <span className="verloop" aria-hidden />
+      </div>
+      <div className="login-stap vol" style={{ paddingTop: 0 }}>
+        <Woordmerk />
+        <h1 className="login-groot">Welkom terug, {voorbeeldLid.naam}.</h1>
+        <p className="tekst gedempt">{zin}</p>
+        <div className="login-onder">
+          <Hoofdknop icoon={<ScanFace size={26} aria-hidden />} onClick={onBinnen}>Kom binnen</Hoofdknop>
+          <button type="button" className="tekstlink zonder-lijn gedempt midden" onClick={onAnder}>Niet {voorbeeldLid.naam}? Log in met e-mail</button>
         </div>
-        <ol className="sectie stappen" style={{ listStyle: 'none', margin: 0 }}>
-          <li className="stap">
-            <span className="stap-nummer" aria-hidden>01</span>
-            <div>
-              <h2>Zet de club op je beginscherm</h2>
-              <p className="tekst gedempt">
-                iPhone: tik in Safari op Deel en dan op Zet op beginscherm. Android: tik in Chrome op het menu en dan op
-                Toevoegen aan startscherm.
-              </p>
-            </div>
-          </li>
-          <li className="stap">
-            <span className="stap-nummer" aria-hidden>02</span>
-            <div>
-              <h2>Zet meldingen aan</h2>
-              <p className="tekst gedempt">
-                Zo weet je het als Marc een avond aankondigt of als iemand je overbiedt. Op een iPhone kan dat pas als de
-                club op je beginscherm staat.
-              </p>
-            </div>
-          </li>
-        </ol>
-      </main>
-      <Onderkant ga={ga} knop={<Hoofdknop onClick={verder}>Naar de avond</Hoofdknop>} />
-    </>
+      </div>
+    </main>
   )
 }

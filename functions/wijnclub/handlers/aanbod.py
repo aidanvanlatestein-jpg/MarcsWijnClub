@@ -5,13 +5,13 @@ import logging
 from typing import Any, Dict, Mapping
 
 from wijnclub import antwoord, opslag
-from wijnclub.domein import bieding, tijd
+from wijnclub.domein import bestelling, bieding, tijd
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# Alleen deze velden gaan naar de web-app.
-LIJST_VELDEN = ("lijstId", "titel", "inleiding", "openVan", "openTot", "afhaalpunten")
+# Alleen deze velden gaan naar de web-app. De levering gaat apart, via bestelling.openbare_levering.
+LIJST_VELDEN = ("lijstId", "titel", "inleiding", "openVan", "openTot")
 WIJN_VELDEN = (
     "wijnId", "letter", "naam", "producent", "jaargang", "druif", "streek", "tekst", "spijs", "drinken",
     "foto", "prijs", "voorraad", "volgorde",
@@ -29,6 +29,7 @@ def handler(event, context):
         lijsten = []
         for lijst in opslag.open_lijsten(nu):
             zichtbaar = _kies(lijst, LIJST_VELDEN)
+            zichtbaar["levering"] = bestelling.openbare_levering(lijst.get("levering"))
             zichtbaar["wijnen"] = [_kies(wijn, WIJN_VELDEN) for wijn in opslag.wijnen_van_lijst(lijst["lijstId"])]
             lijsten.append(zichtbaar)
         biedingen = [bieding.openbaar(wijn, lid) for wijn in opslag.open_biedingen(nu)]

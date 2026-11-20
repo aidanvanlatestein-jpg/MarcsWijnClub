@@ -1,14 +1,14 @@
 // De staat van het klikbare prototype. Alles staat in het geheugen van de browser;
-// er gaat niets naar de API. De regels volgen het pilotplan en de bouwspecificatie:
-// bestellen is bindend en kost niets, betalen kan pas als de lijst sluit, in één
-// betaling per lid per lijst, binnen 48 uur.
+// er gaat niets naar de API. De regels volgen het pilotplan en de bouwspecificatie (design-v4):
+// een lid betaalt meteen bij het bestellen. Marc houdt de flessen 15 minuten vast; wie dan niet
+// betaald heeft, verliest ze weer. Elke bon is één betaling. Het lid kiest brengen of halen.
 //
-// Design-v3 maakt van elke lijst "een avond bij Marc": aangekondigd, live, gesloten. Een wijn
-// staat eerst klaar en verschijnt pas in de feed als Marc hem op tafel zet. De bijzondere fles
-// gaat aan het eind van de avond onder de hamer.
+// Elke lijst is "een avond bij Marc": aangekondigd, live, gesloten. Een wijn staat eerst klaar
+// en verschijnt pas in de feed als Marc hem op tafel zet. De bijzondere fles gaat aan het eind
+// van de avond onder de hamer.
 import { createContext, useContext, useEffect, useReducer, useRef, type ReactNode } from 'react'
-import type { Bestelling, Bieding, Fase, FeedItem, Lijst, LogItem, Regel, Wijn } from './types'
-import { dagEnTijd, euro, tijd } from './opmaak'
+import type { Bestelling, Bieding, Fase, FeedItem, LeverSoort, Lijst, LogItem, Regel, Wijn } from './types'
+import { euro, tijd, tijdvak } from './opmaak'
 import {
   voorbeeldBerichten, voorbeeldBestellingen, voorbeeldBiedingen, voorbeeldLid, voorbeeldLijst,
 } from './voorbeeld'
@@ -16,10 +16,12 @@ import {
 /** Het lid dat in het prototype is ingelogd. In de echte app komt het lid uit het token. */
 export const LID = voorbeeldLid.lidId
 
-const OPSLAG = 'wijnclub-voorbeeld-4'
+const OPSLAG = 'wijnclub-voorbeeld-5'
 const MINUUT = 60_000
 const UUR = 60 * MINUUT
 const BETAALTERMIJN = 48 * UUR
+/** Zo lang houdt Marc de flessen vast terwijl het lid betaalt. */
+export const HOUDTIJD = 15 * MINUUT
 const VERLENGING = 2 * MINUUT
 /** De veiling begint een half uur na het begin van de avond, de hamer valt een uur later. */
 const VEILING_NA_BEGIN = 30 * MINUUT
@@ -30,7 +32,7 @@ export const HOOGSTE_FACTOR = 3
 export const LAATSTE_MINUTEN = VERLENGING
 
 export interface LijstStaat extends Lijst {
-  /** Open: er kan besteld worden zodra een wijn op tafel staat. Gesloten: betalen kan. */
+  /** Open: er kan besteld worden zodra een wijn op tafel staat. */
   status: 'open' | 'gesloten'
   geslotenOp?: string
   fase: Fase
@@ -50,9 +52,9 @@ export interface BiedingStaat extends Bieding {
   biedlog: LogItem[]
 }
 
+/** De laatste poging om een bon te betalen. Mislukt: de bon toont "Niet betaald". */
 export interface Betaalpoging {
-  bestellingIds: string[]
-  bedrag: number
+  bestellingId: string
   gelukt: boolean
   op: string
 }
@@ -81,16 +83,17 @@ export interface Instellingen {
 const STANDAARD_INSTELLINGEN: Instellingen = { bijnamen: true, levendig: true, veilingAltijd: true }
 
 export interface Staat {
-  versie: 3
+  versie: 4
   ingelogd: boolean
-  tipGezien: boolean
+  /** Het lid koos "Voortaan met Face ID" (een passkey). Dan begint de app met "Welkom terug". */
+  faceId: boolean
   lijst: LijstStaat
   biedingen: BiedingStaat[]
   bestellingen: Bestelling[]
   feed: FeedItem[]
   mandje: Record<string, number>
-  /** Het afhaalpunt van voorkeur: het laatst gekozen afhaalpunt. */
-  levering: string | null
+  /** Brengen of halen: wat het lid de vorige keer koos. */
+  levering: LeverSoort | null
   volgendeBon: number
   volgendId: number
   betaling: Betaalpoging | null
@@ -104,18 +107,18 @@ export interface Staat {
 }
 
 export type Actie =
-  | { type: 'inloggen' }
-  | { type: 'tipGezien' }
+  | { type: 'inloggen'; faceId?: boolean }
+  | { type: 'uitloggen' }
   | { type: 'mandje'; wijnId: string; aantal: number }
   | { type: 'pasMandjeAan' }
-  | { type: 'levering'; afhaalpuntId: string }
-  | { type: 'bestel'; lidId: string; regels: { wijnId: string; aantal: number }[]; levering: string; door: 'lid' | 'beheer'; nu: string }
+  | { type: 'levering'; levering: LeverSoort }
+  | { type: 'bestel'; lidId: string; regels: { wijnId: string; aantal: number }[]; levering: LeverSoort; door: 'lid' | 'beheer'; nu: string }
   | { type: 'sluitLijst'; nu: string }
-  | { type: 'betaal'; bestellingIds: string[]; gelukt: boolean; nu: string }
+  | { type: 'betaal'; bestellingId: string; gelukt: boolean; nu: string }
   | { type: 'bied'; wijnId: string; bedrag: number; nu: string }
   | { type: 'anderBiedt'; wijnId: string; nu: string }
   | { type: 'sluitBieding'; wijnId: string; nu: string }
-  | { type: 'leveringBieding'; bestellingId: string; levering: string }
+  | { type: 'leveringBieding'; bestellingId: string; levering: LeverSoort }
   | { type: 'anderKooptOp'; wijnId: string; nu: string }
   | { type: 'afgeleverd'; bestellingId: string; ja: boolean; nu: string }
   | { type: 'nieuweWijn'; wijn: Wijn }
@@ -167,12 +170,12 @@ export function beginStaat(): Staat {
   const nu = iso(new Date())
   const begin = volgendHalfUur(new Date())
   return {
-    versie: 3,
+    versie: 4,
     ingelogd: false,
-    tipGezien: false,
+    faceId: false,
     lijst: {
       ...voorbeeldLijst,
-      afhaalpunten: voorbeeldLijst.afhaalpunten.map((a) => ({ ...a })),
+      levering: leveringNa(begin),
       wijnen: voorbeeldLijst.wijnen.map((w) => ({ ...w })),
       openVan: begin,
       openTot: plus(begin, VEILING_NA_BEGIN + VEILING_DUUR + 30 * MINUUT),
@@ -255,23 +258,57 @@ export function mijnLijstBestellingen(s: Staat): Bestelling[] {
   return s.bestellingen.filter((b) => b.lidId === LID && b.lijstId === s.lijst.lijstId && b.soort !== 'bieding')
 }
 
-/** Eén betaling voor alle open bestellingen van het lid op de lijst. */
-export function betaalverzoek(s: Staat): { bestellingIds: string[]; bedrag: number } {
-  const open = mijnLijstBestellingen(s).filter((b) => b.status === 'open')
-  return { bestellingIds: open.map((b) => b.bestellingId), bedrag: open.reduce((som, b) => som + b.totaal, 0) }
+export function zoekBestelling(s: Staat, bestellingId: string): Bestelling | undefined {
+  return s.bestellingen.find((b) => b.bestellingId === bestellingId)
 }
 
-export function betaalVoor(s: Staat, b: Bestelling): string {
-  return b.soort === 'bieding' ? plus(b.aangemaakt, BETAALTERMIJN) : plus(s.lijst.geslotenOp ?? s.lijst.openTot, BETAALTERMIJN)
+export interface Levermoment {
+  soort: LeverSoort
+  /** "Donderdag tussen 18:00 en 20:00" */
+  wanneer: string
+  waar?: string
+}
+
+/** Wat Marc deze avond aanbiedt, in zijn volgorde: brengen, dan halen. */
+export function levermomenten(s: Staat): Levermoment[] {
+  const { brengen, halen } = s.lijst.levering
+  const uit: Levermoment[] = []
+  if (brengen) uit.push({ soort: 'brengen', wanneer: tijdvak(brengen.van, brengen.tot) })
+  if (halen) uit.push({ soort: 'halen', wanneer: tijdvak(halen.van, halen.tot), waar: halen.waar })
+  return uit
+}
+
+export function levermoment(s: Staat, soort: LeverSoort | null): Levermoment | undefined {
+  return levermomenten(s).find((l) => l.soort === soort)
+}
+
+/** Brengen twee dagen na de avond, ophalen vier dagen erna. Zo blijft het voorbeeld actueel. */
+function leveringNa(begin: string): Lijst['levering'] {
+  const dag = (n: number, uur: number) => {
+    const d = new Date(plus(begin, n * 24 * UUR))
+    d.setUTCHours(uur, 0, 0, 0)
+    return iso(d)
+  }
+  const halen = voorbeeldLijst.levering.halen
+  return {
+    brengen: { van: dag(2, 17), tot: dag(2, 19) },
+    ...(halen && { halen: { ...halen, van: dag(4, 9), tot: dag(4, 11) } }),
+  }
+}
+
+/** De naam in lijsten en op de bon: "Janasse Côtes du Rhône". */
+export function korteNaam(w: { naam: string; korteNaam?: string }): string {
+  return w.korteNaam ?? w.naam
+}
+
+/** Het woord waarmee de feed een wijn noemt: "JANASSE", "DE VERDEJO". */
+export function roepNaam(w: { naam: string; korteNaam?: string }): string {
+  return eersteWoord(korteNaam(w)).toUpperCase()
 }
 
 export function volgendeLetter(s: Staat): string {
   const hoogste = s.lijst.wijnen.reduce((max, w) => Math.max(max, w.letter.charCodeAt(0)), 'A'.charCodeAt(0) - 1)
   return String.fromCharCode(Math.min(hoogste + 1, 'Z'.charCodeAt(0)))
-}
-
-export function afhaalpunt(s: Staat, id: string | null) {
-  return s.lijst.afhaalpunten.find((a) => a.afhaalpuntId === id)
 }
 
 /** De tellers van de avond: flessen, leden en biedingen (terugblik en beheer). */
@@ -309,13 +346,13 @@ function nieuweBestelling(s: Staat, b: Omit<Bestelling, 'bestellingId' | 'bon'>)
 
 function bestel(s: Staat, a: Extract<Actie, { type: 'bestel' }>): Staat {
   if (s.lijst.status !== 'open') return s
-  if (!s.lijst.afhaalpunten.some((p) => p.afhaalpuntId === a.levering)) return s
+  if (!levermoment(s, a.levering)) return s
   const regels: Regel[] = []
   for (const r of a.regels) {
     const w = zoekWijn(s, r.wijnId)
     // Alles of niets, zoals de transactie in DynamoDB. Een wijn die nog klaarstaat, is niet te koop.
     if (!w || !w.opTafelSinds || !Number.isInteger(r.aantal) || r.aantal < 1 || r.aantal > w.voorraad) return s
-    regels.push({ wijnId: w.wijnId, letter: w.letter, naam: w.naam, jaargang: w.jaargang, aantal: r.aantal, prijs: w.prijs })
+    regels.push({ wijnId: w.wijnId, letter: w.letter, naam: korteNaam(w), jaargang: w.jaargang, foto: w.foto, aantal: r.aantal, prijs: w.prijs })
   }
   if (regels.length === 0) return s
   let [, na] = nieuweBestelling(s, {
@@ -325,6 +362,8 @@ function bestel(s: Staat, a: Extract<Actie, { type: 'bestel' }>): Staat {
     regels,
     totaal: regels.reduce((som, r) => som + r.aantal * r.prijs, 0),
     status: 'open',
+    // Het lid betaalt meteen; Marc houdt de flessen 15 minuten vast. Namens een lid stuurt Marc een betaallink.
+    betaalVoor: plus(a.nu, a.door === 'lid' ? HOUDTIJD : BETAALTERMIJN),
     levering: a.levering,
     ingevoerdDoor: a.door,
     aangemaakt: a.nu,
@@ -338,14 +377,39 @@ function bestel(s: Staat, a: Extract<Actie, { type: 'bestel' }>): Staat {
   na = { ...na, lijst: { ...s.lijst, wijnen } }
   // Gebeurtenissen in de feed, zonder namen: het plan zegt dat leden niet zien wie iets kocht.
   const wie = a.lidId === LID ? 'JE NAM' : 'EEN LID NAM'
-  for (const r of regels) na = metFeed(na, { soort: 'gebeurtenis', op: a.nu, tekst: `${wie} ${r.aantal} × WIJN ${r.letter}` })
+  for (const r of regels) na = metFeed(na, { soort: 'gebeurtenis', op: a.nu, tekst: `${wie} ${r.aantal} × ${roepNaam(zoekWijn(s, r.wijnId)!)}` })
   for (const w of wijnen) {
-    if (w.voorraad === 0 && zoekWijn(s, w.wijnId)!.voorraad > 0) na = metFeed(na, { soort: 'gebeurtenis', op: a.nu, tekst: `WIJN ${w.letter} IS OP` })
+    if (w.voorraad === 0 && zoekWijn(s, w.wijnId)!.voorraad > 0) na = metFeed(na, { soort: 'gebeurtenis', op: a.nu, tekst: `DE ${roepNaam(w)} IS OP` })
   }
   return {
     ...na,
     mandje: a.door === 'lid' && a.lidId === LID ? {} : s.mandje,
     levering: a.door === 'lid' && a.lidId === LID ? a.levering : s.levering,
+  }
+}
+
+/** Niet betaald binnen de termijn: de bestelling verloopt en de flessen komen terug op tafel. */
+function verloop(s: Staat, nu: string): Staat {
+  const weg = s.bestellingen.filter((b) => b.status === 'open' && nu >= b.betaalVoor)
+  if (weg.length === 0) return s
+  const ids = new Set(weg.map((b) => b.bestellingId))
+  const terug = new Map<string, number>()
+  for (const b of weg) {
+    if (b.soort === 'bieding') continue
+    for (const r of b.regels) terug.set(r.wijnId, (terug.get(r.wijnId) ?? 0) + r.aantal)
+  }
+  const mijn = weg.find((b) => b.lidId === LID && b.soort === 'lijst')
+  return {
+    ...s,
+    bestellingen: s.bestellingen.map((b) => (ids.has(b.bestellingId) ? { ...b, status: 'verlopen' as const } : b)),
+    lijst: {
+      ...s.lijst,
+      wijnen: s.lijst.wijnen.map((w) => {
+        const n = terug.get(w.wijnId)
+        return n ? { ...w, voorraad: w.voorraad + n, opSinds: undefined } : w
+      }),
+    },
+    melding: mijn ? { kop: 'Je bon is vervallen', tekst: 'Je betaalde niet binnen 15 minuten. De flessen staan weer op tafel.' } : s.melding,
   }
 }
 
@@ -405,9 +469,10 @@ function sluitBieding(s: Staat, wijnId: string, nu: string): Staat {
   const [, metBestelling] = nieuweBestelling(na, {
     lidId: LID,
     soort: 'bieding',
-    regels: [{ wijnId: b.wijnId, letter: '', naam: b.naam, jaargang: b.jaargang, aantal: 1, prijs: b.hoogsteBod }],
+    regels: [{ wijnId: b.wijnId, letter: '', naam: b.naam, jaargang: b.jaargang, foto: b.foto, aantal: 1, prijs: b.hoogsteBod }],
     totaal: b.hoogsteBod,
     status: 'open',
+    betaalVoor: plus(nu, BETAALTERMIJN),
     levering: null,
     ingevoerdDoor: 'lid',
     aangemaakt: nu,
@@ -454,7 +519,7 @@ function lopendeAvond(s: Staat, nu: string): Staat {
   let na: Staat = {
     ...basis,
     ingelogd: s.ingelogd,
-    tipGezien: s.tipGezien,
+    faceId: s.faceId,
     instellingen: s.instellingen,
     herinnering: s.herinnering,
     lijst: {
@@ -471,7 +536,9 @@ function lopendeAvond(s: Staat, nu: string): Staat {
   na = metFeed(na, { soort: 'bericht', op: op(0), tekst: voorbeeldBerichten.begin })
   const bestelVoorbeeld = (i: number) => {
     const v = voorbeeldBestellingen[i]
+    const bestellingId = `b-${bonNummer(na.volgendeBon)}`
     na = bestel(na, { type: 'bestel', lidId: v.lidId, door: v.door, levering: v.levering, regels: [{ wijnId: v.wijnId, aantal: v.aantal }], nu: op(v.minuut) })
+    if (v.betaald) na = stap(na, { type: 'betaal', bestellingId, gelukt: true, nu: op(v.minuut + 1) })
   }
   // In de volgorde van de tijd, zodat de feed klopt.
   na = zetOpTafel(na, 'wijn-f', op(1))
@@ -494,9 +561,9 @@ function reducer(s: Staat, a: Actie): Staat {
 function stap(s: Staat, a: Actie): Staat {
   switch (a.type) {
     case 'inloggen':
-      return { ...s, ingelogd: true }
-    case 'tipGezien':
-      return { ...s, tipGezien: true }
+      return { ...s, ingelogd: true, faceId: a.faceId ?? s.faceId }
+    case 'uitloggen':
+      return { ...s, ingelogd: false, mandje: {} }
     case 'mandje': {
       const mandje = { ...s.mandje }
       if (a.aantal > 0) mandje[a.wijnId] = a.aantal
@@ -512,31 +579,28 @@ function stap(s: Staat, a: Actie): Staat {
       return { ...s, mandje }
     }
     case 'levering':
-      return { ...s, levering: a.afhaalpuntId }
+      return levermoment(s, a.levering) ? { ...s, levering: a.levering } : s
     case 'bestel':
       return bestel(s, a)
     case 'sluitLijst': {
       if (s.lijst.status !== 'open') return s
-      let gesloten: Staat = { ...s, lijst: { ...s.lijst, status: 'gesloten', fase: 'gesloten', geslotenOp: a.nu }, mandje: {}, marcTypt: false }
-      gesloten = metFeed(gesloten, { soort: 'gebeurtenis', op: a.nu, tekst: 'MARC SLOOT DE AVOND' })
-      const { bedrag } = betaalverzoek(gesloten)
-      const melding = bedrag > 0
-        ? { kop: 'De avond is gesloten', tekst: `Je kunt nu betalen: ${euro(bedrag)}, tot ${dagEnTijd(plus(a.nu, BETAALTERMIJN))}.` }
-        : { kop: 'De avond is gesloten', tekst: 'Zodra er een nieuwe avond is, krijg je een melding.' }
-      return { ...gesloten, melding }
+      // Er volgt geen betaalverzoek: wie bestelde, betaalde al. Open bonnen kunnen nog tot hun termijn betaald worden.
+      const gesloten: Staat = { ...s, lijst: { ...s.lijst, status: 'gesloten', fase: 'gesloten', geslotenOp: a.nu }, mandje: {}, marcTypt: false }
+      return {
+        ...metFeed(gesloten, { soort: 'gebeurtenis', op: a.nu, tekst: 'MARC SLOOT DE AVOND' }),
+        melding: { kop: 'De avond is gesloten', tekst: 'Zodra er een nieuwe avond is, krijg je een melding.' },
+      }
     }
     case 'betaal': {
-      const ids = new Set(a.bestellingIds)
-      const bedrag = s.bestellingen.filter((b) => ids.has(b.bestellingId)).reduce((som, b) => som + b.totaal, 0)
-      const betaling = { bestellingIds: a.bestellingIds, bedrag, gelukt: a.gelukt, op: a.nu }
-      if (!a.gelukt) return { ...s, betaling }
+      const b = zoekBestelling(s, a.bestellingId)
+      if (!b) return s
+      const betaling = { bestellingId: a.bestellingId, gelukt: a.gelukt, op: a.nu }
+      // Alleen een open bon binnen de termijn gaat naar betaald; een tweede melding verandert niets.
+      if (!a.gelukt || b.status !== 'open' || a.nu >= b.betaalVoor) return { ...s, betaling }
       return {
         ...s,
         betaling,
-        // Alleen open bestellingen gaan naar betaald; een tweede melding verandert niets.
-        bestellingen: s.bestellingen.map((b) =>
-          ids.has(b.bestellingId) && b.status === 'open' ? { ...b, status: 'betaald', betaaldOp: a.nu } : b,
-        ),
+        bestellingen: s.bestellingen.map((x) => (x.bestellingId === a.bestellingId ? { ...x, status: 'betaald', betaaldOp: a.nu } : x)),
       }
     }
     case 'bied':
@@ -582,8 +646,8 @@ function stap(s: Staat, a: Actie): Staat {
     case 'sluitBieding':
       return sluitBieding(s, a.wijnId, a.nu)
     case 'leveringBieding':
-      // Een gewonnen fles gaat naar een afhaalpunt van de lijst; bewaren bij Marc is uit de pilot.
-      if (!afhaalpunt(s, a.levering)) return s
+      // Na het betalen kiest de winnaar brengen of halen; bewaren bij Marc is uit de pilot.
+      if (!levermoment(s, a.levering)) return s
       return {
         ...s,
         bestellingen: s.bestellingen.map((b) =>
@@ -596,7 +660,7 @@ function stap(s: Staat, a: Actie): Staat {
       // Een ander lid bestelt de laatste flessen. Het mandje blijft staan, zodat te zien is wat er dan gebeurt.
       const na = bestel(s, {
         type: 'bestel', lidId: 'lid-3', regels: [{ wijnId: w.wijnId, aantal: w.voorraad }],
-        levering: s.lijst.afhaalpunten[0].afhaalpuntId, door: 'lid', nu: a.nu,
+        levering: levermomenten(s)[0].soort, door: 'lid', nu: a.nu,
       })
       return { ...na, mandje: s.mandje, levering: s.levering }
     }
@@ -682,8 +746,9 @@ function stap(s: Staat, a: Actie): Staat {
     case 'instelling':
       return { ...s, instellingen: { ...s.instellingen, [a.naam]: a.aan } }
     case 'tik': {
-      // Wat de server op tijd doet: de veiling openen op de begintijd en de hamer laten vallen op de eindtijd.
-      let na = s
+      // Wat de server op tijd doet: de veiling openen op de begintijd, de hamer laten vallen op de eindtijd
+      // en een bon die niet op tijd betaald is laten verlopen.
+      let na = verloop(s, a.nu)
       for (const b of s.biedingen) {
         if (b.biedingStatus !== 'open') continue
         if (!b.geopend && s.lijst.fase === 'live' && a.nu >= s.lijst.veilingBegin) na = openVeiling(na, b.wijnId, a.nu)
@@ -698,6 +763,7 @@ function stap(s: Staat, a: Actie): Staat {
 /** Moet de klok iets doen? Zo hoeft niet elke seconde de hele app opnieuw te tekenen. */
 function teDoen(s: Staat, nu: string): boolean {
   if (s.instellingen.veilingAltijd && !lopendeVeiling(s) && s.biedingen.length > 0) return true
+  if (s.bestellingen.some((b) => b.status === 'open' && nu >= b.betaalVoor)) return true
   return s.biedingen.some(
     (b) => b.biedingStatus === 'open' && ((!b.geopend && s.lijst.fase === 'live' && nu >= s.lijst.veilingBegin) || (b.geopend && nu >= b.eindtijd)),
   )
@@ -715,7 +781,7 @@ function laad(): Staat {
     const ruw = window.sessionStorage.getItem(OPSLAG)
     if (ruw) {
       const s = JSON.parse(ruw) as Staat
-      if (s && s.versie === 3 && s.lijst && Array.isArray(s.bestellingen) && Array.isArray(s.feed)) {
+      if (s && s.versie === 4 && s.lijst && Array.isArray(s.bestellingen) && Array.isArray(s.feed)) {
         return houdVeilingGaande({
           ...s,
           melding: null,

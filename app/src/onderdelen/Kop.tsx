@@ -1,4 +1,4 @@
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, MessageCircle } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useWhatsApp } from './WhatsApp'
 
@@ -12,11 +12,13 @@ export function Woordmerk({ sub = 'Wijnclub' }: { sub?: string }) {
   )
 }
 
-export function VraagMarc({ tekst = 'Hoi Marc, ' }: { tekst?: string }) {
+/** Opent WhatsApp met een bericht aan Marc dat al klaarstaat. Geen ↗ in tekst: dat wordt op iOS een emoji. */
+export function VraagMarc({ tekst = 'Hoi Marc, ', label = 'Vraag Marc', className = 'tekstlink zonder-lijn' }: { tekst?: string; label?: string; className?: string }) {
   const open = useWhatsApp()
   return (
-    <button type="button" className="tekstlink" onClick={() => open(tekst)}>
-      Vraag Marc <span aria-hidden>↗</span>
+    <button type="button" className={className} onClick={() => open(tekst)}>
+      <MessageCircle size={15} strokeWidth={1.75} aria-hidden />
+      {label}
     </button>
   )
 }
@@ -33,25 +35,25 @@ export function Kop({ vraag, sub, rechts }: { vraag?: string; sub?: string; rech
 
 /** Op een scherm met een foto bovenaan: twee zwarte vlakken over de foto. */
 export function ZwevendeNav({ titel, onTerug, vraag }: { titel: string; onTerug: () => void; vraag: string }) {
-  const open = useWhatsApp()
   return (
     <nav className="zwevend" aria-label="Navigatie">
       <button type="button" onClick={onTerug}>
         <ArrowLeft size={20} aria-hidden />
         {titel}
       </button>
-      <button type="button" onClick={() => open(vraag)}>
-        Vraag Marc <span aria-hidden>↗</span>
-      </button>
+      <VraagMarc tekst={vraag} className="zwevend-knop" />
     </nav>
   )
 }
 
-export function TerugLink({ titel, onTerug }: { titel: string; onTerug: () => void }) {
+export function TerugLink({ titel, onTerug, rechts }: { titel: string; onTerug: () => void; rechts?: ReactNode }) {
   return (
-    <button type="button" className="terug-link" onClick={onTerug}>
-      <ArrowLeft size={20} aria-hidden />
-      {titel}
-    </button>
+    <div className="terug-rij">
+      <button type="button" className="terug-link" onClick={onTerug}>
+        <ArrowLeft size={20} aria-hidden />
+        {titel}
+      </button>
+      {rechts}
+    </div>
   )
 }
