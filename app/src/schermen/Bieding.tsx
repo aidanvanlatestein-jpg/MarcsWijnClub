@@ -1,7 +1,7 @@
 // De veiling (design-v4): de zaal, het biedpaneel, eenmaal andermaal en de hamerslag. De bijzondere
 // fles met herkomst, bewaring en spraakbericht staat niet in design-v4; dat scherm komt uit design-v3 (06).
 import { Check, Gavel, Pause, Play, X } from 'lucide-react'
-import { useEffect, useRef, useState, type KeyboardEvent, type TouchEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import { Avatar, LiveBalk, MarcBericht } from '../onderdelen/Avond'
 import { Betalen } from '../onderdelen/Betalen'
 import { Blad } from '../onderdelen/Blad'
@@ -448,12 +448,21 @@ function Spraakbericht() {
 
 // ---- 08 Bod bevestigen ----
 
+/** Zoveel px vegen is één trede op de ladder. Ruim boven een tik, ruim onder de hoogte van een trede. */
+const VEEG_PER_TREDE = 28
+/** Zoveel px scrollen met muiswiel of trackpad is één trede, met hoogstens één trede per WIEL_RUST ms. */
+const WIEL_PER_TREDE = 24
+const WIEL_RUST = 100
+/** Na zo'n pauze begint een nieuwe scrollbeweging bij nul. */
+const WIEL_PAUZE = 500
+
 /** De ladder: hogere bedragen boven, het gekozen bod groot, het hoogste bod onderaan. */
 function Bieden({ bieding, begin, onSluit }: { bieding: BiedingStaat; begin: number; onSluit: () => void }) {
   const [, dispatch] = useStaat()
   const [minimum, setMinimum] = useState(bieding.minimaalVolgendBod)
   const [conflict, setConflict] = useState(false)
-  const beginY = useRef<number | null>(null)
+  const veeg = useRef<{ id: number; y: number; stap: number } | null>(null)
+  const versleept = useRef(false)
   // Het minimum, de hogere stap en nog een stap daarboven. Boven het hoogste toegestane bod valt weg.
   const hoger = hogereStap(minimum)
   const bedragen = [...new Set([minimum, hoger, hoger + 5000])].filter((x) => x <= minimum * HOOGSTE_FACTOR)
@@ -468,15 +477,71 @@ function Bieden({ bieding, begin, onSluit }: { bieding: BiedingStaat; begin: num
     else return
     e.preventDefault()
   }
+  // Het bod loopt mee met de vinger: elke VEEG_PER_TREDE px is één trede, zonder te wachten op het
+  // loslaten. Aan het eind van de ladder schuift het ankerpunt mee met de vinger, zodat omkeren
+  // meteen werkt. Met de muis werkt slepen hetzelfde.
+  const stopVeeg = () => { veeg.current = null }
   const vegen = {
-    onTouchStart: (e: TouchEvent) => { beginY.current = e.touches[0].clientY },
-    onTouchEnd: (e: TouchEvent) => {
-      if (beginY.current === null) return
-      const dy = e.changedTouches[0].clientY - beginY.current
-      if (dy < -40) kies(stap + 1)
-      if (dy > 40) kies(stap - 1)
-      beginY.current = null
+    onPointerDown: (e: PointerEvent) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return
+      veeg.current = { id: e.pointerId, y: e.clientY, stap: Math.min(stap, bedragen.length - 1) }
+      versleept.current = false
     },
+    onPointerMove: (e: PointerEvent) => {
+      const v = veeg.current
+      if (!v || v.id !== e.pointerId) return
+      const treden = Math.trunc((v.y - e.clientY) / VEEG_PER_TREDE)
+      if (treden === 0) return
+      const doel = v.stap + treden
+      const nieuw = Math.max(0, Math.min(bedragen.length - 1, doel))
+      v.y = doel === nieuw ? v.y - treden * VEEG_PER_TREDE : e.clientY
+      v.stap = nieuw
+      if (!versleept.current) {
+        // Vanaf de eerste trede hoort de veeg bij de ladder, ook als de vinger of muis erbuiten komt.
+        try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* de aanwijzer is al weg */ }
+        versleept.current = true
+      }
+      setStap(nieuw)
+    },
+    onPointerUp: stopVeeg,
+    onPointerCancel: stopVeeg,
+    onPointerLeave: stopVeeg,
+  }
+  // Muiswiel en trackpad: omhoog scrollen, naar de bedragen die erboven staan, is een hoger bod.
+  // Eén klik van het wiel is één trede; een trackpad stuurt veel kleine stapjes, die tellen op tot
+  // WIEL_PER_TREDE. React luistert passief naar het wiel, dus de luisteraar staat op het element
+  // zelf: alleen zo scrolt het paneel niet mee.
+  const ladder = useRef<HTMLDivElement>(null)
+  const aantal = bedragen.length
+  useEffect(() => {
+    const el = ladder.current
+    if (!el) return
+    let som = 0
+    let laatste = 0
+    let laatsteTrede = 0
+    const wiel = (e: WheelEvent) => {
+      if (e.ctrlKey) return // knijpen op een trackpad: dat is zoomen
+      e.preventDefault()
+      // Sommige browsers melden regels of pagina's in plaats van px.
+      const px = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 100 : e.deltaY
+      if (px === 0) return
+      if (e.timeStamp - laatste > WIEL_PAUZE || Math.sign(px) !== Math.sign(som)) som = 0
+      laatste = e.timeStamp
+      som += px
+      if (Math.abs(som) < WIEL_PER_TREDE || e.timeStamp - laatsteTrede < WIEL_RUST) return
+      const richting = som < 0 ? 1 : -1
+      som = 0
+      laatsteTrede = e.timeStamp
+      setStap((s) => Math.max(0, Math.min(aantal - 1, s + richting)))
+    }
+    el.addEventListener('wheel', wiel, { passive: false })
+    return () => el.removeEventListener('wheel', wiel)
+  }, [aantal])
+
+  // Na een veeg die op een bedrag eindigt, volgt soms nog een tik: die telt niet als keuze.
+  const tik = (i: number) => {
+    if (versleept.current) versleept.current = false
+    else kies(i)
   }
 
   const bevestig = () => {
@@ -493,7 +558,7 @@ function Bieden({ bieding, begin, onSluit }: { bieding: BiedingStaat; begin: num
 
   return (
     <Blad titel={`Jouw bod op de ${eersteWoord(bieding.naam)}`} onSluit={onSluit} vol>
-      <div className="ladder" role="radiogroup" aria-label="Kies je bod" tabIndex={0} onKeyDown={toets} {...vegen}>
+      <div className="ladder" ref={ladder} role="radiogroup" aria-label="Kies je bod" tabIndex={0} onKeyDown={toets} {...vegen}>
         {[...bedragen].reverse().map((bedrag) => {
           const i = bedragen.indexOf(bedrag)
           const isGekozen = bedrag === gekozen
@@ -505,7 +570,7 @@ function Bieden({ bieding, begin, onSluit }: { bieding: BiedingStaat; begin: num
               aria-checked={isGekozen}
               tabIndex={-1}
               className={`trede${isGekozen ? ' gekozen' : Math.abs(i - stap) === 1 ? ' dichtbij' : ''}`}
-              onClick={() => kies(i)}
+              onClick={() => tik(i)}
             >
               <GrootBedrag centen={bedrag} heel />
               <span className="trede-label">{isGekozen ? 'JOUW BOD' : `+ ${euro(bedrag - hoogste, { heel: true })}`}</span>

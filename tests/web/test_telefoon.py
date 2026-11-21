@@ -200,6 +200,81 @@ def test_bieden(telefoon):
     expect(bied).to_contain_text(re.compile("bovenaan", re.I))
 
 
+def test_bod_loopt_mee_met_vegen(telefoon):
+    """Het gekozen bod verspringt tijdens het vegen, niet pas bij het loslaten, en keert meteen om."""
+    inloggen(telefoon)
+    telefoon.goto(telefoon.adres + "/#/veiling/bieding-1")
+    telefoon.locator(".onderkant .hoofdknop").click()
+    paneel = telefoon.get_by_role("dialog")
+    gekozen = paneel.locator(".trede.gekozen .bedrag-groot")
+    treden = paneel.locator("[role=radio] .bedrag-groot").all_text_contents()
+    assert len(treden) == 3
+    hoogste, midden, laagste = treden
+    expect(gekozen).to_have_text(laagste)
+
+    # hover wacht tot het paneel stilstaat: het schuift van onderaf het scherm in.
+    paneel.locator(".trede.gekozen").hover()
+    vak = paneel.locator(".trede.gekozen").bounding_box()
+    x, y = vak["x"] + vak["width"] / 2, vak["y"] + vak["height"] / 2
+    telefoon.mouse.move(x, y)
+    telefoon.mouse.down()
+    telefoon.mouse.move(x, y - 30)
+    expect(gekozen).to_have_text(midden)
+    telefoon.mouse.move(x, y - 60)
+    expect(gekozen).to_have_text(hoogste)
+    # Voorbij het eind van de ladder gebeurt er niets, en omkeren werkt meteen.
+    telefoon.mouse.move(x, y - 200)
+    expect(gekozen).to_have_text(hoogste)
+    telefoon.mouse.move(x, y - 170)
+    expect(gekozen).to_have_text(midden)
+    telefoon.mouse.up()
+    # De tik die op het slepen volgt, kiest niet alsnog het bedrag onder de muis.
+    expect(gekozen).to_have_text(midden)
+    expect(paneel.get_by_role("button", name=re.compile("^Bevestig", re.I))).to_contain_text(re.sub(r"\D", "", midden))
+
+
+def test_bod_scrollt_met_het_wiel(telefoon):
+    """Muiswiel en trackpad: omhoog scrollen is een hoger bod, één klik van het wiel is één trede."""
+    inloggen(telefoon)
+    telefoon.goto(telefoon.adres + "/#/veiling/bieding-1")
+    telefoon.locator(".onderkant .hoofdknop").click()
+    paneel = telefoon.get_by_role("dialog")
+    ladder = paneel.get_by_role("radiogroup", name="Kies je bod")
+    gekozen = paneel.locator(".trede.gekozen .bedrag-groot")
+    hoogste, midden, laagste = paneel.locator("[role=radio] .bedrag-groot").all_text_contents()
+    expect(gekozen).to_have_text(laagste)
+
+    def wiel(delta_y):
+        # Een gemaakte gebeurtenis: het wiel van Playwright werkt niet in WebKit op telefoonformaat.
+        # Geeft terug of de ladder het scrollen van het paneel tegenhield.
+        tegengehouden = ladder.evaluate(
+            "(el, dy) => !el.dispatchEvent(new WheelEvent('wheel', { deltaY: dy, bubbles: true, cancelable: true }))", delta_y
+        )
+        telefoon.wait_for_timeout(150)
+        return tegengehouden
+
+    assert wiel(-100)
+    expect(gekozen).to_have_text(midden)
+    wiel(-100)
+    expect(gekozen).to_have_text(hoogste)
+    wiel(-100)
+    expect(gekozen).to_have_text(hoogste)
+    wiel(100)
+    expect(gekozen).to_have_text(midden)
+    # Een trackpad stuurt kleine stapjes: die tellen op tot één trede. Elke reeks gaat in één keer
+    # naar de browser, zodat een trage machine er geen pauze tussen legt.
+    stapjes = (
+        "(el, n) => { for (let i = 0; i < n; i++)"
+        " el.dispatchEvent(new WheelEvent('wheel', { deltaY: 10, bubbles: true, cancelable: true })) }"
+    )
+    ladder.evaluate(stapjes, 2)
+    telefoon.wait_for_timeout(150)
+    expect(gekozen).to_have_text(midden)
+    telefoon.wait_for_timeout(600)
+    ladder.evaluate(stapjes, 3)
+    expect(gekozen).to_have_text(laagste)
+
+
 def test_veiling_loopt_altijd(gewone_telefoon):
     """Voor het testen: er loopt altijd precies één veiling, en na de hamer begint er een nieuwe."""
     pagina = gewone_telefoon
