@@ -2,10 +2,14 @@
 from __future__ import annotations
 
 import re
-from typing import Iterable, Mapping, Optional
+from typing import TYPE_CHECKING, Iterable, Mapping, Optional
+
+if TYPE_CHECKING:
+    # Alleen voor mypy; door `from __future__ import annotations` wordt dit nooit uitgevoerd.
+    from typing_extensions import TypeGuard
 
 
-def is_bedrag(waarde: object) -> bool:
+def is_bedrag(waarde: object) -> TypeGuard[int]:
     """Een geldig bedrag is een heel getal van nul of meer. True en False tellen niet."""
     return isinstance(waarde, int) and not isinstance(waarde, bool) and waarde >= 0
 

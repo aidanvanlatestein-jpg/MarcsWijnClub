@@ -362,7 +362,7 @@ flowchart TB
     c4["Controles"]
 ```
 
-Faalt een stap, dan stopt de pipeline en gaat er niets door naar de volgende stap. Ingericht zijn de controles, de uitrol naar test en productie, de rooktest, de wekelijkse controle en de toegang via OIDC. De integratietests, de end-to-end-tests, mypy en cdk-nag volgen.
+Faalt een stap, dan stopt de pipeline en gaat er niets door naar de volgende stap. Ingericht zijn de controles, de uitrol naar test en productie, de rooktest, de wekelijkse controle en de toegang via OIDC. De integratietests tegen DynamoDB in het geheugen en mypy draaien in de controles. De integratietests tegen de teststack, de end-to-end-tests en cdk-nag volgen.
 
 **Opzet**
 
@@ -387,7 +387,9 @@ De repository is openbaar. Daardoor kan productie een echte goedkeuringsstap kri
 
 **Testen**
 
-Alle tests draaien in pytest, ook de browsertests via Playwright voor Python. Zo heeft de bouwer één testtaal.
+De tests draaien in pytest, ook de browsertests via Playwright voor Python. Zo heeft de bouwer zoveel mogelijk één testtaal. Alleen de unit-tests van de web-app zelf draaien in vitest, naast de TypeScript die ze toetsen.
+
+**Regels die op twee plekken staan.** Het prototype speelt de server na en heeft daardoor een paar regels ook: euro-invoer, het totaal, de houdtijd en betaaltermijn, de bovengrens en de verlenging van een bod. `tests/gedeeld/regels.json` bevat de gevallen voor die regels, en zowel pytest als vitest toetst ze. Zo kan zo'n regel niet aan één kant veranderen zonder dat een test faalt.
 
 **De documenten zijn de maatstaf.** Elke test toetst een regel die in dit plan of in de bouwspecificatie staat: een regel voor de lijst of de veiling, een overgang uit de levensloop, een aanroep met zijn foutcodes, of een eis voor de telefoon (M1 tot en met M14). Toetst een test iets wat nergens staat, dan komt de regel eerst in het document, of de test vervalt. Staat er een regel zonder test, dan is dat een gat dat in de week van dat onderdeel dicht moet. De tabel Dekking onderaan zegt per onderdeel welke laag hem toetst.
 
@@ -395,12 +397,15 @@ Alle tests draaien in pytest, ook de browsertests via Playwright voor Python. Zo
 | --- | --- | --- | --- |
 | Unit-tests | Regels voor bieden (minimale verhoging, bovengrens, niet jezelf overbieden, verlenging in de laatste twee minuten, eindtijd), bestelling, voorraad en levering, het verwerken van een Mollie-melding, het herkennen van een WhatsApp-bericht en een etiket en het controleren van tekstvoorstellen met een nagebootst taalmodel, het tellen van een tik op een melding: één keer per lid. Stacktests op de sjablonen. De tests voor het etiket, de tikken, de overgangen van de avond en de signalen volgen met die onderdelen | Elke pull request | Alleen de code, geen AWS |
 | Browsertests | De stromen op telefoonformaat van 375 × 667 en 320 × 568 px, in Chromium en WebKit: inloggen, bestellen en betalen, een bon die niet betaald wordt en vervalt, bieden en winnen, Je bestellingen, een nieuwe fles klaarzetten. Bij elke stroom ook de eisen voor de telefoon die een test kan meten: tikvlakken, geen horizontaal scrollen, contrast, tekstgrootte en wat zonder scrollen in beeld moet staan | Elke pull request | De gebouwde web-app, nu met voorbeeldgegevens |
-| Integratietests | Twintig gelijktijdige biedingen: precies één winnaar per bedrag. Gelijktijdige bestellingen: de voorraad komt nooit onder nul. Een veiling sluit op de eindtijd. Dezelfde Mollie-melding twee keer: één betaling. Volgt | Elke merge | Teststack, met echte DynamoDB en Mollie in testmodus |
+| Unit-tests van de web-app | De staat van het prototype: bestellen alles of niets, voorraad nooit onder nul, betalen, vervallen, bieden en de hamer. De adressen, bedragen en tijden. De gedeelde regelgevallen | Elke pull request | Alleen de code |
+| Integratietests in het geheugen | De transacties uit `domein/` echt uitgevoerd: bestellingen die samen meer vragen dan er is (de voorraad komt nooit onder nul), dezelfde bestelpoging twee keer, twee biedingen op dezelfde stand (er gaat er één door), een bod vlak voor de hamer, de veiling sluiten met de bon van de winnaar, dezelfde Mollie-melding twee keer (één betaling), verlopen en de voorraad terug, en de leesquery's. Gelijktijdig is hier: twee keer dezelfde stand lezen en daarna allebei schrijven | Elke pull request | DynamoDB in het geheugen (moto), met de tabellen uit het sjabloon |
+| Integratietests tegen de teststack | Twintig echt gelijktijdige biedingen: precies één winnaar per bedrag. Een veiling sluit op de eindtijd door de geplande taak. Een melding van Mollie in testmodus. Volgt | Elke merge | Teststack, met echte DynamoDB en Mollie in testmodus |
 | End-to-end-tests | Dezelfde stromen als de browsertests, maar tegen de echte API: een avond die begint, van de lijst bestellen en meteen betalen, een bon die vervalt, bieden en winnen, en Marc die een wijn op tafel zet. Volgt | Elke merge | Teststack, via de browser |
 | Handtest op telefoons | Dezelfde stromen op een echte iPhone (in Safari en vanaf het beginscherm) en een echte Android-telefoon (in Chrome), één keer met de schermlezer aan | Elke release | Teststack |
 | Rooktest | De site laadt, de configuratie van de web-app is er, en het aanbod weigert een aanroep zonder token met `401`. Het aanbod opvragen met een testlid en inloggen volgen. Er worden geen bestellingen geplaatst | Elke merge en elke release | Test en productie |
 | Herkennen en voorstellen | Twintig echte aanbiedingen van Marc met de juiste naam, jaargang, aantal en prijs als antwoord, en twintig foto's van etiketten met de juiste naam, producent, jaargang en streek. Minstens 95% van de velden moet kloppen. Tien sets steekwoorden: bij elk voorstel is met de hand nagekeken dat er geen smaak, score of prijs bij verzonnen is. Volgt | Bij een wijziging van prompt of model, en wekelijks | Teststack, met het echte taalmodel |
 | Beveiliging | pip-audit en npm audit op bekende kwetsbaarheden, secret scanning op de repository. cdk-nag op de infrastructuur volgt | Elke pull request, en wekelijks | De code |
+| Typen | TypeScript in de web-app (`tsc` op strict) en mypy op de functies | Elke pull request | De code |
 
 **Testgegevens en inloggen in de test**
 

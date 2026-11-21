@@ -79,6 +79,8 @@ Elf tabellen, alle met betalen naar gebruik en herstel naar een tijdstip. `betal
 | | | `lijst-index`: `lijstId` + `aangemaakt` | Marcs overzicht per lijst |
 | | | `betaal-index`: `status` + `betaalVoor` | Open bestellingen waarvan de termijn voorbij is, voor de taak die ze laat verlopen |
 | `betalingen` | `mollieBetalingId` | geen | Melding van Mollie naar de bestelling van die betaling |
+
+**Sleutels veranderen niet.** Een andere sleutel van een tabel betekent voor CloudFormation een nieuwe, lege tabel. In `prod` blijft de oude met de gegevens als wees staan, in `test` is hij weg, en er is geen migratie. Tabellen worden daarom alleen uitgebreid: een nieuw veld, een nieuwe index (één per uitrol per tabel), of een nieuwe tabel. `tests/infra/test_stacks.py` legt de sleutels van elke tabel en index vast, en de integratietests maken hun tabellen uit hetzelfde sjabloon.
 | `weergaven` | `wijnId` + `lidId` | geen | Per bieding tellen hoeveel leden hem openden |
 | `berichten` | `berichtId` | geen | Per melding vastleggen wanneer hij verstuurd is. Bij enkele honderden berichten is alles doorlopen geen probleem |
 | `tikken` | `berichtId` + `lidId` | geen | Per melding tellen hoeveel leden erop tikten |
@@ -517,12 +519,18 @@ wine/
 │   └── wijnclub_infra/              vier stacks: data, inloggen, api, web
 └── tests/
     ├── functions/                   tests voor de regels en de functies
+    ├── integratie/                  de transacties uitgevoerd tegen DynamoDB in het geheugen (moto)
+    ├── gedeeld/                     regels.json: gevallen die domein/ en app/src/regels.ts allebei moeten halen
     ├── infra/                       tests voor de stacks
     ├── web/                         browsertests op telefoonformaat, tegen app/dist
     └── smoke/                       rooktest na een uitrol
 ```
 
+De unit-tests van de web-app staan naast de code in `app/src/*.test.ts` en draaien met vitest.
+
 De regels in `domein/` gebruiken geen AWS en zijn daardoor los te testen. De functies daar bouwen de transacties op; de handlers voeren ze uit.
+
+Het prototype speelt de server na en heeft daarom een paar regels ook: euro-invoer, het totaal, de houdtijd en betaaltermijn, de bovengrens en de verlenging van een bod. Die staan in de app alleen in `app/src/regels.ts`, en `tests/gedeeld/regels.json` bevat de gevallen die beide kanten moeten halen. Verandert zo'n regel, dan komt er eerst een geval bij in dat bestand.
 
 | Stack | Bevat |
 | --- | --- |
@@ -549,6 +557,9 @@ Alle versies staan vast. De Lambda-functies gebruiken alleen `boto3`, dat in de 
 | `@types/react`, `@types/react-dom` | 19.3.0 | Typecontrole van de web-app |
 | `lucide-react` | 1.68.0 | Iconen, dezelfde als in het ontwerp |
 | `@fontsource/barlow-condensed` | 5.3.0 | Lettertype, vanaf het eigen domein in plaats van Google Fonts |
+| `vitest` | 5.1.0 | Unit-tests van de web-app |
+| `moto` | 5.2.5 (niet op Python 3.9) | DynamoDB in het geheugen voor de integratietests |
+| `mypy` | 2.4.1 (niet op Python 3.9) | Typecontrole van de functies in de pipeline |
 | `pytest` | 9.2.0 (8.4.2 op Python 3.9) | Tests |
 | `pytest-cov` | 7.1.0 | Dekking van de functies, ondergrens 95% |
 | `playwright` (Python) | 1.64.1 (1.60.0 op Python 3.9) | Browsertests op telefoonformaat, in Chromium en WebKit |
@@ -587,10 +598,15 @@ Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan g
 | Tellingen voor de roadmap: tabel `weergaven`, veld `verlengd`, `GET /api/beheer/tellingen` | Nog niet | Week 6 en 7 |
 | Meting per melding: tabellen `berichten` en `tikken`, `POST /api/mijn/tikken`, `POST /api/beheer/berichten` | Nog niet | Week 7 |
 | Web-app: klikbaar prototype van de schermen uit `design-v4`, aangevuld uit `design-v3` waar V4 niets tekent. Leden: inloggen in drie stappen, aankondiging, de avond als live feed, wijn, de bon met brengen of halen, betalen via een nagebootste betaalpagina, betaald, niet betaald en vervallen, bijzondere fles, de veiling met biedlog, biedpaneel, eenmaal andermaal, hamerslag met terugblik, je bestellingen, Marc. Beheer: de avond, nieuwe fles (camera, nakijken, lijst of veiling, klaar), afleveren, namens een lid. Verder de toestanden. Met voorbeeldinhoud en proefacties. Alles staat in de browser (`app/src/staat.tsx`); er gaat niets naar de API, en "live", de betaalpagina van Mollie en het lezen van het etiket zijn nagebootst | Gebouwd | Week 4 |
+| Naden voor de koppeling: het contract in `contract/`, getoetst in pytest en vitest, de voorbeeldserver los van de schermstaat, en een gegevensbron in de app. Zie het [bouwplan](bouwplannen/naden-voor-de-koppeling.md) | Nog niet | Vóór week 4 |
 | Web-app: echt inloggen via Cognito met de code per e-mail, koppeling met de API, betalen via Mollie, foto's uploaden, het etiket en het bericht laten lezen door het taalmodel, spraakbericht | Nog niet | Week 4 tot en met 7 |
 | Web-app: eisen voor de telefoon uit hoofdstuk 10. Het prototype voldoet aan M1, M2 en M6 en deels aan tien andere; de stand per eis staat in dat hoofdstuk | Deels | Week 4 tot en met 7 |
 | Web-app: manifest en een voorlopig icoon voor het beginscherm (`app/public/manifest.webmanifest`, `app/public/iconen/`). Geen service worker | Gebouwd | Week 4 |
 | Browsertests op telefoonformaat tegen het prototype: `tests/web`, Playwright in pytest, in Chromium en WebKit, op 375 × 667 en 320 × 568 px, en een eigen stap in de pipeline (`controles.yml`, job `telefoon`). Is `app/dist` ouder dan de broncode, dan falen ze. Ze meten M1, M2, M3, M4 (de bon, de bijzondere fles en het biedpaneel), M5, M6, M9, M10 en M11, controleren de uitkomsten (`test_uitkomsten.py`: het totaal op de bon, de voorraad die daalt en terugkomt, net op, het bod in de stand, de prijs van een gewonnen fles) en lopen de stromen van V4 door: inloggen, bestellen en betalen, niet betaald en vervallen, uitloggen en opnieuw inloggen, en een nieuwe fles klaarzetten. `test_kenmerken_scherm.py` controleert kleur, land en licht tot vol op het nakijkscherm en in het aanbod, bij de stand van de schakelaar in de build (`data-kenmerken` op `.app`) | Gebouwd | Week 4 |
+| Unit-tests van de web-app (`app/src/*.test.ts`, vitest): de staat van het prototype (bestellen alles of niets, voorraad nooit onder nul, betalen, vervallen na 15 minuten, bieden met minimum, bovengrens, verlenging en hamer), de adressen, bedragen en tijden, en het lezen van wat Marc intypt | Gebouwd | Week 4 |
+| Gedeelde regelgevallen (`tests/gedeeld/regels.json`) voor de regels die in `domein/` en in `app/src/regels.ts` staan, getoetst aan beide kanten. `leesEuro` in de app las `10,-` niet en doet nu hetzelfde als `lees_euro` | Gebouwd | Week 4 |
+| Integratietests tegen DynamoDB in het geheugen (`tests/integratie`, moto), met de tabellen uit het sjabloon van de datastack: reserveren, uitverkocht, dezelfde poging twee keer, gesloten lijst, betaald zetten en dezelfde melding twee keer, verlopen, bieden en twee biedingen op dezelfde stand, verlenging, sluiten met de bon van de winnaar, een bod vlak voor de hamer, en de leesquery's in `opslag.py` met paginering. Gelijktijdigheid is nagespeeld als twee keer dezelfde stand lezen; twintig echt gelijktijdige biedingen en Mollie in testmodus volgen tegen de teststack | Gebouwd | Week 5 en 6 |
+| Typecontrole van de functies met mypy (`mypy.ini`), in de pipeline | Gebouwd | Week 4 |
 | Tijdlijn per bestelling, de signalen en "Vraagt aandacht" bij afleveren | Nog niet | Week 7 |
 | End-to-end-tests tegen de teststack en de handtest op echte telefoons (M14) | Nog niet | Week 4 tot en met 7 |
 
