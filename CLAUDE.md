@@ -34,6 +34,7 @@ Dit project is van Aidan persoonlijk. Het heeft niets te maken met een werkgever
 | `docs/roadmap.md` | Wat er na de pilot kan komen, onderwerp 1 tot en met 22 |
 | `docs/beveiliging.md` | Verbeterpunten uit de beveiligingsscan, A1 tot en met E10 |
 | `docs/marktonderzoek.md` | Wie hetzelfde doet en wat dat betekent |
+| `docs/bouwplannen/` | Eén plan per feature die in een eigen worktree wordt gebouwd. Het plan verdwijnt in de PR die de feature bouwt; de feiten staan dan in de bouwspecificatie |
 | `design-v4/` | Het ontwerp sinds 20 november 2026: `DESIGN.md` en de schermen. De specificatie van de schermen; wat V4 niet tekent, staat in `design-v3/` |
 | `wijnclub-prototype.html` | Het eerste klikbare prototype, achterhaald. Het klikbare prototype is nu de web-app in `app/` |
 | `functions/wijnclub/` | Lambda-functies in Python. `domein/` bevat de regels zonder AWS |
