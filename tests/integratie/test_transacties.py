@@ -65,7 +65,7 @@ def test_de_tabellen_hebben_de_sleutels_uit_de_stack(db, tabellen):
     }
     assert sleutels == {
         "leden": ["lidId"], "lijsten": ["lijstId"], "wijnen": ["wijnId"], "biedingen": ["wijnId", "tijdstipLid"],
-        "bestellingen": ["bestellingId"], "betalingen": ["mollieBetalingId"],
+        "bestellingen": ["bestellingId"], "betalingen": ["mollieBetalingId"], "tellers": ["tellerId"],
     }
 
 
