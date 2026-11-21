@@ -7,10 +7,14 @@ De schermen veranderen nog. De tests leunen daarom op adressen, rollen en de vas
 (hoofdknop, onderkant, panelen), en zo weinig mogelijk op de teksten van knoppen.
 """
 import re
+from pathlib import Path
 
 import pytest
 from playwright.sync_api import expect
 from telefoon_metingen import buiten_beeld, geen_overtredingen, scherm_klopt
+
+# Een echte foto om in het camerascherm te kiezen: een van de voorbeeldfoto's van het prototype.
+FOTO = Path(__file__).resolve().parents[2] / "app" / "public" / "voorbeeld" / "candido.jpg"
 
 # Schermen die zonder voorbereiding te openen zijn. Beheer staat in het prototype open voor iedereen.
 # "avond" is het aanbod tijdens de lopende avond; dat zet de test klaar met een proefactie.
@@ -259,8 +263,17 @@ def test_terugknop_sluit_paneel(telefoon):
 def test_nieuwe_fles(telefoon):
     """Marc zet een fles klaar: foto, nakijken, lijst, klaar. Elke stap voldoet aan M1, M2 en M5."""
     telefoon.goto(telefoon.adres + "/#/beheer/nieuw")
-    telefoon.get_by_role("button", name="Maak de foto").click()
+    # De sluiter is een bestandsveld dat op een telefoon de camera aan de achterkant opent.
+    sluiter = telefoon.get_by_label("Maak de foto")
+    expect(sluiter).to_have_attribute("capture", "environment")
+    expect(sluiter).to_have_attribute("accept", "image/*")
+    # Iets anders dan een foto gaat niet door.
+    sluiter.set_input_files({"name": "etiket.svg", "mimeType": "image/svg+xml", "buffer": b"<svg xmlns='http://www.w3.org/2000/svg'/>"})
+    expect(telefoon.get_by_role("alert")).to_contain_text("JPEG")
+    sluiter.set_input_files(FOTO)
     expect(telefoon.get_by_role("textbox", name="Naam")).to_have_value(re.compile("Soave", re.I))
+    # De gemaakte foto staat op het nakijkscherm, niet de voorbeeldfoto.
+    expect(telefoon.get_by_role("button", name="Maak de foto opnieuw").locator("img")).to_have_attribute("src", re.compile("^blob:"))
     assert geen_overtredingen(scherm_klopt(telefoon)) == {}
     telefoon.get_by_role("button", name=re.compile("Klopt, verder", re.I)).click()
     expect(telefoon.get_by_role("radiogroup", name="Lijst of veiling")).to_be_visible()
@@ -271,3 +284,7 @@ def test_nieuwe_fles(telefoon):
     telefoon.get_by_role("button", name=re.compile("Zet klaar voor", re.I)).click()
     expect(telefoon.locator("h1")).to_contain_text(re.compile("Klaar", re.I))
     assert geen_overtredingen(scherm_klopt(telefoon)) == {}
+    # Zonder camera bij de hand kan het prototype verder met de voorbeeldfoto.
+    telefoon.get_by_role("button", name=re.compile("Nog een fles", re.I)).click()
+    telefoon.get_by_role("button", name="Gebruik de voorbeeldfoto").click()
+    expect(telefoon.get_by_role("textbox", name="Naam")).to_have_value(re.compile("Soave", re.I))
