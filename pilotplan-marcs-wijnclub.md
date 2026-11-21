@@ -228,7 +228,7 @@ Faalt een stap, dan stopt de pipeline en gaat er niets door naar de volgende sta
 
 **Drie momenten in de pipeline**
 
-1. **Bij elke pull request:** ruff, pip-audit en pytest op de Python-code, npm audit en build van de web-app, `cdk synth` voor test en productie, en `cdk diff` tegen productie in de samenvatting van de controle. Een pull request uit een fork krijgt nooit toegang tot AWS. De pipeline heeft hier alleen leesrechten. Doel: klaar binnen vijf minuten.
+1. **Bij elke pull request:** ruff, pip-audit en pytest op de Python-code, met de dekking van de functies (ondergrens 95%), npm audit en build van de web-app, de browsertests in Chromium en WebKit, `cdk synth` voor test en productie, en `cdk diff` tegen productie in de samenvatting van de controle. Een pull request uit een fork krijgt nooit toegang tot AWS. De pipeline heeft hier alleen leesrechten. Doel: klaar binnen vijf minuten.
 2. **Bij elke merge naar main:** uitrol naar de teststack, daarna de rooktest. De integratietests en de end-to-end-tests tegen die stack komen erbij zodra er meer gebouwd is.
 3. **Bij een release-tag, zoals `v2026.12.1`:** de pipeline wacht op jouw goedkeuring in de GitHub-omgeving `productie`, rolt dezelfde commit uit naar productie en draait de rooktest. Faalt de uitrol of de rooktest, dan rolt de pipeline de vorige release-tag opnieuw uit en faalt de run, zodat jij een melding krijgt.
 

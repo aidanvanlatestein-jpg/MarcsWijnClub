@@ -1,13 +1,17 @@
 """Browsertests op telefoonformaat: de eisen uit hoofdstuk 10 van de bouwspecificatie die een test kan meten.
 
-De tests draaien tegen de gebouwde web-app in app/dist, in Chromium van Playwright. Ze raken AWS niet.
+De tests draaien tegen de gebouwde web-app in app/dist, in Chromium en in WebKit van Playwright.
+WebKit is de motor van Safari: zo opent een lid met een iPhone de link uit WhatsApp. Ze raken AWS niet.
 
     cd app && npm run build && cd ..
-    playwright install chromium-headless-shell
+    playwright install chromium-headless-shell webkit
     pytest tests/web
 
-Ontbreekt app/dist of de browser, dan slaan de tests zich over. In de pipeline staat
-WIJNCLUB_BROWSERTESTS=verplicht: dan is dat een fout.
+Eén browser kiezen kan met WIJNCLUB_BROWSERS, bijvoorbeeld WIJNCLUB_BROWSERS=chromium.
+
+Ontbreekt app/dist of een browser, dan slaan de tests zich over. In de pipeline staat
+WIJNCLUB_BROWSERTESTS=verplicht: dan is dat een fout. Is app/dist ouder dan de broncode van de
+web-app, dan is dat altijd een fout: anders slaagt de test op een app die niet meer bestaat.
 """
 import functools
 import http.server
@@ -17,8 +21,12 @@ from pathlib import Path
 
 import pytest
 
-DIST = Path(__file__).resolve().parents[2] / "app" / "dist"
+APP = Path(__file__).resolve().parents[2] / "app"
+DIST = APP / "dist"
 VERPLICHT = os.environ.get("WIJNCLUB_BROWSERTESTS") == "verplicht"
+BROWSERS = os.environ.get("WIJNCLUB_BROWSERS", "chromium webkit").replace(",", " ").split()
+# Waar de build van afhangt. node_modules telt niet mee: package-lock.json legt de versies vast.
+BRONNEN = ("src", "public", "index.html", "package.json", "package-lock.json", "vite.config.ts", "tsconfig.json")
 
 # De twee referentiematen uit de bouwspecificatie, staand. Op 375 x 667 moet alles kloppen;
 # 320 x 568 is de ondergrens.
@@ -41,6 +49,20 @@ except ImportError:  # pragma: no cover - alleen zonder het pakket
     PlaywrightFout = Exception
 
 
+def nieuwer_dan_de_build(app=APP):
+    """De bestanden van de web-app die na de laatste build zijn gewijzigd, de nieuwste eerst."""
+    gebouwd = (app / "dist" / "index.html").stat().st_mtime
+    bestanden = []
+    for naam in BRONNEN:
+        bron = app / naam
+        if bron.is_dir():
+            bestanden.extend(pad for pad in bron.rglob("*") if pad.is_file())
+        elif bron.is_file():
+            bestanden.append(bron)
+    nieuwer = sorted((pad for pad in bestanden if pad.stat().st_mtime > gebouwd), key=lambda pad: -pad.stat().st_mtime)
+    return [str(pad.relative_to(app)) for pad in nieuwer]
+
+
 class _StilleHandler(http.server.SimpleHTTPRequestHandler):
     extensions_map = {**http.server.SimpleHTTPRequestHandler.extensions_map, ".webmanifest": "application/manifest+json"}
 
@@ -53,6 +75,10 @@ def adres():
     """Serveert app/dist op een vrije poort van deze machine. De app gebruikt # voor schermen, dus één pagina is genoeg."""
     if not (DIST / "index.html").exists():
         _overslaan("app/dist ontbreekt; bouw eerst de web-app met: cd app && npm run build")
+    nieuwer = nieuwer_dan_de_build()
+    if nieuwer:
+        gewijzigd = nieuwer[0] if len(nieuwer) == 1 else "{} en {} andere".format(nieuwer[0], len(nieuwer) - 1)
+        pytest.fail(f"app/dist is ouder dan de broncode ({gewijzigd}); bouw opnieuw met: cd app && npm run build", pytrace=False)
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(_StilleHandler, directory=str(DIST)))
     draad = threading.Thread(target=server.serve_forever, daemon=True)
     draad.start()
@@ -61,18 +87,36 @@ def adres():
 
 
 @pytest.fixture(scope="session")
-def browser():
+def playwright():
     if sync_playwright is None:
         _overslaan("Playwright ontbreekt; installeer requirements-dev.txt")
     pw = sync_playwright().start()
+    yield pw
+    pw.stop()
+
+
+@pytest.fixture(scope="session", params=BROWSERS)
+def browser(request, playwright):
+    """Elke test draait in elke browser. De browser start één keer; elke test krijgt een eigen context."""
+    naam = request.param
+    if naam not in ("chromium", "webkit"):
+        pytest.fail(f"WIJNCLUB_BROWSERS kent {naam} niet; kies chromium, webkit of beide", pytrace=False)
     try:
-        b = pw.chromium.launch()
+        b = getattr(playwright, naam).launch()
     except PlaywrightFout as fout:
-        pw.stop()
-        _overslaan(f"Chromium van Playwright ontbreekt; draai: playwright install chromium-headless-shell ({fout.message.splitlines()[0]})")
+        pakket = "chromium-headless-shell" if naam == "chromium" else naam
+        _overslaan(f"{naam} van Playwright ontbreekt; draai: playwright install {pakket} ({fout.message.splitlines()[0]})")
     yield b
     b.close()
-    pw.stop()
+
+
+def _niet_geladen(verzoek, fouten):
+    """Een bestand dat niet laadt is een fout. Een verzoek dat de browser zelf afbreekt niet: dat gebeurt als de
+    test naar een ander scherm gaat of herlaadt terwijl een foto nog onderweg is."""
+    reden = verzoek.failure or ""
+    if "ABORTED" in reden or "cancel" in reden.lower():
+        return
+    fouten.append(f"niet geladen: {verzoek.url} ({reden})")
 
 
 def _nieuwe_pagina(browser, adres, maat):
@@ -88,6 +132,10 @@ def _nieuwe_pagina(browser, adres, maat):
     pagina = context.new_page()
     fouten = []
     pagina.on("pageerror", lambda fout: fouten.append(str(fout)))
+    # Ook wat de app zelf als fout meldt, en een bestand dat niet laadt: een foto of lettertype dat ontbreekt.
+    pagina.on("console", lambda bericht: fouten.append(f"console: {bericht.text}") if bericht.type == "error" else None)
+    pagina.on("requestfailed", lambda verzoek: _niet_geladen(verzoek, fouten))
+    pagina.on("response", lambda antwoord: fouten.append(f"{antwoord.status}: {antwoord.url}") if antwoord.status >= 400 else None)
     pagina.goto(adres + "/")
     pagina.wait_for_selector(".app")
     pagina.fouten = fouten

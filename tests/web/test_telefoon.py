@@ -77,7 +77,7 @@ def test_elk_scherm(telefoon, scherm):
         naar_de_avond(telefoon)
     else:
         telefoon.goto(telefoon.adres + "/" + scherm)
-    telefoon.wait_for_timeout(300)
+    # scherm_klopt wacht zelf tot wat in beeld schuift stilstaat.
     assert geen_overtredingen(scherm_klopt(telefoon)) == {}
 
 
@@ -108,9 +108,17 @@ def _naar_de_bon(pagina):
 def _betaal(pagina, gelukt=True):
     """De betaalpagina van Mollie staat in het prototype in een paneel; daar kies je wat er gebeurt."""
     paneel = pagina.get_by_role("dialog")
+    # Na een dubbele tik op Betaal sluit de tweede tik in WebKit het paneel weer: die tik valt naast het paneel.
+    # De bestelling staat er dan wel; de knop op de bon opent de betaalpagina opnieuw.
+    expect(pagina.locator("h1")).to_be_visible()
+    if paneel.count() == 0:
+        pagina.locator(".onderkant .hoofdknop").click()
     expect(paneel).to_be_visible()
     paneel.get_by_role("button", name=re.compile("lukt$" if gelukt else "mislukt", re.I)).click()
     expect(paneel).to_have_count(0)
+    # Het paneel sluit met een stap terug in de geschiedenis. Wacht daarop: herladen of een nieuw adres
+    # breekt anders af als die stap er net doorheen komt.
+    pagina.wait_for_function("() => !(history.state && history.state.blad)")
 
 
 def test_bestellen(telefoon):

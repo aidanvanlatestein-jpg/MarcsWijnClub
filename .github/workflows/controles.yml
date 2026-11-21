@@ -29,10 +29,12 @@ jobs:
         run: ruff check --output-format=github .
       - name: Bekende kwetsbaarheden (pip-audit)
         run: pip-audit -r requirements-dev.txt
-      - name: Unit-tests en stacktests (pytest)
+      # De dekking gaat over functions/wijnclub. Op 20 november 2026 was dat 97%; alleen opslag.py blijft
+      # achter tot er integratietests tegen DynamoDB zijn. Zakt het totaal onder 95%, dan faalt de stap.
+      - name: Unit-tests en stacktests (pytest), met dekking van de functies
         env:
           JSII_SILENCE_WARNING_UNTESTED_NODE_VERSION: "1"
-        run: pytest
+        run: pytest --cov=wijnclub --cov-report=term-missing:skip-covered --cov-fail-under=95
 
   web:
     name: Web-app
@@ -56,8 +58,9 @@ jobs:
       - name: Typen controleren en bouwen
         run: npm run build
 
-  # De eisen voor de telefoon uit hoofdstuk 10 van de bouwspecificatie, in Chromium op
-  # 375 x 667 en 320 x 568 px. Tegen de gebouwde web-app; raakt AWS niet.
+  # De eisen voor de telefoon uit hoofdstuk 10 van de bouwspecificatie en de uitkomsten van bestellen,
+  # betalen en bieden, in Chromium en in WebKit (de motor van Safari op de iPhone), op 375 x 667 en
+  # 320 x 568 px. Tegen de gebouwde web-app; raakt AWS niet.
   telefoon:
     name: Web-app op telefoonformaat (Playwright)
     runs-on: ubuntu-24.04
@@ -85,7 +88,7 @@ jobs:
       - name: Afhankelijkheden en browser installeren
         run: |
           pip install -r requirements-dev.txt
-          playwright install --with-deps chromium-headless-shell
+          playwright install --with-deps chromium-headless-shell webkit
       - name: Browsertests (pytest)
         run: pytest tests/web
 
