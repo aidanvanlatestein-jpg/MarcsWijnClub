@@ -13,7 +13,7 @@ Ontwerp voor de pilot uit `../pilotplan-marcs-wijnclub.md`. Dit document en de m
 | Pad | Wat |
 | --- | --- |
 | `DESIGN.md` | Dit document |
-| `schermen/01…21-*.png` | Elk scherm op 2× (780 px breed). Het ontwerp is 390 px breed |
+| `schermen/01…21-*.png` | Elk scherm op 2× (780 px breed). Het ontwerp is 390 px breed. 04 en 05 zijn vervallen |
 
 Het bronbestand is hetzelfde als `../design-v3/referentie/marc-wijnclub.pen`. Alleen de frames met `V4 –`, `V4 Marc –` en `V4 Login –` in de naam horen bij V4.
 
@@ -27,7 +27,7 @@ Het bronbestand is hetzelfde als `../design-v3/referentie/marc-wijnclub.pen`. Al
 
 **Brengen of halen.** Op de bon kiest het lid BRENG of HAAL. Brengen gaat naar het adres van het lid, op een moment dat Marc per avond kiest.
 
-**Inloggen in vijf schermen.** E-mailadres, code, 18 jaar of ouder, Face ID, en terugkomen met Face ID.
+**Inloggen in drie schermen.** E-mailadres, code, 18 jaar of ouder. Face ID en terugkomen met Face ID (04 en 05) vervallen op 21 november 2026: een passkey valt buiten de pilot, zie [roadmap, onderwerp 22](../docs/roadmap.md).
 
 **Een fles klaarzetten begint met de camera.** Marc fotografeert de fles. De app leest het etiket en zijn WhatsApp-tekst. Marc kijkt het na en kiest lijst of veiling.
 
@@ -56,8 +56,8 @@ De tokens, de typografie, de ruimte en de vorm zijn ongewijzigd ten opzichte van
 | 01 | `01-login-1-je-emailadres.png` | `/welkom` | Het e-mailadres dat het lid aan Marc gaf | STUUR MIJ EEN CODE |
 | 02 | `02-login-2-de-code.png` | `/welkom` | De code uit de mail. De telefoon vult hem in (`one-time-code`), daarna gaat het lid vanzelf verder | – |
 | 03 | `03-login-3-achttien.png` | `/welkom` | "Welkom, …" en de vraag: ben je 18 of ouder? Met Ja ga je akkoord met de voorwaarden | JA, KOM BINNEN |
-| 04 | `04-login-4-face-id.png` | `/welkom` | Voortaan zonder code: een passkey | JA, GEBRUIK FACE ID |
-| 05 | `05-login-5-terugkomen.png` | `/welkom` | Terugkomen met Face ID | KOM BINNEN |
+| 04 | – | – | Vervallen op 21 november 2026: Face ID valt buiten de pilot, zie [roadmap, onderwerp 22](../docs/roadmap.md) | – |
+| 05 | – | – | Vervallen op 21 november 2026: terugkomen met Face ID, zie 04 | – |
 | 06 | `06-aankondiging.png` | `/` vóór de avond | Wat er vanavond op tafel komt | HERINNER MIJ OM 19:30 |
 | 07 | `07-het-aanbod-live.png` | `/` tijdens de avond | De live feed met de flessenrij en de keukenbon | Keukenbon → BESTEL |
 | 08 | `08-wijn.png` | `/wijn/:id` | Eén wijn in detail | Keukenbon → BESTEL |
@@ -95,7 +95,7 @@ Aidan besloot op 20 november 2026 om V4 te volgen. Het plan en de bouwspecificat
 | Levering | Afhaalpunten per regio | Brengen (naar het adres van het lid) of halen (bij Marc), per avond met een moment |
 | Gewonnen fles | Na het betalen een afhaalpunt kiezen | Na het betalen brengen of halen kiezen |
 | Persoonsgegevens | Geen adres | Een afleveradres voor wie wil dat Marc brengt. Alleen het lid en Marc zien het |
-| Inloggen | Code per e-mail | Code per e-mail, daarna eventueel een passkey ("Face ID") |
+| Inloggen | Code per e-mail | Code per e-mail. De passkey ("Face ID") die V4 tekende, valt buiten de pilot |
 
 ## Hoe het prototype afwijkt van de schermen
 

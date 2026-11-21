@@ -33,8 +33,8 @@ export function Voorbeeldbalk({ ga }: { ga: Ga }) {
     proeven.push({ label: 'Sla inloggen over', uitleg: 'Meteen naar de aankondiging', doe: () => { dispatch({ type: 'inloggen' }); ga({ scherm: 'aanbod' }) } })
   } else {
     proeven.push({
-      label: 'Kom later terug',
-      uitleg: 'Uitloggen en opnieuw openen. Met Face ID zie je "Welkom terug", anders begint het inloggen opnieuw',
+      label: 'Log uit',
+      uitleg: 'Het inloggen begint opnieuw bij je e-mailadres',
       doe: () => { dispatch({ type: 'uitloggen' }); ga({ scherm: 'welkom' }) },
     })
   }
