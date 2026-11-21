@@ -22,6 +22,8 @@ Onderwerp 19 is een idee van Aidan van 21 november 2026: zien wat er met een bes
 
 Onderwerp 20 is een verbeterpunt van 21 november 2026: het tabblad van de browser toont nu een algemeen plaatje en krijgt het logo van de club. Het hoort niet in de pilot.
 
+Onderwerp 21 is een idee van Aidan van 21 november 2026: de app ondersteunt naast de telefoon ook de browser op een pc, met een bredere indeling voor beheer. Leden gebruiken vooral hun telefoon; Marc doet zijn voorraad en planning naar verwachting ook achter de pc. Het is nog niet met Marc besproken en hoort niet in de pilot.
+
 | Onderwerp | Wat het oplevert | Start als |
 | --- | --- | --- |
 | 1. Omschrijving via een taalmodel | Marc zet een fles in enkele minuten online, in zijn eigen woorden. Het etiket lezen en tekstvoorstellen uit steekwoorden in zijn stijl, met echte teksten van Marc als voorbeeld, zitten al in de pilot. Hier volgen spraak naar tekst en het leren van zijn stijl uit de teksten die hij in de app goedkeurt | De pilot geslaagd is en Marc in de pilot geregeld een voorstel koos |
@@ -44,6 +46,7 @@ Onderwerp 20 is een verbeterpunt van 21 november 2026: het tabblad van de browse
 | 18. Flesfoto's in één stijl | Elke fles staat vrij, even groot en op dezelfde donkere achtergrond, zonder dat Marc er iets extra voor doet | Een proef op Marcs eigen foto's goed genoeg uitvalt, en de foto's in de pilot naast elkaar onrustig ogen |
 | 19. Volgen wat er gebeurt, en ingrijpen als een bestelling misgaat | Marc en Aidan zien per bestelling wat er gebeurde en krijgen een signaal als een lid vastloopt, voordat het lid erover appt | Stap A zit in de pilot, week 7. Stap B: fouten in de pilot Aidan meer dan een uur per maand kosten om uit te zoeken. Stap C: de club groeit voorbij de pilot |
 | 20. Een logo op het tabblad van de browser | Wie de app in een browser opent, herkent het tabblad aan het logo van de club in plaats van aan een algemeen plaatje | Marc het logo heeft geleverd |
+| 21. Ook op de pc: de app in een brede browser | Marc doet voorraad en planning op een groot scherm met toetsenbord, in tabellen in plaats van in een smalle kolom. Leden houden dezelfde app, vooral op hun telefoon | De zes beheerschermen gebouwd zijn en Marc zegt dat hij voorraad of planning liever achter de pc doet |
 
 ## 1. Omschrijving via een taalmodel
 
@@ -549,6 +552,24 @@ Het tabblad van de browser toont nu het algemene plaatje van de browser zelf: `a
 - **Samen met het beginscherm.** De voorlopige iconen in `app/public/iconen/` en in `manifest.webmanifest` worden in dezelfde wijziging het echte logo. Zo ziet een lid op het tabblad en op het beginscherm hetzelfde beeld.
 - **Wat het kost.** Naar schatting een uur, zodra het logo er is.
 - **Start als** Marc het logo heeft geleverd. Het logo en de naam van de club zijn van Marc; zie onderwerp 13. Er komt geen logo dat zonder hem is bedacht.
+
+## 21. Ook op de pc: de app in een brede browser
+
+De pilot is gemaakt voor de telefoon. Op een breder scherm toont de app dezelfde kolom van hoogstens 430 px, met lege ruimte links en rechts; zie "Mobiel eerst" in het plan en eis M1 in de [bouwspecificatie](bouwspecificatie.md), hoofdstuk 10. Dat werkt, maar het benut een groot scherm niet. Vastgesteld op 21 november 2026.
+
+De telefoon blijft het uitgangspunt: daar gebruiken vrijwel alle leden de app, en Marc tijdens de avond ook. Aidan verwacht dat Marc zijn voorraad en zijn planning ook geregeld achter de pc doet: flessen klaarzetten, een avond plannen en de leden bijhouden. Dat is werk met veel gegevens tegelijk, en typen gaat op een toetsenbord sneller. Het is nog niet met Marc besproken.
+
+- **Wat het is.** De app werkt in de gangbare browsers op telefoon en pc: Safari en Chrome op de telefoon, en Chrome, Safari, Edge en Firefox op de pc. Vanaf een breedte van ongeveer 900 px krijgen de schermen waar het helpt een bredere indeling. Het blijft één web-app op één adres, met dezelfde aanroepen.
+- **Beheer eerst.** Een avond plannen, Nieuwe fles, Leden en Afleveren krijgen op een breed scherm een tabel of twee kolommen: de lijst links, de gekozen fles, avond of bestelling rechts. Tussen de beheerschermen komt een vast menu aan de zijkant. De avond blijft gemaakt voor de telefoon, want Marc staat dan aan tafel.
+- **Voorraad in één overzicht.** Op de pc ziet Marc alle flessen in één tabel: klaargezet, op tafel, verkocht en nog beschikbaar, te sorteren en te doorzoeken. De pilot heeft dat overzicht niet; daar zet Marc flessen één voor één klaar. Dit raakt onderwerp 5, het inkoopoverzicht.
+- **Voor leden.** Het aanbod, de bon en de veiling blijven dezelfde kolom, met op een breed scherm de foto ernaast in plaats van erboven. Meer niet: een lid bestelt op zijn telefoon.
+- **Muis en toetsenbord.** Alles is te bedienen met het toetsenbord, met een zichtbare focus. Vegen heeft altijd een knop of het muiswiel als tweede weg, zoals de biedladder nu al. Een foto van een fles kiest Marc op de pc uit een map of sleept hij erin; de camera blijft voor de telefoon. Voor zo'n bestand gelden dezelfde regels als voor elke upload; zie "Uploads zijn een risico" in de bouwspecificatie, hoofdstuk 5.
+- **Inloggen op de pc.** Een passkey op de telefoon werkt niet vanzelf op de pc. Marc logt daar in met een passkey van de pc zelf of via de telefoon, en een lid met de code per e-mail. Zoek uit wat Cognito hier toelaat voordat het ontwerp vastligt. Op een gedeelde pc blijft niemand een jaar ingelogd: daar hoort een kortere sessie of een duidelijke knop Uitloggen bij.
+- **Wat er verandert in de documenten.** Eis M1 krijgt een tweede deel voor brede schermen, en hoofdstuk 10 een referentiemaat voor de pc, bijvoorbeeld 1280 × 720 px. De browsertests draaien die maat erbij in Chromium, WebKit en Firefox, en de handtest krijgt een ronde op een pc. Het ontwerp tekent tot nu toe alleen frames van 390 px; Aidan levert de brede schermen voor beheer.
+- **Wat het kost.** Naar schatting drie tot vijf dagen: één voor de brede indeling van de bestaande schermen en het menu, twee tot drie voor het voorraadoverzicht, en één voor de tests en de handtest op de pc.
+- **Wat het niet doet.** Geen aparte app voor de pc, geen functie die alleen op de pc bestaat behalve het overzicht, en geen eisen voor de telefoon die soepeler worden.
+
+**Start als** de zes beheerschermen van de pilot gebouwd zijn en Marc zegt dat hij voorraad of planning liever achter de pc doet. Vraag het hem bij zijn oordeel over het prototype. Tot dan toont een pc de smalle kolom. Dat is in de pilot alleen in Chromium en WebKit op telefoonformaat getest, niet op een pc en niet in Firefox.
 
 ## Bewust niet
 

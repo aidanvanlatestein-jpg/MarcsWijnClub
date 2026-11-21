@@ -18,7 +18,7 @@ Spreken ze elkaar tegen, of staat iets nergens: vraag het na en pas het document
 
 Daarnaast, niet nodig voor de bouw van de pilot:
 
-- [docs/roadmap.md](docs/roadmap.md): wat er na de pilot kan komen, onderwerp 1 tot en met 20. Alleen onderwerp 13 (eigen domein) en 15 (beveiliging) moeten vóór de eerste uitnodiging af; ze staan in week 8. Stap A van onderwerp 19, de tijdlijn per bestelling, zit sinds 21 november 2026 in de pilot en staat in week 7.
+- [docs/roadmap.md](docs/roadmap.md): wat er na de pilot kan komen, onderwerp 1 tot en met 21. Alleen onderwerp 13 (eigen domein) en 15 (beveiliging) moeten vóór de eerste uitnodiging af; ze staan in week 8. Stap A van onderwerp 19, de tijdlijn per bestelling, zit sinds 21 november 2026 in de pilot en staat in week 7.
 - [docs/beveiliging.md](docs/beveiliging.md): de verbeterpunten uit de beveiligingsscan van 20 november 2026, A1 tot en met E10.
 - [docs/marktonderzoek.md](docs/marktonderzoek.md): wie hetzelfde doet en wat dat betekent, van 19 november 2026.
 
