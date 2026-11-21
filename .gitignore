@@ -13,3 +13,6 @@ app/dist/
 
 # Eigen foto's, bijvoorbeeld uit WhatsApp. Kunnen leden tonen; de repository is openbaar.
 /photos/
+
+# Uitkomsten van de test met het echte model (tests/model). Alleen lokaal.
+/tests/model/uitkomsten/

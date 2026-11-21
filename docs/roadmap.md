@@ -28,7 +28,7 @@ Onderwerp 22 is een besluit van 21 november 2026: de passkey ("Face ID") die des
 
 | Onderwerp | Wat het oplevert | Start als |
 | --- | --- | --- |
-| 1. Omschrijving via een taalmodel | Marc zet een fles in enkele minuten online, in zijn eigen woorden. Het etiket lezen en tekstvoorstellen uit steekwoorden in zijn stijl, met echte teksten van Marc als voorbeeld, zitten al in de pilot. Hier volgen spraak naar tekst, het leren van zijn stijl uit de teksten die hij in de app goedkeurt, en feiten over de maker opzoeken met bron. De route naar het model is gekozen: de API van Anthropic, met een [bouwplan](bouwplannen/1b-claude-api.md) | De route: nu, vóór week 4 van de pilot. Spraak en stijl: de pilot geslaagd is en Marc in de pilot geregeld een voorstel koos. Opzoeken: Marc in de pilot feiten over de maker zelf blijft intypen |
+| 1. Omschrijving via een taalmodel | Marc zet een fles in enkele minuten online, in zijn eigen woorden. Het etiket lezen en tekstvoorstellen uit steekwoorden in zijn stijl, met echte teksten van Marc als voorbeeld, zitten al in de pilot. Hier volgen spraak naar tekst, het leren van zijn stijl uit de teksten die hij in de app goedkeurt, en feiten over de maker opzoeken met bron. De route naar het model is gekozen en gebouwd: de API van Anthropic, zie de [bouwspecificatie](bouwspecificatie.md), hoofdstuk 5 | De route: nu, vóór week 4 van de pilot. Spraak en stijl: de pilot geslaagd is en Marc in de pilot geregeld een voorstel koos. Opzoeken: Marc in de pilot feiten over de maker zelf blijft intypen |
 | 2. Assistent voor vragen van leden | Leden krijgen direct antwoord op veelgestelde vragen; Marc krijgt alleen de vragen die hem nodig hebben | Er minstens 20 flessen met goedgekeurde tekst zijn en Marc dezelfde vragen steeds terug ziet komen |
 | 3. Campagnes en het beste moment | Marc plant een reeks berichten rond een lijst of bieding en ziet welk moment de meeste bestellingen oplevert | De pilot geslaagd is en de app per melding heeft vastgelegd wanneer hij verstuurd is en wat hij opleverde |
 | 4. Terug op de lijst en op dronk | Leden komen terug voor een wijn die ze lekker vonden, en openen een fles op het goede moment | Onderwerp 14 gebouwd is en er drie maanden aan aankopen en oordelen ligt |
@@ -79,17 +79,17 @@ Er zijn nu zeven teksten van Marc als voorbeeld: vier van "de wijn", één van "
 
 ### De route naar het model
 
-De regels in `domein/tekst.py` en `domein/herkennen.py` werken met elk model: de handler geeft een functie mee die de instructie en de vraag naar het model stuurt en de tekst terugkrijgt. Er is nog geen handler, geen aanroep van een model en geen sleutel. De keuze hieronder kost dus nog niets aan ombouw, en geldt voor herkennen, etiket en teksten samen.
+De regels in `domein/tekst.py` en `domein/herkennen.py` werken met elk model: de handler geeft een functie mee die de instructie en de vraag naar het model stuurt en de tekst terugkrijgt. Sinds 21 november 2026 doet `functions/wijnclub/model.py` dat via de API van Anthropic. De keuze hieronder geldt voor herkennen, etiket en teksten samen.
 
 Op 21 november 2026 besloot Aidan dat het taalmodel niet in de EU hoeft te draaien. Bij het invoeren van een fles gaan alleen Marcs bericht, zijn steekwoorden en de foto van de fles naar het model, nooit gegevens van leden. De rest van de app blijft in de EU. Voor de assistent van onderwerp 2, die wel met leden praat, geldt dit besluit niet.
 
-**Gekozen op 21 november 2026: variant B nu, variant C daarna.** B is uitgewerkt in [bouwplannen/1b-claude-api.md](bouwplannen/1b-claude-api.md), om in een eigen sessie te bouwen. C is stap 3 van dit onderwerp en komt na de pilot.
+**Gekozen op 21 november 2026: variant B nu, variant C daarna.** B is gebouwd op 21 november 2026; wat er staat, beschrijft de [bouwspecificatie](bouwspecificatie.md) onder De route naar het model in hoofdstuk 5. C is stap 3 van dit onderwerp en komt na de pilot.
 
 #### A. Bedrock (afgevallen)
 
 Een taalmodel via Bedrock, met boto3 uit de runtime en zonder sleutel of nieuwe verwerker. Het was het minste werk, maar kan geen feiten opzoeken. Daarmee zou stap 3 een tweede route naar het model vragen.
 
-#### B. De API van Anthropic (gekozen)
+#### B. De API van Anthropic (gekozen, gebouwd)
 
 Marc merkt hetzelfde als in de pilot beschreven: drie voorstellen uit zijn steekwoorden en de velden uit zijn bericht. De route geldt voor herkennen, het etiket en de teksten samen.
 
@@ -372,7 +372,7 @@ Uitgewerkt in [bouwplannen/16a-kenmerken-per-wijn.md](bouwplannen/16a-kenmerken-
 - De regels komen in `domein/kenmerken.py`, met dezelfde opzet als het herkennen van een bericht. Het antwoord van het model is onbetrouwbare invoer: alles buiten de lijst valt weg. Wat het etiket of Marc al gaf, wint.
 - **Dit wijkt af van een regel van onderwerp 1:** het model verzint geen smaken die Marc niet noemde. Die regel blijft voor de tekst in Marcs stem. `volheid` is een schatting uit druif, streek en jaargang die Marc nakijkt, en staat bij de wijn als kenmerk, niet als woorden van Marc.
 - Het wordt gebouwd en staat **uit in productie** tot Marc instemt en een test met twintig wijnen van eerdere lijsten goed uitvalt: verbetert Marc er meer dan één op de vijf, dan vult hij `volheid` zelf in en vervalt het voorstel.
-- De aanroep naar het model zelf komt bij het etiket in week 4 en telt mee in de grens van 100 per dag voor `beheer`. Er komt geen nieuwe dienst, sleutel of afhankelijkheid bij, bovenop wat [bouwplan 1B](bouwplannen/1b-claude-api.md) toevoegt.
+- De aanroep naar het model zelf komt bij het etiket in week 4 en telt mee in de grens van 100 per dag voor `beheer`. Er komt geen nieuwe dienst, sleutel of afhankelijkheid bij, bovenop wat de route naar het model (variant B van onderwerp 1) toevoegde.
 
 ### Stap B: markeren
 

@@ -58,3 +58,16 @@ def open_biedingen(nu: str) -> List[Dict[str, Any]]:
         IndexName="bieding-index",
         KeyConditionExpression=Key("biedingStatus").eq("open") & Key("eindtijd").gt(nu),
     )
+
+
+def tel_modelaanroep(argumenten: Dict[str, Any]) -> bool:
+    """Telt één aanroep van het taalmodel. False als de grens van de dag al bereikt is.
+
+    De argumenten komen uit domein.teller.tel_op.
+    """
+    tabel = _tabel("tellers")
+    try:
+        tabel.update_item(**argumenten)
+    except tabel.meta.client.exceptions.ConditionalCheckFailedException:
+        return False
+    return True

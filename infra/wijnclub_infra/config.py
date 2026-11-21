@@ -24,6 +24,11 @@ class Omgeving:
         """Naam van het geheim in Secrets Manager. De waarde staat nergens in de code."""
         return "wijnclub/{}/mollie-api-sleutel".format(self.naam)
 
+    @property
+    def anthropic_geheim(self) -> str:
+        """Naam van het geheim met de sleutel van Anthropic. Aidan zet de sleutel er zelf in, per omgeving."""
+        return "wijnclub/{}/anthropic-api-sleutel".format(self.naam)
+
 
 def laad(app) -> Omgeving:
     naam = app.node.try_get_context("omgeving") or "test"

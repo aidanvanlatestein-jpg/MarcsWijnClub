@@ -227,3 +227,25 @@ def test_de_jaargang_ligt_tussen_1900_en_2100(jaargang, verwacht):
 def test_duizend_euro_is_de_hoogste_prijs_voor_de_lijst():
     assert herkennen.herken("Wijn J Soave € 1000", model(prijs="1000")).prijs == 100_000
     assert herkennen.herken("Wijn J Soave € 1000,01", model(prijs="1000,01")).prijs is None
+
+
+# ---- De grens op het taalmodel ----
+
+def test_honderd_aanroepen_van_het_model_per_dag_mag_nog():
+    """De voorwaarde staat in DynamoDB. Deze nagebootste tabel voert precies die voorwaarde uit."""
+    from wijnclub.domein import teller
+
+    argumenten = teller.tel_op(NU)
+    assert argumenten["ExpressionAttributeValues"][":grens"] == 100
+    assert argumenten["ConditionExpression"] == "attribute_not_exists(aantal) OR aantal < :grens"
+    assert argumenten["UpdateExpression"].startswith("ADD aantal :een ")
+
+    aantal = None
+    gelukt = 0
+    for _ in range(101):
+        waarden = argumenten["ExpressionAttributeValues"]
+        if aantal is None or aantal < waarden[":grens"]:
+            aantal = (aantal or 0) + waarden[":een"]
+            gelukt += 1
+    assert gelukt == 100
+    assert aantal == 100
