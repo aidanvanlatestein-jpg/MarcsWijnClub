@@ -1,5 +1,5 @@
 import { Camera, Check, ClipboardPaste, Mic, Pencil, Send, Truck, X, ZapOff } from 'lucide-react'
-import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react'
+import { useEffect, useState, type ChangeEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { LiveBalk } from '../onderdelen/Avond'
 import { BonRegels } from '../onderdelen/Bon'
 import { Blad } from '../onderdelen/Blad'
@@ -11,7 +11,8 @@ import { adresRegel, bedrag, dagDatum, euro, kortTijdvak, naamMetJaar, naarInvoe
 import { herkenBericht, leesEuro, leesLetters } from '../regels'
 import type { BeheerTab, Ga } from '../route'
 import { gesorteerd, klaar, korteNaam, levermomenten, opTafel, plus, roepNaam, tellers, useStaat, veilingVanAvond, volgendeLetter, type Staat } from '../staat'
-import type { Bestelling, LeverSoort } from '../types'
+import { KENMERKEN } from '../schakelaars'
+import type { Bestelling, Kleur, LeverSoort, Volheid } from '../types'
 import { voorbeeldBericht, voorbeeldBerichten, voorbeeldEtiket, voorbeeldLeden, voorbeeldLedenBinnen, voorbeeldSnelleZinnen } from '../voorbeeld'
 import { LEVER_WOORD } from './Bestelling'
 
@@ -41,6 +42,9 @@ interface Formulier {
   jaar: string
   druif: string
   streek: string
+  kleur: Kleur | ''
+  land: string
+  volheid: Volheid | ''
   prijs: string
   aantal: string
   tekst: string
@@ -54,6 +58,9 @@ interface Formulier {
 }
 
 type Stap = 'foto' | 'na' | 'soort' | 'klaar'
+
+const KLEUREN: Kleur[] = ['rood', 'wit', 'rosé', 'bubbels', 'zoet']
+const VOLHEDEN: Volheid[] = ['licht', 'midden', 'vol']
 
 /** Wat de bouwspecificatie als foto toestaat. Een camera levert JPEG. */
 const FOTO_SOORTEN = ['image/jpeg', 'image/png', 'image/webp']
@@ -89,6 +96,9 @@ function NieuweFles({ ga }: { ga: Ga }) {
       jaar: h.jaargang ? String(h.jaargang) : '',
       druif: etiket?.druif ?? '',
       streek: etiket?.streek ?? '',
+      kleur: etiket?.kleur ?? '',
+      land: etiket?.land ?? '',
+      volheid: KENMERKEN ? etiket?.volheid ?? '' : '',
       prijs: h.prijs !== undefined ? bedrag(h.prijs) : '',
       aantal: h.aantal ? String(h.aantal) : '',
       tekst: h.tekst,
@@ -100,8 +110,10 @@ function NieuweFles({ ga }: { ga: Ga }) {
       herkomst: '',
       bewaring: '',
     })
-    // Het jaar op het etiket en in het bericht verschillen vaak: dat vraagt de app na.
-    setTwijfel(new Set(h.jaargang ? ['jaar'] : []))
+    // Het jaar op het etiket en in het bericht verschillen vaak: dat vraagt de app na. Kleur, land en licht tot
+    // vol stelt het model voor; Marc kijkt ze na.
+    const voorgesteld: (keyof Formulier)[] = etiket ? ['kleur', 'land', ...(KENMERKEN ? ['volheid' as const] : [])] : []
+    setTwijfel(new Set([...(h.jaargang ? ['jaar' as const] : []), ...voorgesteld]))
     setFout(null)
     setStap('na')
   }
@@ -161,6 +173,7 @@ function NieuweFles({ ga }: { ga: Ga }) {
           letter: letter && !lijst.wijnen.some((w) => w.letter === letter) ? letter : volgendeLetter(staat),
           naam, korteNaam: form.naam.trim() || undefined, producent: form.producent.trim() || undefined, jaargang,
           druif: form.druif.trim() || undefined, streek: form.streek.trim() || undefined,
+          kleur: form.kleur || undefined, land: form.land.trim() || undefined, volheid: (KENMERKEN && form.volheid) || undefined,
           tekst: form.tekst.trim(), spijs: form.spijs.trim() || undefined, drinken: form.drinken.trim() || undefined, foto,
           prijs, voorraad: aantal, partij: aantal, volgorde: lijst.wijnen.reduce((m, w) => Math.max(m, w.volgorde), 0) + 1,
         },
@@ -302,6 +315,9 @@ function NieuweFles({ ga }: { ga: Ga }) {
             <Veld label="Naam" waarde={form.naam} onWijzig={zet('naam')} />
             <Veld label="Jaar" waarde={form.jaar} onWijzig={zet('jaar')} invoer="numeric" twijfel={twijfel.has('jaar')} />
             <Veld label="Druif · streek" waarde={[form.druif, form.streek].filter(Boolean).join(' · ')} onWijzig={(w) => { const [d = '', ...r] = w.split('·'); zet('druif')(d.trim()); zet('streek')(r.join('·').trim()) }} />
+            <Segmenten label="Kleur" opties={KLEUREN} gekozen={form.kleur} onKies={zet('kleur')} twijfel={twijfel.has('kleur')} />
+            <Veld label="Land" waarde={form.land} onWijzig={zet('land')} twijfel={twijfel.has('land')} />
+            {KENMERKEN && <Segmenten label="Licht tot vol" opties={VOLHEDEN} gekozen={form.volheid} onKies={zet('volheid')} twijfel={twijfel.has('volheid')} />}
             <Veld label="Prijs per fles" waarde={form.prijs} onWijzig={zet('prijs')} invoer="decimal" voor="€" />
             <Veld label="Aantal" waarde={form.aantal} onWijzig={zet('aantal')} invoer="numeric" na="flessen" />
           </div>
@@ -417,6 +433,51 @@ function Veld({ label, waarde, onWijzig, invoer, voor, na, twijfel = false }: {
         {na && waarde && <b>{na}</b>}
         <Pencil size={16} aria-hidden />
       </label>
+    </div>
+  )
+}
+
+/**
+ * Een keuze uit een paar woorden op het nakijkscherm, zoals de kleur of licht tot vol. Werkt als een
+ * radiogroep: tikken, of de pijltjestoetsen zoals bij Keuze.
+ */
+function Segmenten<T extends string>({ label, opties, gekozen, onKies, twijfel = false }: {
+  label: string
+  opties: T[]
+  gekozen: T | ''
+  onKies: (w: T) => void
+  twijfel?: boolean
+}) {
+  const toets = (e: KeyboardEvent<HTMLDivElement>) => {
+    const richting = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0
+    if (!richting) return
+    e.preventDefault()
+    const nu = opties.indexOf(gekozen as T)
+    const volgende = opties[nu < 0 ? (richting > 0 ? 0 : opties.length - 1) : (nu + richting + opties.length) % opties.length]
+    onKies(volgende)
+    e.currentTarget.querySelector<HTMLButtonElement>(`[data-id="${CSS.escape(volgende)}"]`)?.focus()
+  }
+  return (
+    <div className={twijfel ? 'veld segment-veld twijfel' : 'veld segment-veld'}>
+      <span>{label}{twijfel && <small>Klopt dit?</small>}</span>
+      <div className="segmenten" role="radiogroup" aria-label={label} onKeyDown={toets}>
+        {opties.map((o, i) => {
+          const aan = o === gekozen
+          return (
+            <button
+              key={o}
+              type="button"
+              role="radio"
+              data-id={o}
+              aria-checked={aan}
+              tabIndex={aan || (!gekozen && i === 0) ? 0 : -1}
+              onClick={() => onKies(o)}
+            >
+              {o}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

@@ -23,8 +23,9 @@ export function Aanbod({ ga }: { ga: Ga }) {
 }
 
 /** "ROOD · ITALIË" */
-export function soortEnLand(w: Pick<Wijn, 'kleur' | 'land'>): string {
-  return [w.kleur, w.land].filter(Boolean).join(' · ').toUpperCase()
+/** "ROOD · ITALIË · VOL". Zonder volheid alleen kleur en land: "ROOD · ITALIË". */
+export function soortEnLand(w: Pick<Wijn, 'kleur' | 'land' | 'volheid'>): string {
+  return [w.kleur, w.land, w.volheid].filter(Boolean).join(' · ').toUpperCase()
 }
 
 // ---- Aankondiging ----

@@ -15,6 +15,8 @@ LIJST_VELDEN = ("lijstId", "titel", "inleiding", "openVan", "openTot")
 WIJN_VELDEN = (
     "wijnId", "letter", "naam", "producent", "jaargang", "druif", "streek", "tekst", "spijs", "drinken",
     "foto", "prijs", "voorraad", "volgorde",
+    # Kenmerken: zonder waarde ontbreken ze. kenmerkenBron gaat niet naar leden.
+    "kleur", "land", "volheid",
 )
 
 

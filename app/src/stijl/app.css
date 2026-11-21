@@ -823,6 +823,16 @@ main { flex: 1; display: block; }
 .herkend-kop span:last-child { color: var(--paper-muted); }
 .veld > span small { display: block; font-size: 13px; color: #6b5412; letter-spacing: 1px; }
 .veld.twijfel { background: #f3ecd7; margin: 0 -16px; padding: 4px 16px; }
+/* Kleur en licht tot vol: een rij segmenten op papier, als radiogroep. Elk tikvlak is minstens 44 px. */
+.veld.segment-veld { flex-direction: column; align-items: stretch; gap: 6px; padding: 10px 0; }
+.veld.segment-veld.twijfel { padding: 10px 16px; }
+.herkend .segmenten { margin: 0; border-color: var(--paper-ink); }
+.herkend .segmenten button {
+  min-width: 0; min-height: 44px; padding: 0 2px; font-size: 15px; letter-spacing: 0.5px; color: var(--paper-muted);
+}
+.herkend .segmenten button + button { border-left: 1px solid #d0d0d0; }
+.herkend .segmenten button[aria-checked='true'] { background: var(--paper-ink); color: var(--paper); }
+.herkend .segmenten button:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
 .veld b { font-size: 20px; font-weight: 700; flex: none; }
 .veld input { text-transform: none; }
 .invoer-groot.wit { color: var(--ink); border-color: var(--line); font-size: 17px; line-height: 23px; min-height: 140px; }
