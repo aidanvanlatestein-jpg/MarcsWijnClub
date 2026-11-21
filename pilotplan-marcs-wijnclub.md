@@ -279,7 +279,7 @@ flowchart LR
         fn["Lambda in Python<br/>één functie per taak"]
         db[("DynamoDB")]
         sch["EventBridge Scheduler<br/>begin, veiling, hamer, sluiten, vervallen"]
-        llm["Taalmodel, Bedrock of API van Anthropic<br/>bericht, etiket, tekstvoorstellen"]
+        llm["API van Anthropic<br/>bericht, etiket, tekstvoorstellen"]
         sec["Secrets Manager<br/>Mollie, meldingen"]
         ses["SES<br/>uitnodiging, inlogcode, terugval"]
         cw["CloudWatch<br/>logboek en alarmen"]
@@ -316,8 +316,8 @@ flowchart LR
 | Geplande taken | EventBridge Scheduler | Eenmalige taken op de begintijd van een avond, het begin van de veiling, de hamer en de eindtijd van de avond. Een taak die elke minuut draait, laat onbetaalde bonnen vervallen, geeft de voorraad terug en stuurt de betaalherinnering |
 | Live bijwerken | Pollen op de HTTP API | Elke 3 seconden zolang het scherm zichtbaar is, voor de avond en de zaal. Bij 30 leden is dat ongeveer 10 aanroepen per seconde; de begrenzing van de API moet daarop zijn ingesteld. Een WebSocket is roadmap onderwerp 17 |
 | Meldingen | Web Push vanuit Lambda, met een service worker in de web-app; e-mail via SES als terugval | De service worker dient alleen voor meldingen, niet om offline te werken. Op een iPhone werkt een melding pas als de app op het beginscherm staat. E-mail is de terugval voor meldingen over een eigen bon of bod en voor "ik ben onderweg", als het lid geen werkend abonnement heeft. Marc krijgt een melding als een bon namens een lid of een gewonnen fles vervalt, en bij een signaal dat voor hem is (zie Volgen en ingrijpen in de besluiten) |
-| Bericht en etiket herkennen, tekst voorstellen | Een taalmodel van Anthropic, via Bedrock of via de API van Anthropic; de keuze staat in onderwerp 1 van de [roadmap](docs/roadmap.md) en valt vóór week 4. Het model hoeft niet in de EU te draaien | Haalt naam, producent, jaargang, aantal, prijs en tekst uit Marcs WhatsApp-bericht, en naam, producent, jaargang, streek, kleur en land van de foto van het etiket. Maakt drie tekstvoorstellen uit Marcs steekwoorden. Marc controleert het resultaat en kiest. Eén model dat ook afbeeldingen leest |
-| Sleutels | Secrets Manager | Mollie-sleutel en de sleutels voor meldingen. In `test` de testsleutel van Mollie |
+| Bericht en etiket herkennen, tekst voorstellen | De API van Anthropic, gekozen op 21 november 2026; zie onderwerp 1 van de [roadmap](docs/roadmap.md) en [bouwplan 1B](docs/bouwplannen/1b-claude-api.md). Het model hoeft niet in de EU te draaien | Haalt naam, producent, jaargang, aantal, prijs en tekst uit Marcs WhatsApp-bericht, en naam, producent, jaargang, streek, kleur en land van de foto van het etiket. Maakt drie tekstvoorstellen uit Marcs steekwoorden. Marc controleert het resultaat en kiest. Eén model dat ook afbeeldingen leest |
+| Sleutels | Secrets Manager | Mollie-sleutel, de sleutel van Anthropic en de sleutels voor meldingen. In `test` de testsleutel van Mollie en een eigen sleutel van Anthropic met een bestedingslimiet |
 | Instellingen | CDK-context bij het uitrollen | Afzenderadres en Marcs WhatsApp-nummer gaan als context mee en komen in de configuratie van de web-app, niet in de repository |
 | Logboek en alarmen | CloudWatch | Alarm bij mislukte betaalmeldingen, een dubbele betaling, een mislukte geplande taak en pieken in geweigerde aanroepen |
 | Opzet van de omgeving | AWS CDK in Python | Alles als code, in dezelfde taal als de Lambda-functies. Per omgeving vier stacks, zie Deployment |
@@ -483,7 +483,7 @@ Zes punten moeten door een jurist bekeken worden voordat de pilot start. De midd
 - De app legt vast op welke melding een lid tikte, om te meten welk moment werkt. Dat staat in de privacyverklaring. Na 180 dagen verdwijnt dat gegeven vanzelf. Laat toetsen of hiervoor toestemming nodig is.
 - De app legt per bestelling de stappen vast, met een tijdstip: gemaakt, betaling gestart, betaald, vervallen, afgeleverd. Dat dient om een bestelling uit te voeren en een fout te herstellen. Er staat geen naam, adres of bedrag in, en na 180 dagen verdwijnt het vanzelf. Het staat in de privacyverklaring; laat toetsen of de uitvoering van de bestelling hiervoor de grondslag is.
 - Alle gegevens staan in een AWS-regio binnen de EU. Het taalmodel is de uitzondering: op 21 november 2026 besloot Aidan dat het niet in de EU hoeft te draaien, omdat er alleen Marcs bericht, zijn steekwoorden en de foto van een fles naartoe gaan, nooit gegevens van leden.
-- De web-app haalt de locatie en andere gegevens uit de foto voordat hij wordt geüpload. Op de foto hoort alleen de fles. Laat de jurist meekijken naar wat AWS of Anthropic met deze gegevens doet; via de API van Anthropic is Anthropic een verwerker en hoort het in de privacyverklaring.
+- De web-app haalt de locatie en andere gegevens uit de foto voordat hij wordt geüpload. Op de foto hoort alleen de fles. Laat de jurist meekijken naar wat Anthropic met deze gegevens doet. Anthropic is een verwerker en hoort in de privacyverklaring. Anthropic verwijdert invoer en uitvoer van de API binnen 30 dagen en traint er standaard niet op; een aanroep die hun misbruikcontrole aanmerkt, kan tot 2 jaar bewaard blijven.
 - Het AWS-account is gedeeld met andere eigen projecten. Wie daar beheerrechten heeft, kan de gegevens van leden lezen; dat hoort in de privacyverklaring. Zie punt E8 en E9 in [docs/beveiliging.md](docs/beveiliging.md).
 - Er komt een korte privacyverklaring in de app, en een lid kan zijn gegevens laten verwijderen: Marc doet dat in Beheer: leden. Bestellingen blijven voor de boekhouding, zonder naam of adres. Betaalgegevens blijven bij Mollie en in Marcs boekhouding zolang de fiscale bewaarplicht dat vraagt.
 - Namen, adressen en bedragen per persoon komen niet in de logbestanden.
@@ -544,7 +544,7 @@ Zet in het AWS-account een budgetalarm op €20 per maand, zodat een fout in de 
 
 **Kosten van het taalmodel**
 
-Het taalmodel kost per token, via Bedrock en via de API van Anthropic. Opzoeken op het web (variant C in onderwerp 1 van de [roadmap](docs/roadmap.md)) kost daarbovenop $10 per 1.000 zoekopdrachten. Een token is een stukje tekst van ongeveer een halve tot driekwart woord, en een foto telt als een vast aantal tokens. Er zijn geen vaste kosten. De schatting hieronder gebruikt de prijzen die Anthropic zelf rekent, op 20 november 2026: Claude Haiku 5.5 $0,10 per miljoen tokens in en $0,50 uit, Claude Sonnet 5.5 $2 in en $10 uit. Bedrock heeft eigen prijzen, mogelijk met een toeslag voor een regio in de EU. Controleer ze op de prijspagina van Bedrock bij de keuze van het model in week 4.
+Het taalmodel kost per token, naar de prijzen van de API van Anthropic. Opzoeken op het web (variant C in onderwerp 1 van de [roadmap](docs/roadmap.md)) kost daarbovenop $10 per 1.000 zoekopdrachten. Een token is een stukje tekst van ongeveer een halve tot driekwart woord, en een foto telt als een vast aantal tokens. Er zijn geen vaste kosten. De schatting hieronder gebruikt de prijzen die Anthropic zelf rekent, op 20 november 2026: Claude Haiku 5.5 $0,10 per miljoen tokens in en $0,50 uit, Claude Sonnet 5.5 $2 in en $10 uit. Controleer ze op de prijspagina van Anthropic bij de keuze van het model in week 4.
 
 | Per wijn | Tokens, ruw geschat | Klein model (Haiku 5.5) | Middelgroot model (Sonnet 5.5) |
 | --- | --- | --- | --- |

@@ -67,7 +67,7 @@ In [handlers/aanbod.py](../../functions/wijnclub/handlers/aanbod.py) komen `kleu
 
 - Stap B en C van onderwerp 16.
 - Tannine, zuur, zoet, smaken, spijzen en een lijst druiven.
-- De echte aanroep naar Bedrock, de rechten in IAM en de grens per dag. Er is nog geen handler voor het etiket; die komt in week 4.
+- De echte aanroep naar het model, de rechten in IAM en de grens per dag. Die komen uit [bouwplan 1B](1b-claude-api.md). Er is nog geen handler voor het etiket; die komt in week 4.
 - Uitrollen. Geen `cdk deploy`.
 
 ## De poort naar productie

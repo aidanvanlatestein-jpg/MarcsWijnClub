@@ -28,7 +28,7 @@ Onderwerp 22 is een besluit van 21 november 2026: de passkey ("Face ID") die des
 
 | Onderwerp | Wat het oplevert | Start als |
 | --- | --- | --- |
-| 1. Omschrijving via een taalmodel | Marc zet een fles in enkele minuten online, in zijn eigen woorden. Het etiket lezen en tekstvoorstellen uit steekwoorden in zijn stijl, met echte teksten van Marc als voorbeeld, zitten al in de pilot. Hier volgen spraak naar tekst, het leren van zijn stijl uit de teksten die hij in de app goedkeurt, en feiten over de maker opzoeken met bron. De route naar het model is nog een keuze uit drie varianten | Spraak en stijl: de pilot geslaagd is en Marc in de pilot geregeld een voorstel koos. De route naar het model: vóór week 4 van de pilot. Opzoeken: Marc in de pilot feiten over de maker zelf blijft intypen |
+| 1. Omschrijving via een taalmodel | Marc zet een fles in enkele minuten online, in zijn eigen woorden. Het etiket lezen en tekstvoorstellen uit steekwoorden in zijn stijl, met echte teksten van Marc als voorbeeld, zitten al in de pilot. Hier volgen spraak naar tekst, het leren van zijn stijl uit de teksten die hij in de app goedkeurt, en feiten over de maker opzoeken met bron. De route naar het model is gekozen: de API van Anthropic, met een [bouwplan](bouwplannen/1b-claude-api.md) | De route: nu, vóór week 4 van de pilot. Spraak en stijl: de pilot geslaagd is en Marc in de pilot geregeld een voorstel koos. Opzoeken: Marc in de pilot feiten over de maker zelf blijft intypen |
 | 2. Assistent voor vragen van leden | Leden krijgen direct antwoord op veelgestelde vragen; Marc krijgt alleen de vragen die hem nodig hebben | Er minstens 20 flessen met goedgekeurde tekst zijn en Marc dezelfde vragen steeds terug ziet komen |
 | 3. Campagnes en het beste moment | Marc plant een reeks berichten rond een lijst of bieding en ziet welk moment de meeste bestellingen oplevert | De pilot geslaagd is en de app per melding heeft vastgelegd wanneer hij verstuurd is en wat hij opleverde |
 | 4. Terug op de lijst en op dronk | Leden komen terug voor een wijn die ze lekker vonden, en openen een fles op het goede moment | Onderwerp 14 gebouwd is en er drie maanden aan aankopen en oordelen ligt |
@@ -77,35 +77,29 @@ Er zijn nu zeven teksten van Marc als voorbeeld: vier van "de wijn", één van "
 - **Een smalle basis.** Twee teksten gaan over hetzelfde domein en twee over zoete wijn. De kans dat "honing, abrikoos" of "edele rotting" in een tekst over een andere wijn belandt, is reëel. De test met tien sets steekwoorden moet daar per voorstel op letten.
 - **Eén bericht, drie delen.** De tekst over het domein en Marcs eigen tekst over dezelfde wijnen lijken uit één bericht te komen. Marc schrijft dus soms alle drie de opbouwen achter elkaar.
 
-### Drie varianten voor de route naar het model
+### De route naar het model
 
 De regels in `domein/tekst.py` en `domein/herkennen.py` werken met elk model: de handler geeft een functie mee die de instructie en de vraag naar het model stuurt en de tekst terugkrijgt. Er is nog geen handler, geen aanroep van een model en geen sleutel. De keuze hieronder kost dus nog niets aan ombouw, en geldt voor herkennen, etiket en teksten samen.
 
 Op 21 november 2026 besloot Aidan dat het taalmodel niet in de EU hoeft te draaien. Bij het invoeren van een fles gaan alleen Marcs bericht, zijn steekwoorden en de foto van de fles naar het model, nooit gegevens van leden. De rest van de app blijft in de EU. Voor de assistent van onderwerp 2, die wel met leden praat, geldt dit besluit niet.
 
-#### A. Bedrock
+**Gekozen op 21 november 2026: variant B nu, variant C daarna.** B is uitgewerkt in [bouwplannen/1b-claude-api.md](bouwplannen/1b-claude-api.md), om in een eigen sessie te bouwen. C is stap 3 van dit onderwerp en komt na de pilot.
 
-- **Wat Marc merkt:** drie voorstellen uit zijn steekwoorden, zoals in de pilot beschreven.
-- **De aanroep:** de handler roept `bedrock-runtime` aan met boto3 uit de runtime van Lambda. Geen nieuw pakket en geen sleutel; de functie mag via IAM precies één model aanroepen.
-- **Bouwen:** een handler per route, de rechten op het model en een stacktest daarop. `tekst.py` blijft zoals het is.
-- **Kosten:** de prijzen van Bedrock, die afwijken van die van Anthropic. Zie Kosten van het taalmodel in het plan.
-- **Voor:** het minste werk, geen nieuwe verwerker, alles in het eigen AWS-account.
-- **Tegen:** kan geen feiten opzoeken, dus stap 3 kan hier niet. Mogelijk vraagt een model een abonnement in AWS Marketplace; dat is een handeling in het gedeelde account.
+#### A. Bedrock (afgevallen)
 
-#### B. De API van Anthropic, zelfde werking
+Een taalmodel via Bedrock, met boto3 uit de runtime en zonder sleutel of nieuwe verwerker. Het was het minste werk, maar kan geen feiten opzoeken. Daarmee zou stap 3 een tweede route naar het model vragen.
 
-- **Wat Marc merkt:** hetzelfde als bij A.
-- **De aanroep:** het pakket `anthropic` van Anthropic, met een vaste versie. Versie 2.12.0 van 20 november 2026 is puur Python en noemt Python 3.14. Het komt in een Lambda-layer, zoals de bouwspecificatie voorschrijft voor een pakket buiten de runtime, en `pip-audit` in de controles dekt het.
-- **De sleutel:** in Secrets Manager als `wijnclub/<omgeving>/anthropic-api-sleutel`, naast die van Mollie in `infra/wijnclub_infra/config.py`. In `test` een aparte sleutel met een lage bestedingslimiet in de Console van Anthropic. De functie mag alleen dit ene geheim lezen, met een stacktest (C6 in [beveiliging.md](beveiliging.md)).
-- **Het antwoord:** gestructureerde uitvoer van de API, met een JSON-schema voor `{"voorstellen": [...]}`. Dan is de JSON altijd geldig; de regel "geef alleen een JSON-object terug" kan uit de instructie. De controles in `lees_antwoord` blijven: getallen, links, lengte en de markering van nieuwe woorden.
-- **Een weigering:** de handler kijkt naar de reden waarom het model stopte. Weigert het model of loopt het antwoord af, dan krijgt Marc "vul zelf in", net als bij de limiet.
-- **Het model:** de test met tien sets steekwoorden draait op drie modellen. Per wijn kosten drie voorstellen, met 2.000 tokens in en 1.500 uit, ongeveer $0,001 met Claude Haiku 5.5, $0,02 met Claude Sonnet 5.5 en $0,04 met Claude Opus 5.5, naar de prijzen van Anthropic op 21 november 2026. Begin met Haiku 5.5 en stap alleen over als de test tegenvalt.
-- **Bouwen:** de layer, het geheim met de rechten, een klein hulpje dat de sleutel één keer per opstart leest, en een tijdslimiet van 30 in plaats van 10 seconden voor deze functies (`_functie()` in `infra/wijnclub_infra/api_stack.py`).
-- **Voor:** nieuwe modellen en functies zijn er meteen, en stap 3 bouwt hierop voort zonder een tweede route.
-- **Tegen:** Anthropic wordt een nieuwe verwerker, met een regel in de privacyverklaring. De verwerking is wereldwijd of in de VS: de API kent geen keuze voor de EU.
-- **Ondervariant: Claude op het platform van AWS.** Dezelfde API met dezelfde SDK, maar toegang via IAM zonder sleutel en de rekening via AWS. Aanmelden gebeurt in de console van AWS, die het abonnement in AWS Marketplace zelf regelt. Dat is een handeling in het gedeelde account en gebeurt alleen na een ja van Aidan.
+#### B. De API van Anthropic (gekozen)
 
-#### C. De API van Anthropic met opzoeken
+Marc merkt hetzelfde als in de pilot beschreven: drie voorstellen uit zijn steekwoorden en de velden uit zijn bericht. De route geldt voor herkennen, het etiket en de teksten samen.
+
+- Het pakket `anthropic` in een Lambda-laag, de sleutel in Secrets Manager met per omgeving een eigen werkruimte en bestedingslimiet, en een antwoord in een vast JSON-schema.
+- Weigert het model of is de API niet bereikbaar, dan vult Marc zelf in.
+- Drie voorstellen kosten per wijn ongeveer $0,001 met Claude Haiku 5.5, $0,02 met Claude Sonnet 5.5 en $0,04 met Claude Opus 5.5, naar de prijzen van Anthropic op 21 november 2026. De test met het echte model kiest tussen de drie.
+- Anthropic wordt een verwerker, met een regel in de privacyverklaring. De verwerking is wereldwijd of in de VS; de API kent geen keuze voor de EU.
+- Wat er gebouwd wordt, in welke volgorde en met welke tests, staat in het bouwplan.
+
+#### C. De API van Anthropic met opzoeken (stap 3, na de pilot)
 
 Bouwt voort op B en maakt stap 3 mogelijk. Het gaat in twee aanroepen, zodat Marc elk feit ziet voordat het in een tekst komt.
 
@@ -119,15 +113,15 @@ Bouwt voort op B en maakt stap 3 mogelijk. Het gaat in twee aanroepen, zodat Mar
 - **Bouwen:** een extra route, een tabel of item voor de uitkomst, een scherm om feiten aan te vinken (niet getekend in design-v4) en een uitbreiding van `tekst.py` met feiten als bron.
 - **Tegen:** de meeste bouwtijd, en Marc doet een stap extra per fles. Of dat minder tijd kost dan zelf intypen, moet een proef op tien flessen uitwijzen.
 
-#### Aanbeveling
+#### Nagezocht op 21 november 2026
 
-Kies B voor de pilot, in week 4, voor herkennen, etiket en teksten samen, zodat er één route naar het model is. Bouw C daarna als stap 3 van dit onderwerp, als Marc in de pilot feiten over de maker zelf blijft intypen. Kies A als opzoeken er nooit komt en een nieuwe verwerker zwaarder weegt dan de snelheid van nieuwe modellen: het is dan het minste werk.
+- **Bewaren en training.** Anthropic verwijdert invoer en uitvoer van de API binnen 30 dagen en gebruikt ze standaard niet om modellen te trainen. Merkt de misbruikcontrole van Anthropic een aanroep aan, dan kan die tot 2 jaar bewaard blijven. Zie [hoe lang Anthropic gegevens bewaart](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data).
+- **Plaats van verwerking.** De API kent alleen "wereldwijd" en "VS".
+- **Vast JSON-schema.** Werkt op Claude Haiku 5.5, Sonnet 5.5 en Opus 5.5. Het schema kent geen maximale lengte en geen maximaal aantal; die grenzen blijven in `lees_antwoord`.
+- **Het pakket.** `anthropic` 2.12.0 vraagt Python 3.10 of hoger. De pipeline draait 3.14; een lokale omgeving op 3.9 kan het niet laden.
+- **Zoeken op het web** (voor C) staat standaard aan in de Console. Roep het zoekgereedschap direct aan, zonder het automatische filteren: dat filteren draait code bij Anthropic en valt onder een andere bewaarregel.
 
-#### Nog nazoeken
-
-- Hoe lang Anthropic de invoer bewaart en of die voor training gebruikt wordt. De pagina over bewaren is nog niet nagekeken.
-- Welke Claude-modellen Bedrock aanbiedt, in welke regio en tegen welke prijs, als A in beeld blijft.
-- Of het zoekgereedschap voor de organisatie aan staat in de Console van Anthropic. Het staat standaard aan, tenzij een beheerder het uitzette.
+Nog open: de [verwerkersovereenkomst](https://www.anthropic.com/legal/data-processing-addendum) van Anthropic is nog niet gelezen. Laat de jurist meekijken voordat `prod` een sleutel krijgt.
 
 #### Vragen voor Marc
 
@@ -378,7 +372,7 @@ Uitgewerkt in [bouwplannen/16a-kenmerken-per-wijn.md](bouwplannen/16a-kenmerken-
 - De regels komen in `domein/kenmerken.py`, met dezelfde opzet als het herkennen van een bericht. Het antwoord van het model is onbetrouwbare invoer: alles buiten de lijst valt weg. Wat het etiket of Marc al gaf, wint.
 - **Dit wijkt af van een regel van onderwerp 1:** het model verzint geen smaken die Marc niet noemde. Die regel blijft voor de tekst in Marcs stem. `volheid` is een schatting uit druif, streek en jaargang die Marc nakijkt, en staat bij de wijn als kenmerk, niet als woorden van Marc.
 - Het wordt gebouwd en staat **uit in productie** tot Marc instemt en een test met twintig wijnen van eerdere lijsten goed uitvalt: verbetert Marc er meer dan één op de vijf, dan vult hij `volheid` zelf in en vervalt het voorstel.
-- De aanroep naar Bedrock zelf komt bij het etiket in week 4 en telt mee in de grens van 100 per dag voor `beheer`. Er komt geen nieuwe dienst, sleutel of afhankelijkheid bij.
+- De aanroep naar het model zelf komt bij het etiket in week 4 en telt mee in de grens van 100 per dag voor `beheer`. Er komt geen nieuwe dienst, sleutel of afhankelijkheid bij, bovenop wat [bouwplan 1B](bouwplannen/1b-claude-api.md) toevoegt.
 
 ### Stap B: markeren
 
@@ -456,7 +450,7 @@ Er zijn twee routes. Ze sluiten elkaar niet uit.
 - **Diensten die wel foto's bewerken.** remove.bg lijkt in de EU te verwerken; dat moet in hun verwerkersovereenkomst bevestigd worden. Photoroom verwerkt in de VS, en het model van Stability op Bedrock draait alleen in de VS. Ze kosten enkele centen per foto. Elke dienst is een nieuwe verwerker, met een sleutel in Secrets Manager en een plek in de privacyverklaring.
 - **Beeldmodellen die een nieuwe foto maken.** Niet gebruiken. Ze kunnen het etiket, de jaargang of de vorm van de fles veranderen, en dan ziet een lid een andere fles dan het koopt.
 
-Voor Claude geldt de keuze van de route uit onderwerp 1: variant A (Bedrock) of B (de API van Anthropic). Sinds 21 november 2026 hoeft het taalmodel niet in de EU te draaien, omdat er alleen een foto van de fles naartoe gaat.
+Voor Claude geldt de route uit onderwerp 1: de API van Anthropic, gekozen op 21 november 2026. Sinds 21 november 2026 hoeft het taalmodel niet in de EU te draaien, omdat er alleen een foto van de fles naartoe gaat.
 
 Het voorstel is beide te combineren: route A maakt het pakshot, Claude controleert de foto en het resultaat. De keuze volgt na de proef.
 
