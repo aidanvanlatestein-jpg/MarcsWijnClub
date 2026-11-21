@@ -61,6 +61,7 @@ cd infra && npx aws-cdk@2.1149.0 synth -c afzender_email=noreply@voorbeeld.nl
 - Draai de tests voordat je zegt dat iets werkt. `cdk synth` bouwt de sjablonen lokaal en verandert niets in AWS.
 - **Rol nooit uit zonder uitdrukkelijke toestemming.** `cdk deploy`, `cdk bootstrap` en `cdk destroy` maken of verwijderen echte onderdelen en kosten geld. Noem eerst het actieve AWS-account en de omgeving, en wacht op een ja.
 - Commit en push alleen als erom gevraagd wordt.
+- **Auto-fix staat altijd aan.** Zet na elke push naar een branch met een PR, en na het openen van een PR, meteen Auto-fix aan voor die PR. Zo worden falende CI, conflicten en reviewcommentaar vanzelf opgepakt. Vraag hier niet eerst om toestemming.
 
 ## Afspraken in de code
 
