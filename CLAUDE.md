@@ -4,8 +4,8 @@
 
 Een besloten web-app voor de wijnverkoop van Marc, een privéchef in Roermond (marckookt.com). Marc verkoopt nu wijn via een WhatsApp-groep van ongeveer 120 mensen. De app vervangt het bestellen in die groep door twee vormen:
 
-- **De lijst:** wijnen tegen vaste prijs, enkele uren open. Een lid bestelt meerdere wijnen in één keer en kiest een afhaalpunt. Betalen met iDEAL volgt zodra de lijst sluit.
-- **De bieding:** bijzondere flessen, het hoogste bod op de eindtijd wint.
+- **De lijst:** wijnen tegen vaste prijs, op een avond die enkele uren duurt. Marc zet ze een voor een op tafel. Een lid bestelt meerdere wijnen in één keer, kiest brengen of halen en betaalt meteen met iDEAL.
+- **De veiling** (in code: de bieding): één bijzondere fles aan het eind van de avond, het hoogste bod op de eindtijd wint.
 
 Het doel is een pilot met 20 tot 30 leden. Het is geen marktplaats tussen leden en geen product voor andere verkopers.
 
@@ -29,8 +29,11 @@ Dit project is van Aidan persoonlijk. Het heeft niets te maken met een werkgever
 
 | Bestand of map | Inhoud |
 | --- | --- |
-| `pilotplan-marcs-wijnclub.md` | Het plan: scope, schermen, architectuur, CI/CD, planning, succescriteria |
-| `docs/bouwspecificatie.md` | Bouwniveau: tabellen en sleutels, levensloop van een bestelling, bieding, API. Hoofdstuk 8 zegt wat al gebouwd is |
+| `pilotplan-marcs-wijnclub.md` | Het plan: begrippen, besluiten, scope, schermen, architectuur, CI/CD, planning, succescriteria. Begint met wat je leest om de app opnieuw te bouwen |
+| `docs/bouwspecificatie.md` | Bouwniveau: tabellen en sleutels, levensloop van een avond en een bestelling, bieding, API. Hoofdstuk 8 zegt wat al gebouwd is |
+| `docs/roadmap.md` | Wat er na de pilot kan komen, onderwerp 1 tot en met 17 |
+| `docs/beveiliging.md` | Verbeterpunten uit de beveiligingsscan, A1 tot en met E10 |
+| `docs/marktonderzoek.md` | Wie hetzelfde doet en wat dat betekent |
 | `design-v4/` | Het ontwerp sinds 20 november 2026: `DESIGN.md` en de schermen. De specificatie van de schermen; wat V4 niet tekent, staat in `design-v3/` |
 | `wijnclub-prototype.html` | Het eerste klikbare prototype, achterhaald. Het klikbare prototype is nu de web-app in `app/` |
 | `functions/wijnclub/` | Lambda-functies in Python. `domein/` bevat de regels zonder AWS |

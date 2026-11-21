@@ -4,7 +4,7 @@ Ontwerp voor de pilot uit `../pilotplan-marcs-wijnclub.md`. Dit document en de m
 
 **Wat waar wint**
 
-- **Functie, regels, data en beveiliging:** het pilotplan en `../docs/bouwspecificatie.md`. Sinds 20 november 2026 volgen die V4 op het betalen en de levering (zie "Wat V4 aan de regels verandert").
+- **Functie, regels, data en beveiliging:** het pilotplan en `../docs/bouwspecificatie.md`. Sinds 20 november 2026 volgen die V4 op het betalen en de levering (zie "Wat V4 aan de regels verandert"). Sinds 21 november 2026 staan de open beslissingen uit V3 (rust, wie bood, live, de rol van Marc, de avond sluiten) als besluit of voorlopige bouwkeuze in de besluiten van het plan.
 - **Uiterlijk, opmaak en interactie:** dit document en de schermen.
 - **Tegenstrijdig of niet beschreven:** vraag het na, niet gokken.
 
@@ -75,9 +75,11 @@ De tokens, de typografie, de ruimte en de vorm zijn ongewijzigd ten opzichte van
 | 20 | `20-marc-5-live-verkopen.png` | `/beheer` | Marc presenteert de avond | ZET DE CHIANTI OP TAFEL |
 | 21 | `21-marc-6-afleveren.png` | `/beheer/afleveren` | Brengen, halen, klaar; betaallink sturen | LAAT WETEN: IK BEN ONDERWEG |
 
+In de web-app staan de routes achter een hekje: `/wijn/:id` is `#/wijn/:id`. De volledige lijst staat in `../docs/bouwspecificatie.md`, hoofdstuk 1.
+
 Zonder `V4`-frame in de tabel hierboven:
 
-- **De bijzondere fles:** de poster met spraakbericht, herkomst en bewaring. Komt uit V3 (scherm 06) en is te openen vanaf de zaal.
+- **De bijzondere fles:** de poster met spraakbericht, herkomst en bewaring. Komt uit V3 (scherm 06) en is te openen vanaf de aankondiging en de zaal.
 - **Net op:** komt uit V3 (scherm 16), zonder letters.
 - **Je bestellingen:** nog niet getekend. Het lid komt er via de terugblik na de avond.
 - **Marc:** het scherm met voorwaarden en privacy. Nog niet getekend, en zonder tab.
