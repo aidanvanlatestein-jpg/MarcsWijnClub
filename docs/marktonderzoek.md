@@ -52,3 +52,24 @@ Geen van de vier heeft een bieding, en geen van de vier heeft een app.
 
 - **iDEAL wordt Wero.** Sinds eind januari 2026 staat het gezamenlijke logo bij webwinkels. De technische overstap loopt sinds oktober 2026 via de betaaldienstverlener, en iDEAL blijft naar verwachting tot eind 2027 beschikbaar, volgens [ABN AMRO](https://www.abnamro.nl/nl/zakelijk/producten/betalen/winkels-en-webshops/ideal-wordt-wero.html) en [Emerce](https://www.emerce.nl/nieuws/overgang-ideal-wero-begint-januari-2026). In 2027 komen er volgens ABN AMRO betaalvormen bij voor abonnementen en online bestellingen. Wat Mollie precies doet en wanneer, is niet nagezocht. Schermteksten zeggen beter "betalen" dan "iDEAL", en vraag Mollie of Wero een bedrag kan reserveren: dat zou het risico van de niet-betalende winnaar wegnemen.
 - **Leeftijdscontrole bij online verkoop.** In januari 2026 is een [wetsvoorstel tot wijziging van de Alcoholwet](https://www.njb.nl/wetgeving/wetsvoorstellen/wijziging-alcoholwet/) ingediend over de naleving van de leeftijdsgrens bij online verkoop. Of het is aangenomen, is niet gevonden. Het [Ondernemersplein](https://ondernemersplein.overheid.nl/bedrijfsvoering/juridische-zaken/doe-een-leeftijdscontrole-bij-alcohol-verkopen-op-afstand/) schrijft nu al een controle voor bij de aankoop en bij de aflevering, met een vastgelegde werkwijze. Neem dit mee in de juridische check bij het punt Leeftijd.
+
+## Smaak en personalisatie
+
+Nagezocht op 21 november 2026 voor onderwerp 16 op de [roadmap](roadmap.md), Mijn smaak. De vraag was hoe anderen een koper laten kiezen op smaak, en wat daarvan past bij een club met zes tot tien wijnen per avond.
+
+| Wie | Wat ze doen | Wat het betekent voor de club |
+| --- | --- | --- |
+| Vivino | Smaakschalen per wijn (licht tot vol, zacht tot fris, soepel tot stevig, droog tot zoet) uit [recensies van de gebruikers](https://www.vivino.com/en/wine-news/what-are-wine-taste-characteristics-a-vivino-guide). De score [Match for You](https://www.vivino.com/en/wine-news/vivinos-match-for-you-score-explained-how-we-learn-your-taste) komt uit wat iemand zelf beoordeelde, vanaf ongeveer vijf oordelen, plus druiven en streken die iemand zelf aanvinkt | De schalen steunen op miljoenen recensies; hier schat één model en kijkt één persoon na. Wat iemand kocht en ervan vond, voorspelt beter dan wat iemand invult |
+| Firstleaf en Bright Cellars | Een korte quiz bij de start, daarna sturen de oordelen op elke doos de keuze, volgens [Modern Retail](https://www.modernretail.co/retailers/inside-firstleafs-data-driven-approach-to-wine-subscriptions/) en reviews | Ingevulde wensen zijn een begin. De oordelen van onderwerp 14 zijn de volgende stap |
+| Clubs van restaurants op Table22 | De keuze van de chef, of één grove keuze zoals [alleen rood](https://www.table22.com/post/lenoir-wine-club) | Bij een kleine selectie van iemand die je vertrouwt, volstaat één grove keuze |
+| Albert Heijn | Een filter wijnsmaak met [soepel en stevig](https://www.ah.nl/producten/wijn-en-bubbels/rode-wijn/soepele-rode-wijn), naast druif en land | Eén as per kleur is wat gewone kopers gebruiken |
+| Grand Cru Wijnen | Een [smaakprofiel met 27 elementen](https://www.grandcruwijnen.nl/en/knowledge-base/how-can-i-choose-a-wine-that-fits-my-flavor-preference-out-of-the-huge-assortment) | Werkt bij duizenden wijnen, niet bij tien |
+| Meldingen in het algemeen | Gerichte meldingen worden vaker geopend dan meldingen aan iedereen, volgens [Airship](https://www.airship.com/blog/mobile-app-push-notification-benchmarks-for-2023-have-arrived/) en [Localytics](https://martech.org/study-targeted-mobile-push-messages-293-percent-effective/) | Het ondersteunt een melding op maat in richting. De cijfers komen van verkopers van meldingsdiensten en zijn deels oud |
+
+Wat dit betekent:
+
+- **Eén kenmerk erbij is genoeg.** Kleur, land en druif staan al in de pilot. Licht tot vol is de as die kopers gebruiken, en die een model uit druif, streek en jaargang redelijk kan schatten.
+- **Markeren, niet verbergen.** Filters zijn bedoeld om een grote lijst klein te maken. Een lijst van tien wijnen is al klein, en verbergen haalt Marcs keuze uit beeld.
+- **De echte winst zit in de melding en in de oordelen.** Een melding die alleen komt als er iets voor je bij zit, en later een voorkeur uit wat je kocht en lekker vond.
+
+Niet gevonden: een onderzoek dat meet hoe goed een taalmodel de body, tannine of zuren van een wijn schat uit druif en streek. Hoe Vivino zijn schalen precies berekent, staat nergens openbaar. Grapedistrict stelt in de winkel minstens zes smaakvragen, maar welke, is niet gevonden.
