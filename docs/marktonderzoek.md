@@ -1,7 +1,6 @@
 # Marktonderzoek: Marcs wijnclub
 
-Verhuisd uit het [pilotplan](../pilotplan-marcs-wijnclub.md) op 21 november 2026; de tekst is van 19 november 2026. Sinds ontwerp V4 (20 november 2026) zijn drie zinnen bijgewerkt: de pilot kent geen afhaalpunten en geen betaling na het sluiten meer, maar brengen of halen en betalen bij het bestellen.
-
+Verhuisd uit het [pilotplan](../pilotplan-marcs-wijnclub.md) op 21 november 2026; de tekst is van 19 november 2026. Sinds ontwerp V4 (20 november 2026) zijn drie zinnen bijgewerkt: de pilot kent geen afhaalpunten en geen betaling na het sluiten meer, maar brengen of halen en betalen bij het bestellen. Op 21 november 2026 is de zin over het opgeld bijgewerkt.
 
 Er is geen app gevonden die doet wat de wijnclub doet, maar het model zelf is niet nieuw: minstens drie Nederlandse wijnverkopers verkopen op dezelfde manier via een WhatsApp-groep, zonder app. De echte concurrent van de app is daarmee WhatsApp zelf. Voor de bieding bestaan grote veilinghuizen, die de koper ongeveer een kwart bovenop het bod rekenen.
 
@@ -44,7 +43,7 @@ Geen van de vier heeft een bieding, en geen van de vier heeft een app.
 
 - **Het model is bewezen, de app niet.** Drie verkopers draaien dit in WhatsApp en één werft uitdrukkelijk met "geen webshop, geen account". De pilot moet dus aantonen dat een app sneller is dan een antwoord in de groep. Het succescriterium van een halve minuut en het invoeren namens een lid zijn daarvoor de juiste keuzes.
 - **Niemand combineert een lijst met een bieding.** De verkopers in WhatsApp bieden niet, de veilinghuizen hebben geen lijst van één verkoper die je kent.
-- **De bieding kost het lid geen opgeld.** Bij de veilinghuizen komt er ongeveer een kwart bovenop het bod. In de club is het bod de prijs. Dat staat nu nergens in de app en hoort op het scherm van de bijzondere fles.
+- **De bieding kost het lid geen opgeld.** Bij de veilinghuizen komt er ongeveer een kwart bovenop het bod. In de club is het bod de prijs. Dat stond op 19 november 2026 nergens in de app; sindsdien staat het in het plan als regel voor de veiling en op het scherm van de bijzondere fles.
 - **Marc is het onderscheid.** Geen van de gevonden aanbieders kookt. Het advies wat je erbij eet, de fles die aan tafel opengaat en brengen of halen in de eigen regio kan een landelijke verkoper niet namaken.
 - **Wat anderen hebben en de pilot niet:** een wachtlijst, een vast ritme, flessen laten staan tot er een doos is, een lid dat een nieuw lid voorstelt, proeverijen, en bij veilingen een maximaal bod, een richtprijs en volgen. Die staan nu als onderwerp 4 tot en met 12 op de [roadmap](roadmap.md).
 - **Terugkomen is de zwakke plek van online wijnverkoop.** Volgens [gegevens van Commerce7](https://wineindustryadvisor.com/2026/10/07/more-than-8-in-10-first-time-winery-web-buyers-dont-order-again-within-a-year-new-commerce7-data-shows/) bestelt meer dan acht op de tien nieuwe webklanten van wijnhuizen in de Verenigde Staten en Canada binnen een jaar niet opnieuw; wie terugkomt, doet dat meestal binnen twee maanden. Dat zijn webwinkels, geen besloten groep, dus het is een vraag en geen maatstaf. De pilot volgt daarom welk deel van de leden op een tweede en derde lijst bestelt; dat staat bij de succescriteria, zonder streefwaarde.
