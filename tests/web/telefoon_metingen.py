@@ -2,6 +2,7 @@
 
 Elke functie geeft een lijst met overtredingen terug, zodat een mislukte test zegt wat er mis is.
 """
+import re
 
 # Wat je kunt aantikken. De gouden voorbeeldbalk telt niet mee: die bestaat alleen in het prototype.
 _TIKVLAKKEN = """() => {
@@ -78,6 +79,39 @@ _VAK = """(sel) => {
 }"""
 
 
+# Velden waarin je typt. Een keuzevakje of een verborgen veld voor een foto telt niet mee.
+_INVOER = """() => {
+  const uit = [];
+  for (const el of document.querySelectorAll('input, textarea, select')) {
+    if (['checkbox', 'radio', 'file', 'hidden', 'range'].includes(el.type) || el.closest('.voorbeeld')) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) continue;
+    const fs = parseFloat(getComputedStyle(el).fontSize);
+    if (fs < 16) uit.push(`${el.getAttribute('aria-label') || el.id || el.name || el.tagName}: ${fs}px`);
+  }
+  return [...new Set(uit)];
+}"""
+
+# Een animatie die eindigt, zoals een kaart die in beeld schuift. Een stip die blijft knipperen telt niet mee.
+_BEWEEGT = """() => document.getAnimations().some((a) => {
+  const duur = a.effect && a.effect.getComputedTiming().endTime;
+  return a.playState === 'running' && Number.isFinite(duur);
+})"""
+
+
+def rustig(pagina):
+    """Wacht tot wat in beeld schuift stilstaat: halverwege een animatie meet je een doorzichtige tekst."""
+    pagina.wait_for_function(f"() => !({_BEWEEGT})()")
+
+
+def centen(tekst):
+    """Het eerste bedrag in een tekst, in hele centen: "€ 13,50" is 1350, "€ 1.250" is 125000."""
+    gevonden = re.search(r"(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{2}))?", tekst)
+    if not gevonden:
+        raise AssertionError(f"geen bedrag in: {tekst!r}")
+    return int(gevonden.group(1).replace(".", "")) * 100 + int(gevonden.group(2) or 0)
+
+
 def horizontaal_scrollen(pagina):
     breed = pagina.evaluate("() => document.documentElement.scrollWidth - innerWidth")
     return [f"de pagina is {breed} px breder dan het scherm"] if breed > 0 else []
@@ -104,14 +138,34 @@ def buiten_beeld(pagina, *selectors):
     return uit
 
 
+def kleine_invoer(pagina):
+    """M6: een veld met tekst onder 16 px laat een iPhone inzoomen."""
+    return pagina.evaluate(_INVOER)
+
+
+def onderkant_te_hoog(pagina):
+    """M3: de vaste onderkant neemt hoogstens een kwart van de hoogte in."""
+    maten = pagina.evaluate("""() => {
+      const onder = document.querySelector('.onderkant');
+      return onder ? { hoogte: onder.getBoundingClientRect().height, scherm: innerHeight } : null;
+    }""")
+    if maten is None:
+        return ["geen vaste onderkant gevonden"]
+    if maten["hoogte"] > maten["scherm"] / 4:
+        return [f"de onderkant is {maten['hoogte']:.0f} px: meer dan een kwart van {maten['scherm']} px"]
+    return []
+
+
 def scherm_klopt(pagina):
-    """M1, M2 en M5 voor het scherm dat nu open is."""
+    """M1, M2, M5 en M6 voor het scherm dat nu open is."""
+    rustig(pagina)
     t = tekst(pagina)
     return {
         "horizontaal scrollen (M1)": horizontaal_scrollen(pagina),
         "tikvlakken onder 44 px (M2)": kleine_tikvlakken(pagina),
         "te weinig contrast (M5)": t["contrast"],
         "te kleine tekst (M5)": t["klein"],
+        "invoer onder 16 px (M6)": kleine_invoer(pagina),
     }
 
 
