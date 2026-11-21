@@ -60,6 +60,43 @@ def test_indexen_uit_de_bouwspecificatie(test):
     ]
 
 
+def _sleutels(schema):
+    return [veld["AttributeName"] for veld in sorted(schema, key=lambda v: v["KeyType"] != "HASH")]
+
+
+# Een andere sleutel betekent een nieuwe, lege tabel. In prod blijft de oude met de gegevens als wees
+# staan; in test is hij weg. Tabellen worden alleen uitgebreid. Zie "Tabellen en sleutels" in de bouwspecificatie.
+SLEUTELS = {
+    ("leden",): ["lidId"],
+    ("lijsten",): ["lijstId"],
+    ("lijsten", "status-index"): ["status", "openTot"],
+    ("wijnen",): ["wijnId"],
+    ("wijnen", "lijst-index"): ["lijstId", "volgorde"],
+    ("wijnen", "bieding-index"): ["biedingStatus", "eindtijd"],
+    ("biedingen",): ["wijnId", "tijdstipLid"],
+    ("biedingen", "lid-index"): ["lidId", "tijdstip"],
+    ("bestellingen",): ["bestellingId"],
+    ("bestellingen", "lid-index"): ["lidId", "aangemaakt"],
+    ("bestellingen", "lijst-index"): ["lijstId", "aangemaakt"],
+    ("bestellingen", "betaal-index"): ["status", "betaalVoor"],
+    ("betalingen",): ["mollieBetalingId"],
+}
+
+
+@pytest.mark.parametrize("naam", ["test", "prod"])
+def test_sleutels_van_elke_tabel_en_index_veranderen_niet(naam, test, prod):
+    gevonden = {}
+    for logisch_id, tabel in {"test": test, "prod": prod}[naam]["data"].find_resources("AWS::DynamoDB::Table").items():
+        eigenschappen = tabel["Properties"]
+        # De logische id begint met de naam van de tabel: Leden..., Wijnen...
+        tabelnaam = next(t for (t, *_) in SLEUTELS if logisch_id.lower().startswith(t))
+        gevonden[(tabelnaam,)] = _sleutels(eigenschappen["KeySchema"])
+        for index in eigenschappen.get("GlobalSecondaryIndexes", []):
+            gevonden[(tabelnaam, index["IndexName"])] = _sleutels(index["KeySchema"])
+            assert index["Projection"] == {"ProjectionType": "ALL"}
+    assert gevonden == SLEUTELS
+
+
 def test_open_bestellingen_zijn_te_vinden_op_betaalvoor(test):
     # De taak voor verlopen zoekt open bestellingen waarvan betaalVoor voorbij is.
     test["data"].has_resource_properties(

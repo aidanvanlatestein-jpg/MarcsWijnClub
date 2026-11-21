@@ -29,11 +29,15 @@ jobs:
         run: ruff check --output-format=github .
       - name: Bekende kwetsbaarheden (pip-audit)
         run: pip-audit -r requirements-dev.txt
-      # De dekking gaat over functions/wijnclub. Op 20 november 2026 was dat 97%; alleen opslag.py blijft
-      # achter tot er integratietests tegen DynamoDB zijn. Zakt het totaal onder 95%, dan faalt de stap.
-      - name: Unit-tests en stacktests (pytest), met dekking van de functies
+      - name: Typen controleren (mypy)
+        run: mypy
+      # De dekking gaat over functions/wijnclub, nu ook opslag.py via de integratietests tegen DynamoDB
+      # in het geheugen (moto). Zakt het totaal onder 95%, dan faalt de stap. Zonder moto falen de
+      # integratietests in plaats van over te slaan.
+      - name: Unit-, integratie- en stacktests (pytest), met dekking van de functies
         env:
           JSII_SILENCE_WARNING_UNTESTED_NODE_VERSION: "1"
+          WIJNCLUB_INTEGRATIE: verplicht
         run: pytest --cov=wijnclub --cov-report=term-missing:skip-covered --cov-fail-under=95
 
   web:
@@ -55,6 +59,9 @@ jobs:
         run: npm ci
       - name: Bekende kwetsbaarheden (npm audit)
         run: npm audit --audit-level=high
+      # De staat van het prototype, de hulpjes en de regels die ook in functions/wijnclub/domein staan.
+      - name: Unit-tests (vitest)
+        run: npm test
       - name: Typen controleren en bouwen
         run: npm run build
 

@@ -9,9 +9,13 @@
 import { createContext, useContext, useEffect, useReducer, useRef, type ReactNode } from 'react'
 import type { Bestelling, Bieding, Fase, FeedItem, LeverSoort, Lijst, LogItem, Regel, Wijn } from './types'
 import { euro, tijd, tijdvak } from './opmaak'
+import { betaalVoor, hoogsteToegestaneBod, nieuweEindtijd, plus, totaal, VERLENGING } from './regels'
 import {
   voorbeeldBerichten, voorbeeldBestellingen, voorbeeldBiedingen, voorbeeldLid, voorbeeldLijst,
 } from './voorbeeld'
+
+// De regels die ook in functions/wijnclub/domein staan, staan in regels.ts.
+export { plus }
 
 /** Het lid dat in het prototype is ingelogd. In de echte app komt het lid uit het token. */
 export const LID = voorbeeldLid.lidId
@@ -19,15 +23,9 @@ export const LID = voorbeeldLid.lidId
 const OPSLAG = 'wijnclub-voorbeeld-5'
 const MINUUT = 60_000
 const UUR = 60 * MINUUT
-const BETAALTERMIJN = 48 * UUR
-/** Zo lang houdt Marc de flessen vast terwijl het lid betaalt. */
-export const HOUDTIJD = 15 * MINUUT
-const VERLENGING = 2 * MINUUT
 /** De veiling begint een half uur na het begin van de avond, de hamer valt een uur later. */
 const VEILING_NA_BEGIN = 30 * MINUUT
 const VEILING_DUUR = 60 * MINUUT
-/** Een bod is hoogstens drie keer het minimum, zoals in functions/wijnclub/domein/bieding.py. */
-export const HOOGSTE_FACTOR = 3
 /** De laatste twee minuten van een veiling: "eenmaal, andermaal". */
 export const LAATSTE_MINUTEN = VERLENGING
 
@@ -138,10 +136,6 @@ export type Actie =
 
 function iso(moment: Date): string {
   return moment.toISOString().replace(/\.\d{3}Z$/, 'Z')
-}
-
-export function plus(utc: string, ms: number): string {
-  return iso(new Date(new Date(utc).getTime() + ms))
 }
 
 /** Het eerstvolgende hele of halve uur dat minstens een kwartier weg is. Zo blijft het voorbeeld actueel. */
@@ -357,10 +351,10 @@ function bestel(s: Staat, a: Extract<Actie, { type: 'bestel' }>): Staat {
     soort: a.door === 'lid' ? 'lijst' : 'namens',
     lijstId: s.lijst.lijstId,
     regels,
-    totaal: regels.reduce((som, r) => som + r.aantal * r.prijs, 0),
+    totaal: totaal(regels),
     status: 'open',
     // Het lid betaalt meteen; Marc houdt de flessen 15 minuten vast. Namens een lid stuurt Marc een betaallink.
-    betaalVoor: plus(a.nu, a.door === 'lid' ? HOUDTIJD : BETAALTERMIJN),
+    betaalVoor: betaalVoor(a.door === 'lid' ? 'lijst' : 'namens', a.nu),
     levering: a.levering,
     ingevoerdDoor: a.door,
     aangemaakt: a.nu,
@@ -437,14 +431,13 @@ function volgendeBieder(b: BiedingStaat): number {
 
 function anderBod(b: BiedingStaat, nu: string): BiedingStaat {
   const bod = b.minimaalVolgendBod
-  const rest = new Date(b.eindtijd).getTime() - new Date(nu).getTime()
   return {
     ...b,
     hoogsteBod: bod,
     minimaalVolgendBod: bod + b.minimaleVerhoging,
     aantalBiedingen: (b.aantalBiedingen ?? 0) + 1,
     mijnBodIsHoogste: false,
-    eindtijd: rest <= VERLENGING ? plus(nu, VERLENGING) : b.eindtijd,
+    eindtijd: nieuweEindtijd(b.eindtijd, nu),
     biedlog: [...b.biedlog, { soort: 'bod', op: nu, bedrag: bod, bieder: volgendeBieder(b) }],
   }
 }
@@ -469,7 +462,7 @@ function sluitBieding(s: Staat, wijnId: string, nu: string): Staat {
     regels: [{ wijnId: b.wijnId, letter: '', naam: b.naam, jaargang: b.jaargang, foto: b.foto, aantal: 1, prijs: b.hoogsteBod }],
     totaal: b.hoogsteBod,
     status: 'open',
-    betaalVoor: plus(nu, BETAALTERMIJN),
+    betaalVoor: betaalVoor('bieding', nu),
     levering: null,
     ingevoerdDoor: 'lid',
     aangemaakt: nu,
@@ -548,7 +541,8 @@ function lopendeAvond(s: Staat, nu: string): Staat {
   return na
 }
 
-function reducer(s: Staat, a: Actie): Staat {
+/** Alle wijzigingen van de staat. Geëxporteerd voor de tests in staat.test.ts. */
+export function reducer(s: Staat, a: Actie): Staat {
   const na = stap(s, a)
   // Acties zonder tijdstip (een instelling, opnieuw beginnen) vangt de klok binnen een seconde op.
   return 'nu' in a ? houdVeilingGaande(na, a.nu) : na
@@ -607,8 +601,7 @@ function stap(s: Staat, a: Actie): Staat {
           // Je eigen hoogste bod overbieden kan niet, en een bod is hoogstens drie keer het minimum.
           if (b.mijnBodIsHoogste) return b
           if (!Number.isInteger(a.bedrag) || a.bedrag < b.minimaalVolgendBod) return b
-          if (a.bedrag > b.minimaalVolgendBod * HOOGSTE_FACTOR) return b
-          const rest = new Date(b.eindtijd).getTime() - new Date(a.nu).getTime()
+          if (a.bedrag > hoogsteToegestaneBod(b.minimaalVolgendBod)) return b
           return {
             ...b,
             hoogsteBod: a.bedrag,
@@ -617,7 +610,7 @@ function stap(s: Staat, a: Actie): Staat {
             minimaalVolgendBod: a.bedrag + b.minimaleVerhoging,
             aantalBiedingen: (b.aantalBiedingen ?? 0) + 1,
             // Een bod in de laatste twee minuten verlengt de eindtijd.
-            eindtijd: rest <= VERLENGING ? plus(a.nu, VERLENGING) : b.eindtijd,
+            eindtijd: nieuweEindtijd(b.eindtijd, a.nu),
             biedlog: [...b.biedlog, { soort: 'bod', op: a.nu, bedrag: a.bedrag, bieder: 'jij' }],
           }
         }),

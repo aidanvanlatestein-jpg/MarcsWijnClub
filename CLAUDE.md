@@ -40,7 +40,8 @@ Dit project is van Aidan persoonlijk. Het heeft niets te maken met een werkgever
 | `functions/wijnclub/` | Lambda-functies in Python. `domein/` bevat de regels zonder AWS |
 | `infra/` | AWS CDK in Python, vier stacks per omgeving (`test`, `prod`) |
 | `app/` | De web-app: React met Vite. Bouwt naar `app/dist` |
-| `tests/` | pytest, voor de functies en voor de stacks |
+| `tests/` | pytest: de functies, de transacties tegen DynamoDB in het geheugen (`integratie/`), de stacks en de browsertests. `gedeeld/regels.json` bevat gevallen die ook de web-app moet halen |
+| `app/src/*.test.ts` | vitest: de staat van het prototype, de hulpjes en de gedeelde regels |
 
 Lees het plan en de bouwspecificatie voordat je iets ontwerpt. Wijkt een wijziging ervan af, pas dan het document aan in dezelfde wijziging.
 
@@ -55,8 +56,10 @@ pytest
 ```
 
 ```bash
-cd app && npm ci && npm run build
+cd app && npm ci && npm test && npm run build
 ```
+
+De integratietests en mypy vragen Python 3.10 of hoger. Op de lokale Python 3.9 slaat pytest de integratietests over en draait mypy niet; in de pipeline draaien ze altijd.
 
 ```bash
 cd infra && npx aws-cdk@2.1149.0 synth -c afzender_email=noreply@voorbeeld.nl

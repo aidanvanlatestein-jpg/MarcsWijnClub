@@ -3,14 +3,14 @@ from __future__ import annotations
 
 import json
 from decimal import Decimal
-from typing import Any, Dict, List, Mapping
+from typing import Any, Dict, List, Mapping, Union
 
 
 class NietIngelogd(Exception):
     pass
 
 
-def _getal(waarde: Any):
+def _getal(waarde: Any) -> Union[int, float]:
     # DynamoDB geeft getallen terug als Decimal.
     if isinstance(waarde, Decimal):
         return int(waarde) if waarde == waarde.to_integral_value() else float(waarde)
@@ -32,9 +32,10 @@ def fout(status: int, code: str, bericht: str) -> Dict[str, Any]:
 
 def _claims(event: Mapping[str, Any]) -> Mapping[str, Any]:
     try:
-        return event["requestContext"]["authorizer"]["jwt"]["claims"]
+        claims: Mapping[str, Any] = event["requestContext"]["authorizer"]["jwt"]["claims"]
     except (KeyError, TypeError):
         raise NietIngelogd() from None
+    return claims
 
 
 def lid_id(event: Mapping[str, Any]) -> str:

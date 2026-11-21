@@ -20,9 +20,13 @@ import hashlib
 import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from . import dynamo, geld, tijd
+
+if TYPE_CHECKING:
+    # Alleen voor mypy; door `from __future__ import annotations` wordt dit nooit uitgevoerd.
+    from typing_extensions import TypeGuard
 
 OPEN = "open"
 BETAALD = "betaald"
@@ -116,7 +120,7 @@ def betaal_voor(*, soort: str, aangemaakt: datetime) -> datetime:
     raise OngeldigeBestelling("onbekende_soort")
 
 
-def _is_tijd(waarde: Any) -> bool:
+def _is_tijd(waarde: Any) -> TypeGuard[str]:
     if not isinstance(waarde, str):
         return False
     try:

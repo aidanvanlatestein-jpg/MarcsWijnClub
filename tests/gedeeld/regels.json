@@ -1,0 +1,39 @@
+{
+  "uitleg": "Regels die zowel in functions/wijnclub/domein als in app/src/regels.ts staan. Beide kanten moeten elk geval halen: tests/functions/test_gedeeld.py en app/src/gedeeld.test.ts. Voeg een geval toe als een regel verandert, nooit maar aan één kant.",
+  "leesEuro": [
+    { "invoer": "11,50", "centen": 1150 },
+    { "invoer": "11.5", "centen": 1150 },
+    { "invoer": "€ 11", "centen": 1100 },
+    { "invoer": " €9,05 ", "centen": 905 },
+    { "invoer": "10,-", "centen": 1000 },
+    { "invoer": "10.-", "centen": 1000 },
+    { "invoer": "0", "centen": 0 },
+    { "invoer": "99999", "centen": 9999900 },
+    { "invoer": "100000", "centen": null },
+    { "invoer": "11,505", "centen": null },
+    { "invoer": "10,", "centen": null },
+    { "invoer": "-5", "centen": null },
+    { "invoer": "abc", "centen": null },
+    { "invoer": "", "centen": null }
+  ],
+  "totaal": [
+    { "regels": [], "centen": 0 },
+    { "regels": [{ "prijs": 950, "aantal": 1 }, { "prijs": 1150, "aantal": 2 }], "centen": 3250 },
+    { "regels": [{ "prijs": 0, "aantal": 6 }], "centen": 0 }
+  ],
+  "hoogsteToegestaneBod": [
+    { "minimaalVolgendBod": 4000, "hoogste": 12000 },
+    { "minimaalVolgendBod": 2550, "hoogste": 7650 }
+  ],
+  "nieuweEindtijd": [
+    { "eindtijd": "2026-11-22T20:00:00Z", "nu": "2026-11-22T19:40:00Z", "nieuw": "2026-11-22T20:00:00Z" },
+    { "eindtijd": "2026-11-22T20:00:00Z", "nu": "2026-11-22T19:57:59Z", "nieuw": "2026-11-22T20:00:00Z" },
+    { "eindtijd": "2026-11-22T20:00:00Z", "nu": "2026-11-22T19:58:30Z", "nieuw": "2026-11-22T20:00:30Z" },
+    { "eindtijd": "2026-11-22T20:00:00Z", "nu": "2026-11-22T19:59:59Z", "nieuw": "2026-11-22T20:01:59Z" }
+  ],
+  "betaalVoor": [
+    { "soort": "lijst", "aangemaakt": "2026-11-19T15:40:00Z", "betaalVoor": "2026-11-19T15:55:00Z" },
+    { "soort": "namens", "aangemaakt": "2026-11-19T15:40:00Z", "betaalVoor": "2026-11-21T15:40:00Z" },
+    { "soort": "bieding", "aangemaakt": "2026-11-19T23:59:00Z", "betaalVoor": "2026-11-21T23:59:00Z" }
+  ]
+}
