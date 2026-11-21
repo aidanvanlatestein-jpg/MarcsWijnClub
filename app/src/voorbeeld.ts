@@ -4,8 +4,10 @@
 // Uit de praktijk: de teksten, prijzen en aantallen van de Janasse en de Cándido, en
 // "En de laatste van vandaag". Verzonnen: de Verdejo en de Chianti, de Barolo en alles wat erbij staat,
 // de brengen- en haalmomenten, de inleiding, Marcs berichten in de feed en de biedlog, de snelle zinnen,
-// het aantal leden, de leden, hun adressen en hun bestellingen. Dit zijn geen woorden van Marc.
-import type { Bieding, Levering, LeverSoort, Lid, Lijst } from './types'
+// het aantal leden, de leden, hun adressen en hun bestellingen, en licht tot vol bij de wijnen. Dit zijn geen
+// woorden van Marc.
+import { KENMERKEN } from './schakelaars'
+import type { Bieding, Kleur, Levering, LeverSoort, Lid, Lijst, Volheid } from './types'
 
 /** Verzonnen leden en adressen. Echte namen en adressen van leden komen nooit in de code. */
 export const voorbeeldLid: Lid = {
@@ -26,6 +28,14 @@ const levering: Levering = {
   halen: { van: '2026-11-28T09:00:00Z', tot: '2026-11-28T11:00:00Z', waar: 'bij Marc in Roermond' },
 }
 
+/**
+ * Licht tot vol bij een voorbeeldwijn, alleen als de schakelaar aan staat. De Janasse heeft bewust geen
+ * volheid: die toont alleen kleur en land.
+ */
+function kenmerk(volheid: Volheid): { volheid?: Volheid } {
+  return KENMERKEN ? { volheid } : {}
+}
+
 export const voorbeeldLijst: Lijst = {
   lijstId: 'lijst-47',
   titel: 'Lijst van de week',
@@ -36,13 +46,13 @@ export const voorbeeldLijst: Lijst = {
   wijnen: [
     {
       wijnId: 'wijn-f', letter: 'F', naam: 'Verdejo Rueda', jaargang: 2024, volgorde: 1,
-      kleur: 'wit', druif: 'Verdejo', streek: 'Rueda', land: 'Spanje',
+      kleur: 'wit', druif: 'Verdejo', streek: 'Rueda', land: 'Spanje', ...kenmerk('licht'),
       tekst: 'Fris en sappig, citrus en een beetje venkel. Mijn zomerwit.',
       foto: '/voorbeeld/verdejo.jpg', prijs: 975, voorraad: 6, partij: 6,
     },
     {
       wijnId: 'wijn-g', letter: 'G', naam: 'Chianti Classico', jaargang: 2021, volgorde: 2,
-      kleur: 'rood', druif: 'Sangiovese', streek: 'Toscane', land: 'Italië',
+      kleur: 'rood', druif: 'Sangiovese', streek: 'Toscane', land: 'Italië', ...kenmerk('midden'),
       tekst: 'Kersen, viooltjes en een droge, stevige finale. Perfect bij pasta.',
       foto: '/voorbeeld/chianti.jpg', prijs: 1600, voorraad: 6, partij: 6,
     },
@@ -54,7 +64,7 @@ export const voorbeeldLijst: Lijst = {
     },
     {
       wijnId: 'wijn-i', letter: 'I', naam: 'Cándido Immensum', jaargang: 2022, volgorde: 4,
-      kleur: 'rood', producent: 'Cándido', druif: 'Negroamaro', streek: 'Puglia', land: 'Italië',
+      kleur: 'rood', producent: 'Cándido', druif: 'Negroamaro', streek: 'Puglia', land: 'Italië', ...kenmerk('vol'),
       tekst: 'Krachtige Negroamaro uit Puglia, boordevol rijp zwart fruit, pruimen en warme kruiden. Vol en soepel in de mond, met zwoele tannines en een rijke, lange afdronk. Een echte Italiaanse krachtpatser.',
       spijs: 'Stoofvlees, pasta met ragù of lam van de barbecue.',
       drinken: 'Nu tot 2028. Een half uur open voor je schenkt.',
@@ -113,4 +123,9 @@ Fris en rond, met amandel en witte perzik. Lekker bij vis.
 18 flessen beschikbaar €10,5 pfl`
 
 /** Wat de app in het voorbeeld "op het etiket leest" bij een foto. In de echte app doet een taalmodel dat. */
-export const voorbeeldEtiket = { producent: 'Cantina Voorbeeld', druif: 'Garganega', streek: 'Veneto', foto: '/voorbeeld/verdejo.jpg' }
+export const voorbeeldEtiket: {
+  producent: string; druif: string; streek: string; foto: string; kleur: Kleur; land: string; volheid: Volheid
+} = {
+  producent: 'Cantina Voorbeeld', druif: 'Garganega', streek: 'Veneto', foto: '/voorbeeld/verdejo.jpg',
+  kleur: 'wit', land: 'Italië', volheid: 'licht',
+}

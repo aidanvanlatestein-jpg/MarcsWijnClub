@@ -2,6 +2,7 @@ import { Pushmelding } from './onderdelen/Pushmelding'
 import { Voorbeeldbalk } from './onderdelen/Voorbeeldbalk'
 import { WhatsAppProvider } from './onderdelen/WhatsApp'
 import { useRoute, type Ga, type Route } from './route'
+import { KENMERKEN } from './schakelaars'
 import { Aanbod } from './schermen/Aanbod'
 import { Beheer, Namens } from './schermen/Beheer'
 import { Bestelling } from './schermen/Bestelling'
@@ -33,7 +34,7 @@ function Prototype() {
   const [route, ga] = useRoute()
   const naarWelkom = !staat.ingelogd && !ZONDER_INLOGGEN.includes(route.scherm)
   return (
-    <div className="app">
+    <div className="app" data-kenmerken={KENMERKEN ? 'aan' : 'uit'}>
       <Voorbeeldbalk ga={ga} />
       <Pushmelding />
       {naarWelkom ? <Welkom ga={ga} /> : <Scherm route={route} ga={ga} />}

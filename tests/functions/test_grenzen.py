@@ -4,6 +4,7 @@ Deze tests komen uit een mutatietest van 20 november 2026: een fout die expres i
 gezet (een < in plaats van <=, een getal één hoger) viel op deze plekken niet op. De grenzen staan
 hier als getal en niet als naam uit de code, zodat een grens die verschuift ook een test laat falen.
 """
+import json
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
@@ -12,7 +13,7 @@ import pytest
 from wijnclub import antwoord
 from wijnclub.domein import bestelling as b
 from wijnclub.domein import bieding as bd
-from wijnclub.domein import dynamo, herkennen, tijd
+from wijnclub.domein import dynamo, herkennen, kenmerken, tijd
 
 NU = datetime(2026, 11, 19, 15, 40, tzinfo=timezone.utc)
 TABELLEN = {"wijnen": "t-wijnen", "biedingen": "t-biedingen", "bestellingen": "t-bestellingen"}
@@ -227,6 +228,27 @@ def test_de_jaargang_ligt_tussen_1900_en_2100(jaargang, verwacht):
 def test_duizend_euro_is_de_hoogste_prijs_voor_de_lijst():
     assert herkennen.herken("Wijn J Soave € 1000", model(prijs="1000")).prijs == 100_000
     assert herkennen.herken("Wijn J Soave € 1000,01", model(prijs="1000,01")).prijs is None
+
+
+# ---- Kenmerken ----
+
+def test_een_land_van_precies_veertig_tekens_mag_nog():
+    lang = "a" * 40
+    assert kenmerken.lees_antwoord(json.dumps({"land": lang})).land == lang
+    assert kenmerken.lees_antwoord(json.dumps({"land": lang + "a"})).land is None
+    with pytest.raises(ValueError):
+        kenmerken.controleer(None, lang + "a", None)
+
+
+def test_een_veld_van_precies_honderdtwintig_tekens_gaat_naar_het_model():
+    _, vraag = kenmerken.maak_vraag({"naam": "a" * 120, "druif": "b" * 121})
+    assert "a" * 120 in vraag
+    assert "b" not in vraag
+
+
+def test_er_zijn_vijf_kleuren_en_drie_volheden():
+    assert kenmerken.KLEUREN == ("rood", "wit", "rosé", "bubbels", "zoet")
+    assert kenmerken.VOLHEDEN == ("licht", "midden", "vol")
 
 
 # ---- De grens op het taalmodel ----
