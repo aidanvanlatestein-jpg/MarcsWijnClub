@@ -30,7 +30,7 @@ Het plan rust op acht aannames. De eerste twee zijn op 20 november 2026 bewust o
 | Er is geen pakketverzending | Verzending vraagt verpakking, verzekering en een leeftijdscheck aan de deur |
 | Eén bouwer werkt er in deeltijd aan | De planning schuift mee |
 
-Op 20 november 2026 is ook besloten dat het fotograferen van een fles en het voorstellen van een tekst in de pilot komen, in week 4. Het stond eerder als eerste stap van onderwerp 1 op de roadmap. Marc begint met een foto, met zijn WhatsApp-bericht of met beide. De app leest het etiket, en uit een paar steekwoorden van Marc maakt ze drie tekstvoorstellen; Marc kiest er één en past hem aan. De stijl van de voorstellen levert Aidan later aan, op basis van Marcs omschrijvingen in WhatsApp.
+Op 20 november 2026 is ook besloten dat het fotograferen van een fles en het voorstellen van een tekst in de pilot komen, in week 4. Het stond eerder als eerste stap van onderwerp 1 op de roadmap. Marc begint met een foto, met zijn WhatsApp-bericht of met beide. De app leest het etiket, en uit een paar steekwoorden van Marc maakt ze drie tekstvoorstellen; Marc kiest er één en past hem aan. De stijl van de voorstellen is op 21 november 2026 afgeleid van Marcs omschrijvingen in WhatsApp en staat in `domein/tekst.py`.
 
 Deze punten moeten vóór de bouw rond zijn:
 
