@@ -18,7 +18,7 @@ Onderwerp 17 is een uitgestelde keuze van 21 november 2026: live bijwerken via e
 
 | Onderwerp | Wat het oplevert | Start als |
 | --- | --- | --- |
-| 1. Omschrijving via een taalmodel | Marc zet een fles in enkele minuten online, in zijn eigen woorden. Het etiket lezen en tekstvoorstellen uit steekwoorden zitten al in de pilot; hier volgen spraak naar tekst en het leren van zijn stijl | De pilot geslaagd is en Marc in de pilot geregeld een voorstel koos |
+| 1. Omschrijving via een taalmodel | Marc zet een fles in enkele minuten online, in zijn eigen woorden. Het etiket lezen en tekstvoorstellen uit steekwoorden in zijn stijl, met echte teksten van Marc als voorbeeld, zitten al in de pilot. Hier volgen spraak naar tekst en het leren van zijn stijl uit de teksten die hij in de app goedkeurt | De pilot geslaagd is en Marc in de pilot geregeld een voorstel koos |
 | 2. Assistent voor vragen van leden | Leden krijgen direct antwoord op veelgestelde vragen; Marc krijgt alleen de vragen die hem nodig hebben | Er minstens 20 flessen met goedgekeurde tekst zijn en Marc dezelfde vragen steeds terug ziet komen |
 | 3. Campagnes en het beste moment | Marc plant een reeks berichten rond een lijst of bieding en ziet welk moment de meeste bestellingen oplevert | De pilot geslaagd is en de app per melding heeft vastgelegd wanneer hij verstuurd is en wat hij opleverde |
 | 4. Terug op de lijst en op dronk | Leden komen terug voor een wijn die ze lekker vonden, en openen een fles op het goede moment | Onderwerp 14 gebouwd is en er drie maanden aan aankopen en oordelen ligt |
@@ -38,15 +38,15 @@ Onderwerp 17 is een uitgestelde keuze van 21 november 2026: live bijwerken via e
 
 ## 1. Omschrijving via een taalmodel
 
-In de pilot herkent de app al naam, jaargang, aantal, prijs en tekst in Marcs WhatsApp-bericht. Op 20 november 2026 is de eerste stap van dit onderwerp naar de pilot gehaald: Marc fotografeert de fles, de app leest het etiket, en uit zijn steekwoorden maakt ze drie tekstvoorstellen in een vaste stijl. Zie Hoe het werkt in het [plan](../pilotplan-marcs-wijnclub.md) en de [bouwspecificatie](bouwspecificatie.md), hoofdstuk 5. Na de pilot volgen nog twee stappen:
+In de pilot herkent de app al naam, jaargang, aantal, prijs en tekst in Marcs WhatsApp-bericht. Op 20 november 2026 is de eerste stap van dit onderwerp naar de pilot gehaald: Marc fotografeert de fles, de app leest het etiket, en uit zijn steekwoorden maakt ze drie tekstvoorstellen in zijn stijl. Elk voorstel heeft een eigen opbouw: de wijn, het verhaal van de maker, en Marc zelf in de ik-vorm. De stijl is beschreven in `functions/wijnclub/domein/tekst.py`, met echte omschrijvingen van Marc als voorbeeld. Marc vond het op 21 november 2026 goed dat ze in de openbare repository staan. Zie Hoe het werkt in het [plan](../pilotplan-marcs-wijnclub.md) en de [bouwspecificatie](bouwspecificatie.md), hoofdstuk 5. Na de pilot volgen nog twee stappen:
 
-1. **Van spraak naar tekst.** Marc spreekt 30 seconden in over de fles. De app schrijft daar de drie blokken van: waarom deze, wanneer drinken, wat eet je erbij.
-2. **Zijn stijl leren.** Eerder goedgekeurde teksten gaan als voorbeeld mee, zodat een nieuw voorstel klinkt als Marc. In de pilot is de stijl nog één vaste beschrijving.
+1. **Van spraak naar tekst.** Marc spreekt 30 seconden in over de fles. De app maakt daar dezelfde drie voorstellen van als bij steekwoorden. Wat hij zegt over wanneer je de fles drinkt en wat je erbij eet, komt in de voorstellen. In de pilot spreekt Marc al in via de microfoon van zijn toetsenbord; deze stap neemt een langere opname op in de app zelf.
+2. **Zijn stijl leren.** In de pilot gaan vaste voorbeelden mee: teksten van Marc uit WhatsApp, die Aidan aanlevert. Na de pilot komen daar de teksten bij die Marc in de app ongewijzigd koos of zelf schreef, zodat de voorbeelden vanzelf aangroeien en bij de wijnen van dat moment passen.
 
 Vier regels gelden daarbij:
 
 - Marc keurt elke tekst goed voordat een lid hem ziet.
-- Herkomst en bewaring worden nooit gegenereerd. Die komen alleen uit wat Marc zelf invoert.
+- Herkomst, bewaring en gerechten worden nooit verzonnen. Noemt Marc ze in zijn steekwoorden, dan werkt het model ze uit tot volzinnen. Anders blijven ze uit de tekst. De velden voor herkomst, bewaring, `spijs` en `drinken` vult Marc zelf in.
 - Het model verzint geen scores, prijzen of smaken die Marc niet noemde. Die regel gaat over de tekst in Marcs stem. De kenmerken van onderwerp 16 zijn een schatting die Marc nakijkt, en staan los van zijn woorden.
 - We meten hoeveel tijd een fles Marc kost en welk deel van het concept hij ongewijzigd laat. In de pilot legt elke wijn vast waar de tekst vandaan komt.
 
