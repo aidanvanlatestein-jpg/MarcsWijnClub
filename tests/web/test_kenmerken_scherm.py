@@ -5,7 +5,7 @@ hem uit; de tests lezen van de gebouwde app of hij aan staat en controleren dan 
 de schakelaar aan bouwen en testen:
 
     cd app && VITE_KENMERKEN=aan npm run build && cd ..
-    pytest tests/web/test_kenmerken.py
+    pytest tests/web/test_kenmerken_scherm.py
 
 Alle inhoud is voorbeeldinhoud van het prototype.
 """
