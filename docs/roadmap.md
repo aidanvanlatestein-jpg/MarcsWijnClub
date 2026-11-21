@@ -1,6 +1,6 @@
 # Roadmap: Marcs wijnclub
 
-Verhuisd uit het [pilotplan](../pilotplan-marcs-wijnclub.md) op 21 november 2026, met dezelfde nummers. Niets hiervan hoort in de pilot, behalve onderwerp 13 en 15 en stap A van onderwerp 18. Onderwerp 13 en 15 moeten af vóór de eerste uitnodiging aan een lid en staan in de planning van het plan, in week 8. Stap A van onderwerp 18 staat in week 7.
+Verhuisd uit het [pilotplan](../pilotplan-marcs-wijnclub.md) op 21 november 2026, met dezelfde nummers. Niets hiervan hoort in de pilot, behalve onderwerp 13 en 15 en stap A van onderwerp 19. Onderwerp 13 en 15 moeten af vóór de eerste uitnodiging aan een lid en staan in de planning van het plan, in week 8. Stap A van onderwerp 19 staat in week 7.
 
 Na een geslaagde pilot volgen twee uitbreidingen met een taalmodel: eerst de omschrijving van een fles, daarna een assistent die vragen van leden beantwoordt. Die volgorde is bewust: de omschrijving bouwt voort op wat de pilot al doet en Marc keurt elke tekst goed. De assistent praat rechtstreeks met leden en vraagt meer waarborgen. Een derde uitbreiding staat los van het taalmodel: geplande campagnes, met een meting van het beste moment om leden te benaderen.
 
@@ -16,7 +16,9 @@ Onderwerp 16 is een idee van Aidan van 21 november 2026, met Vivino als voorbeel
 
 Onderwerp 17 is een uitgestelde keuze van 21 november 2026: live bijwerken via een WebSocket in plaats van pollen.
 
-Onderwerp 18 is een idee van Aidan van 21 november 2026: zien wat er met een bestelling gebeurde en waar leden vastlopen, zodat Marc of Aidan kan ingrijpen. Het is nog niet met Marc besproken. Stap A, de tijdlijn per bestelling met de signalen, is dezelfde dag naar de pilot gehaald en staat in week 7 van het plan. Stap B en C blijven hier.
+Onderwerp 18 is een idee van Aidan van 21 november 2026: elke flesfoto krijgt dezelfde professionele stijl, met een eigen model in AWS of met commerciële AI. Het is nog niet met Marc besproken en hoort niet in de pilot.
+
+Onderwerp 19 is een idee van Aidan van 21 november 2026: zien wat er met een bestelling gebeurde en waar leden vastlopen, zodat Marc of Aidan kan ingrijpen. Het is nog niet met Marc besproken. Stap A, de tijdlijn per bestelling met de signalen, is dezelfde dag naar de pilot gehaald en staat in week 7 van het plan. Stap B en C blijven hier.
 
 | Onderwerp | Wat het oplevert | Start als |
 | --- | --- | --- |
@@ -37,7 +39,8 @@ Onderwerp 18 is een idee van Aidan van 21 november 2026: zien wat er met een bes
 | 15. Security: verbeterpunten uit de scan | De pipeline, het inloggen en de API zijn dicht voordat er echte leden en betalingen zijn | Nu. Groep A vóór de eerste release-tag, groep B en E vóór de eerste uitnodiging aan een lid |
 | 16. Mijn smaak: wensen, filteren en een melding op maat | Een lid ziet eerst wat bij zijn smaak past en krijgt alleen een melding als er iets voor hem bij zit | De pilot geslaagd is, en leden zeggen dat ze lijsten of meldingen overslaan omdat er weinig voor hen bij zit |
 | 17. Live bijwerken via een WebSocket | De stand van de veiling binnen een seconde, zonder dat elke telefoon elke 3 seconden vraagt | Leden in de pilot een bod missen of zeggen dat de stand achterloopt |
-| 18. Volgen wat er gebeurt, en ingrijpen als een bestelling misgaat | Marc en Aidan zien per bestelling wat er gebeurde en krijgen een signaal als een lid vastloopt, voordat het lid erover appt | Stap A zit in de pilot, week 7. Stap B: fouten in de pilot Aidan meer dan een uur per maand kosten om uit te zoeken. Stap C: de club groeit voorbij de pilot |
+| 18. Flesfoto's in één stijl | Elke fles staat vrij, even groot en op dezelfde donkere achtergrond, zonder dat Marc er iets extra voor doet | Een proef op Marcs eigen foto's goed genoeg uitvalt, en de foto's in de pilot naast elkaar onrustig ogen |
+| 19. Volgen wat er gebeurt, en ingrijpen als een bestelling misgaat | Marc en Aidan zien per bestelling wat er gebeurde en krijgen een signaal als een lid vastloopt, voordat het lid erover appt | Stap A zit in de pilot, week 7. Stap B: fouten in de pilot Aidan meer dan een uur per maand kosten om uit te zoeken. Stap C: de club groeit voorbij de pilot |
 
 ## 1. Omschrijving via een taalmodel
 
@@ -365,7 +368,40 @@ In de pilot ververst de web-app de avond en de veiling door elke 3 seconden te v
 - **Wat het kost.** Naar schatting een week bouwtijd, een extra onderdeel om te beveiligen en te testen, en een tabel met open verbindingen.
 - **Start als** leden in de pilot een bod missen of zeggen dat de stand achterloopt, of als de club groeit voorbij enkele tientallen leden die tegelijk kijken.
 
-## 18. Volgen wat er gebeurt, en ingrijpen als een bestelling misgaat
+## 18. Flesfoto's in één stijl
+
+Marc fotografeert flessen in zijn keuken of kelder, en de app toont die foto's onbewerkt, bijgesneden vanuit het midden. Daardoor ziet elke fles er anders uit. Het doel is een pakshot zoals bij een wijnhandel: de fles vrijstaand, in een vast vak van 3:4, gecentreerd op een vaste voetlijn en 85% van de hoogte, op één bijna zwarte achtergrond die achter de fles iets lichter is zodat donker glas zichtbaar blijft. Marc maakt de foto zoals nu en doet er niets extra voor; het bewerkte resultaat verschijnt vanzelf bij het nakijken.
+
+Er zijn twee routes. Ze sluiten elkaar niet uit.
+
+**A. Een eigen model in AWS.** Een Lambda-functie in `eu-west-1` maakt de fles vrij met `rembg` en het model BiRefNet (beide MIT), en zet hem met Pillow in het vak.
+
+- Voor: de foto blijft in de EU en in het eigen account, er komt geen nieuwe verwerker bij, en het kost centen per maand.
+- Tegen: de functie heeft een container nodig, terwijl de bouwspecificatie nu zegt dat er geen Docker nodig is. Het vrijmaken duurt naar schatting 5 tot 20 seconden en vraagt 4 tot 8 GB geheugen. Het model moet worden bijgehouden.
+- Op 21 november 2026 is een proef gestart op foto's van Marc, met BiRefNet en de lichte variant ervan. De foto's en de uitkomst staan niet in de repository.
+
+**B. Commerciële AI.**
+
+- **Claude, via de API met de SDK van Anthropic of via Bedrock.** Claude leest foto's, maar geeft alleen tekst terug. Het kan een foto dus niet bewerken of een fles vrijmaken. Wel kan het in dezelfde aanroep als het etiket lezen zeggen of de foto bruikbaar is (de fles helemaal in beeld, rechtop, één fles, geen raam erachter), waar de fles staat zodat de app hem kan uitsnijden, en of het vrijmaken van route A gelukt is. Dat kost weinig extra, want het etiket gaat in de pilot al naar het model.
+- **Diensten die wel foto's bewerken.** remove.bg lijkt in de EU te verwerken; dat moet in hun verwerkersovereenkomst bevestigd worden. Photoroom verwerkt in de VS, en het model van Stability op Bedrock draait alleen in de VS. Ze kosten enkele centen per foto. Elke dienst is een nieuwe verwerker, met een sleutel in Secrets Manager en een plek in de privacyverklaring.
+- **Beeldmodellen die een nieuwe foto maken.** Niet gebruiken. Ze kunnen het etiket, de jaargang of de vorm van de fles veranderen, en dan ziet een lid een andere fles dan het koopt.
+
+Voor Claude via de API van Anthropic geldt hetzelfde als voor elke dienst buiten AWS: nagaan waar de foto verwerkt wordt, want het plan eist dat ook het taalmodel in de EU draait. Via Bedrock is het dezelfde vraag als voor het etiket lezen in week 4.
+
+Het voorstel is beide te combineren: route A maakt het pakshot, Claude controleert de foto en het resultaat. De keuze volgt na de proef.
+
+Regels:
+
+- Marc ziet het bewerkte resultaat voordat een lid het ziet, en kan altijd de foto opnieuw maken.
+- Lukt het vrijmaken niet, dan krijgt Marc vanzelf een nette uitsnede zonder vrijmaken, met de reden erbij, zoals "de fles raakt de rand".
+- Het origineel blijft bewaard, zodat de stijl later kan veranderen zonder nieuwe foto's.
+- De vrijgemaakte fles wordt opgeslagen als doorzichtige afbeelding. De achtergrond komt uit de web-app, zodat hij op elk scherm gelijk is.
+- Op de foto hoort alleen de fles. Locatie en andere gegevens gaan eruit voordat hij wordt geüpload, zoals in de pilot.
+- Ontwerp V3 kent alleen een verloop van doorzichtig naar zwart over foto's. Een vaste achtergrond achter de fles is een aanvulling op het ontwerp.
+
+**Start als** een proef op Marcs eigen foto's goed genoeg uitvalt, en de foto's in de pilot naast elkaar onrustig ogen.
+
+## 19. Volgen wat er gebeurt, en ingrijpen als een bestelling misgaat
 
 Twee vragen lopen hier door elkaar, en ze vragen iets anders:
 
@@ -518,4 +554,4 @@ Drie tellingen maken de keuze tussen deze onderwerpen na acht weken makkelijker.
 
 Voor onderwerp 16 komt er geen telling bij. Vraag in de vijf gesprekken na afloop of een lid lijsten of meldingen oversloeg omdat er weinig voor hem bij zat.
 
-Voor onderwerp 18 komt er geen telling bij: stap A zit in de pilot. Houd in de pilot bij hoe vaak een signaal afging, hoe vaak Marc of Aidan daarna ingreep, en hoe vaak een lid iets meldde waar geen signaal voor was. Dat zegt of stap B en C nodig zijn.
+Voor onderwerp 19 komt er geen telling bij: stap A zit in de pilot. Houd in de pilot bij hoe vaak een signaal afging, hoe vaak Marc of Aidan daarna ingreep, en hoe vaak een lid iets meldde waar geen signaal voor was. Dat zegt of stap B en C nodig zijn.

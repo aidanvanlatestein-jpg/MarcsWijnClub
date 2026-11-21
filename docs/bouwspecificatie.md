@@ -237,7 +237,7 @@ Dezelfde taak stuurt bij een bestelling `namens` of `bieding` die 24 uur vóór 
 
 ### Tijdlijn en signalen
 
-Besloten op 21 november 2026: stap A van onderwerp 18 op de [roadmap](roadmap.md) zit in de pilot. Elke bestelling krijgt een tijdlijn in de tabel `tijdlijn`, en een regel over die tijdlijn kan een signaal geven aan Marc of Aidan.
+Besloten op 21 november 2026: stap A van onderwerp 19 op de [roadmap](roadmap.md) zit in de pilot. Elke bestelling krijgt een tijdlijn in de tabel `tijdlijn`, en een regel over die tijdlijn kan een signaal geven aan Marc of Aidan.
 
 | `stap` | Wie schrijft hem |
 | --- | --- |

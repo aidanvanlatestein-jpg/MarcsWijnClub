@@ -10,3 +10,6 @@ node_modules/
 .env.*
 .DS_Store
 app/dist/
+
+# Eigen foto's, bijvoorbeeld uit WhatsApp. Kunnen leden tonen; de repository is openbaar.
+/photos/
