@@ -11,6 +11,10 @@ boto3==1.44.6; python_version >= "3.10"
 pytest==8.4.2; python_version < "3.10"
 boto3==1.42.97; python_version < "3.10"
 
+# Dekking van de functies meten (pytest --cov). Dezelfde versie voor elke Python; pip-audit meldde
+# op 20 november 2026 geen bekende kwetsbaarheden voor deze versie.
+pytest-cov==7.1.0
+
 # Browsertests op telefoonformaat (tests/web). Steeds de nieuwste versie die minstens twee weken oud was.
 # PyPI meldde op 19 november 2026 geen bekende kwetsbaarheden voor deze versies. Vanaf 1.61 vraagt
 # Playwright Python 3.10; 1.60.0 is de laatste voor 3.9 en draait alleen lokaal.

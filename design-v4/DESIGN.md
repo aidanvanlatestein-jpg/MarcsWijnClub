@@ -100,7 +100,7 @@ Aidan besloot op 20 november 2026 om V4 te volgen. Het plan en de bouwspecificat
 - **Flessen kiezen.** Tikken op de flessen werkt, zoals V4 laat zien. De min- en de plusknop van 44 px blijven toch staan: een fles is te smal om met een duim zeker te raken (bouwspecificatie, M2).
 - **Namen en adressen.** Het prototype gebruikt verzonnen leden (`Lid 1`, `Voorbeeldstraat 1`), geen namen zoals in de schermen. Zo staat het in CLAUDE.md.
 - **Marcs woorden.** Teksten in Marcs stem zijn in het prototype als voorbeeld gemarkeerd.
-- **Camera.** De sluiter gebruikt een voorbeeldfoto en de herkenning is een eenvoudige regel. In de echte app leest een taalmodel het etiket en het bericht.
+- **Camera.** De sluiter opent de camera van de telefoon zelf (`capture="environment"`), niet een zoeker in de app zoals scherm 15 tekent; het beeld achter het kader is een voorbeeldfoto. De foto blijft op het toestel en de herkenning is een eenvoudige regel. Zonder camera kan het prototype verder met "Gebruik de voorbeeldfoto". In de echte app leest een taalmodel het etiket en het bericht.
 - **Navigatie in het beheer.** V4 tekent geen weg tussen de beheerschermen. Het prototype heeft daarom tekstlinks: "+ NIEUWE FLES" en "AFLEVEREN →" op de avond, en "← DE AVOND" bij afleveren.
 
 ## Nog niet getekend

@@ -48,7 +48,7 @@ Leden hebben één startpagina, zonder tabbalk. Marc heeft drie beheerschermen. 
 
 | Onderdeel | In de pilot | Niet in de pilot |
 | --- | --- | --- |
-| De lijst | Wijnen van Marc tegen vaste prijs, met voorraad per wijn en zijn eigen inleiding. Enkele uren open. Meerdere wijnen in één bestelling. Bijbestellen kan tot de lijst sluit, als een nieuwe bon met een eigen betaling | Staffelkorting, abonnement |
+| De lijst | Wijnen van Marc tegen vaste prijs, met voorraad per wijn en zijn eigen inleiding. Enkele uren open. Meerdere wijnen in één bestelling. Bijbestellen kan tot de lijst sluit, als een nieuwe bon met een eigen betaling | Staffelkorting, abonnement. Filteren op smaak en een melding op maat (onderwerp 16 op de roadmap) |
 | De bieding | Bijzondere flessen, één per keer, met eindtijd. Het hoogste bod wint | Flessen van leden, prijsvergelijking |
 | Advies | Bij elke wijn Marcs tekst. Marc schrijft hem zelf, neemt hem over uit zijn WhatsApp-bericht, of kiest uit drie voorstellen die de app maakt uit zijn steekwoorden en het etiket. "Wat eet je erbij" en "wanneer drinken" mogen leeg blijven. Bij een bieding ook herkomst, bewaring en een spraakbericht | Algemeen wijnadvies los van het aanbod. Een tekst uit een spraakbericht, en voorstellen die leren van Marcs eerdere teksten (onderwerp 1 op de roadmap) |
 | Betalen | iDEAL via Mollie. Lijst: meteen bij het bestellen, één betaling per bon. Marc houdt de flessen 15 minuten vast; daarna vervalt een onbetaalde bon en komt de voorraad terug. Namens een lid: het lid krijgt een betaallink en heeft 48 uur. Bieding: binnen 48 uur na het winnen | Credits, creditcard, betalen tussen leden, één betaling per lid voor een hele lijst |
@@ -228,7 +228,7 @@ Faalt een stap, dan stopt de pipeline en gaat er niets door naar de volgende sta
 
 **Drie momenten in de pipeline**
 
-1. **Bij elke pull request:** ruff, pip-audit en pytest op de Python-code, npm audit en build van de web-app, `cdk synth` voor test en productie, en `cdk diff` tegen productie in de samenvatting van de controle. Een pull request uit een fork krijgt nooit toegang tot AWS. De pipeline heeft hier alleen leesrechten. Doel: klaar binnen vijf minuten.
+1. **Bij elke pull request:** ruff, pip-audit en pytest op de Python-code, met de dekking van de functies (ondergrens 95%), npm audit en build van de web-app, de browsertests in Chromium en WebKit, `cdk synth` voor test en productie, en `cdk diff` tegen productie in de samenvatting van de controle. Een pull request uit een fork krijgt nooit toegang tot AWS. De pipeline heeft hier alleen leesrechten. Doel: klaar binnen vijf minuten.
 2. **Bij elke merge naar main:** uitrol naar de teststack, daarna de rooktest. De integratietests en de end-to-end-tests tegen die stack komen erbij zodra er meer gebouwd is.
 3. **Bij een release-tag, zoals `v2026.12.1`:** de pipeline wacht op jouw goedkeuring in de GitHub-omgeving `productie`, rolt dezelfde commit uit naar productie en draait de rooktest. Faalt de uitrol of de rooktest, dan rolt de pipeline de vorige release-tag opnieuw uit en faalt de run, zodat jij een melding krijgt.
 
@@ -477,6 +477,8 @@ Onderwerp 14 stond eerst in de pilot en is er op 19 november 2026 uitgehaald: de
 
 Onderwerp 15 is ook geen idee: het is de lijst met verbeterpunten uit de beveiligingsscan van 20 november 2026. Een deel moet af vóór de eerste uitrol naar productie.
 
+Onderwerp 16 is een idee van Aidan van 21 november 2026, met Vivino als voorbeeld: een lid legt zijn smaak vast, filtert het aanbod en krijgt een melding op maat. Het is nog niet met Marc besproken en hoort niet in de pilot.
+
 | Onderwerp | Wat het oplevert | Start als |
 | --- | --- | --- |
 | 1. Omschrijving via een taalmodel | Marc zet een fles in enkele minuten online, in zijn eigen woorden. Het etiket lezen en tekstvoorstellen uit steekwoorden zitten al in de pilot; hier volgen spraak naar tekst en het leren van zijn stijl | De pilot geslaagd is en Marc in de pilot geregeld een voorstel koos |
@@ -493,7 +495,8 @@ Onderwerp 15 is ook geen idee: het is de lijst met verbeterpunten uit de beveili
 | 12. Wachtlijst bij uitverkocht | Een fles die vrijkomt gaat vanzelf naar wie hem wilde | Marc wijnen gaat verkopen die hij kan nabestellen, of bestellingen geregeld vervallen |
 | 13. Eigen domein en eigen afzenderadres | Een adres dat leden herkennen, en een inlogcode die van de club komt | De naam van de club gekozen is. Uiterlijk vóór de eerste uitnodiging aan een lid |
 | 14. Mijn flessen: de eigen collectie | Een lid ziet terug wat het kocht, wat het ervan vond en wat bij Marc ligt, en bestelt opnieuw | De pilot geslaagd is en leden vragen wat ze eerder kochten, of onderwerp 4 aan de beurt is |
-| 15. Security: verbeterpunten uit de scan | De pipeline, het inloggen en de API zijn dicht voordat er echte leden en betalingen zijn | Nu. Groep A vóór de eerste release-tag, groep B vóór de eerste uitnodiging aan een lid |
+| 15. Security: verbeterpunten uit de scan | De pipeline, het inloggen en de API zijn dicht voordat er echte leden en betalingen zijn | Nu. Groep A vóór de eerste release-tag, groep B en E vóór de eerste uitnodiging aan een lid |
+| 16. Mijn smaak: wensen, filteren en een melding op maat | Een lid ziet eerst wat bij zijn smaak past en krijgt alleen een melding als er iets voor hem bij zit | De pilot geslaagd is, kleur en land bij een wijn staan, en leden zeggen dat ze lijsten of meldingen overslaan omdat er weinig voor hen bij zit |
 
 **1. Omschrijving via een taalmodel**
 
@@ -506,7 +509,7 @@ Vier regels gelden daarbij:
 
 - Marc keurt elke tekst goed voordat een lid hem ziet.
 - Herkomst en bewaring worden nooit gegenereerd. Die komen alleen uit wat Marc zelf invoert.
-- Het model verzint geen scores, prijzen of smaken die Marc niet noemde.
+- Het model verzint geen scores, prijzen of smaken die Marc niet noemde. Die regel gaat over de tekst in Marcs stem. De kenmerken van onderwerp 16 zijn een schatting die Marc nakijkt, en staan los van zijn woorden.
 - We meten hoeveel tijd een fles Marc kost en welk deel van het concept hij ongewijzigd laat. In de pilot legt elke wijn vast waar de tekst vandaan komt.
 
 Technisch blijft dit binnen de bestaande opzet: een taalmodel via Bedrock voor tekst en etiket, en Amazon Transcribe voor de spraak. Of Transcribe Nederlands goed genoeg herkent, moet een proef met Marcs eigen opnames uitwijzen.
@@ -730,7 +733,9 @@ Een scherm waar een lid terugziet wat het bij Marc kocht. Het stond in de pilot 
 
 **15. Security: verbeterpunten uit de scan**
 
-Op 20 november 2026 zijn de repository, de instellingen van de repository in GitHub en de lokaal gebouwde sjablonen van de stacks nagelopen. Het AWS-account zelf is nog niet gescand: de sessie van het profiel `wijnclub` was verlopen. Die punten staan onderaan als nog te controleren.
+Op 20 november 2026 zijn de repository, de instellingen van de repository in GitHub en de lokaal gebouwde sjablonen van de stacks nagelopen. Het AWS-account is op 20 november alleen-lezen gescand: de instellingen van het account, de bootstrap van CDK, de drie rollen voor GitHub en de teststack. De bevindingen staan in groep E. De sessie verliep halverwege; wat daardoor openstaat, staat onderaan.
+
+In AWS bevestigd: de drie rollen voor GitHub vertrouwen precies de bedoelde plek en hebben alleen de bedoelde rechten, geen andere rol vertrouwt de koppeling met GitHub, de productierol is nog nooit gebruikt, de bucket is niet openbaar, de tabellen hebben herstel naar een tijdstip en geen eigen toegangsbeleid, er zijn geen IAM-gebruikers met toegangssleutels, en buiten `eu-west-1` staat er niets van de wijnclub.
 
 Wat goed staat: geen geheimen of persoonsgegevens in de code of de geschiedenis, een noreply-adres als auteur, secret scanning met push-beveiliging aan, elke Action op een commit-hash, OIDC met het onveranderlijke onderwerp, een bucket die alleen CloudFront kan lezen, herstel naar een tijdstip op elke tabel, zelf aanmelden uit, `npm audit` zonder meldingen en `pip-audit` schoon op Python 3.14 in de pipeline.
 
@@ -744,6 +749,7 @@ Wat goed staat: geen geheimen of persoonsgegevens in de code of de geschiedenis,
 | A4 | De uitrolrollen van CDK zijn beheerder van het hele gedeelde account. Dat is een bewust risico, maar het maakt A1 tot en met A3 zwaarder | Een eigen bootstrap voor de wijnclub met een eigen kenmerk (qualifier) en een uitvoeringsbeleid of een grens (permissions boundary) die alleen `Wijnclub-*` en `wijnclub-*` toelaat. Of het eigen account uit de README |
 | A5 | `productie.yml` controleert niet of de tag op `main` staat. Een tag op een losse commit gaat na goedkeuring naar productie | Een stap die stopt als de commit van de tag niet in `main` zit |
 | A6 | De CDK-opdrachtregel komt bij elke run via `npx --yes aws-cdk@2.1149.0` binnen, zonder lockbestand; pip installeert zonder hashes. De versie staat vast, de inhoud en de onderliggende pakketten niet | Zet `aws-cdk` als ontwikkelpakket in een `package.json` met lockbestand en gebruik `npm ci`. Installeer Python-pakketten met `--require-hashes` |
+| A7 | Het plan zegt dat de productiestack beëindigingsbeveiliging heeft. In `infra/` staat die nergens aan | `termination_protection` aan voor de stacks van productie en voor `Wijnclub-GitHub`, met een stacktest |
 
 *Groep B: vóór de eerste uitnodiging aan een lid*
 
@@ -781,14 +787,113 @@ Wat goed staat: geen geheimen of persoonsgegevens in de code of de geschiedenis,
 | D5 | Secret scanning zoekt alleen naar sleutels van bekende leveranciers | Ook de algemene patronen en de geldigheidscontrole aanzetten |
 | D6 | De lokale `.venv` draait op Python 3.9.6. `pip-audit` meldt daar 15 bekende kwetsbaarheden, in pytest, urllib3, requests, filelock en msgpack. Ze draaien alleen lokaal | De lokale omgeving opnieuw aanmaken met Python 3.14 en de regels voor 3.9 uit `requirements-dev.txt` halen |
 
+*Groep E: het AWS-account, vóór de eerste uitnodiging aan een lid*
+
+Het account is gedeeld. E2, E5 en E8 raken ook andere projecten: beoordeel ze, en verander daar niets vanuit de wijnclub.
+
+| Nr | Punt | Wat te doen |
+| --- | --- | --- |
+| E1 | AWS meldt dat de hoofdgebruiker (root) geen tweestapsverificatie heeft. Toegangssleutels heeft hij niet. In een account dat lid is van een organisatie kan dit ook betekenen dat de hoofdgebruiker geen inloggegevens heeft | Nagaan welke van de twee het is. Heeft hij een wachtwoord, zet dan tweestapsverificatie aan. De README vraagt dit al |
+| E2 | Er zijn zeven IAM-gebruikers, geen ervan met tweestapsverificatie. Eén heeft een wachtwoord voor de console, zes hebben niets om mee in te loggen | Tweestapsverificatie op de gebruiker met een wachtwoord, of hem vervangen door inloggen via Identity Center. Ongebruikte gebruikers opruimen |
+| E3 | Er is geen CloudTrail-spoor, geen GuardDuty, geen Security Hub, geen Config en geen Access Analyzer. Alleen de standaardgeschiedenis van 90 dagen bestaat. Na een incident is niet te zien wat er in het account gebeurde | Een CloudTrail-spoor voor alle regio's naar een eigen bucket, met controle van de logbestanden. Access Analyzer voor toegang van buiten; dat is gratis. GuardDuty overwegen, dat kost geld |
+| E4 | Er is geen budgetalarm, terwijl de README er een van € 20 vraagt. De kostentag `project` is vanuit dit account niet te activeren: dat kan alleen het beheeraccount van de organisatie | Een budgetalarm op het account, of een melding bij afwijkende kosten (Cost Anomaly Detection). De tag laten activeren in het beheeraccount, of de README aanpassen |
+| E5 | De blokkade van openbare toegang tot S3 staat niet aan op het niveau van het account. De buckets van de wijnclub en van CDK hebben hem zelf wel | Aanzetten voor het account, nadat is nagegaan dat geen ander project een bucket bewust openbaar heeft |
+| E6 | De bootstrap van CDK in `eu-west-1` is op 19 november 2026 met de standaardinstellingen aangemaakt: uitvoeren met `AdministratorAccess`, geen grens, en elke rol in het account met genoeg rechten mag de uitrolrollen aannemen. In die regio staan alleen stacks van de wijnclub | Dit is A4, en het kan zonder een ander project te raken: opnieuw bootstrappen in `eu-west-1` met een beperkt uitvoeringsbeleid |
+| E7 | De client in de teststack staat zoals in B1 en B2: wachtwoord als eerste factor, OAuth aan met `https://example.com` als terugkeeradres en het bereik `aws.cognito.signin.user.admin`. De user pool heeft geen domein, dus de inlogpagina van Cognito is niet bereikbaar. Het tijdelijke wachtwoord is zeven dagen geldig | B1 en B2. Voeg nooit een domein aan de user pool toe zolang OAuth aan staat |
+| E8 | De scheiding werkt ook de andere kant op. Er staan 48 rollen, twee koppelingen met een andere dienst voor pipelines en gebruikers van andere projecten in het account. Wie daar beheerrechten heeft, kan de ledentabel en de user pool lezen | Vóór er echte leden in staan: het eigen account uit de README, of de gegevens van leden versleutelen met een eigen sleutel in KMS die alleen de functies van de wijnclub mogen gebruiken |
+| E9 | Het account is lid van een AWS-organisatie en het inloggen loopt via Identity Center. Wie de organisatie en Identity Center beheert, bepaalt wie er nog meer in dit account kan | Vastleggen wie dat zijn en welke rechten zij op dit account hebben. Dit hoort ook in de privacyverklaring: wie kan bij de gegevens van leden |
+| E10 | Er is geen contactpersoon voor beveiliging ingesteld. Meldingen van AWS over misbruik gaan dan alleen naar het adres van de hoofdgebruiker | Een contactpersoon voor beveiliging instellen onder Account |
+
 *Nog te controleren in het AWS-account*
 
-- Het rootaccount: tweestapsverificatie aan en geen toegangssleutels.
-- IAM: gebruikers met vaste sleutels, ongebruikte sleutels en rollen die elk account of elke GitHub-repository vertrouwen.
-- CloudTrail, GuardDuty en het budgetalarm: of ze aan staan.
-- De stacks `Wijnclub-*` zoals ze er nu staan, vergeleken met de sjablonen: afwijkingen, openbare toegang, de vertrouwensregels van de drie rollen voor GitHub en het beleid van de uitrolrollen van CDK (A4).
+De sessie verliep voordat dit gelezen was. De sjablonen zeggen wat er hoort te staan; dit is de controle of het er ook zo staat.
+
+- De API: of elke route een token vraagt en wat de begrenzing op de stage is.
+- De functies: wie ze mag aanroepen, en dat er geen eigen adres (function URL) op staat.
 - Secrets Manager: of er alleen `wijnclub/<omgeving>/…` staat en wie het mag lezen.
 - SES: of het afzenderadres geverifieerd is en of het account nog in de proefomgeving zit.
+- De logboeken en hun bewaartermijn, en of er al alarmen zijn.
+- Afwijkingen tussen de stacks en hun sjablonen (drift). Die controle start een bewerking in CloudFormation en is daarom niet gedraaid.
+
+**16. Mijn smaak: wensen, filteren en een melding op maat**
+
+Een lid legt vast wat het graag drinkt: rood of wit, licht of vol, bepaalde producenten en smaken. De app gebruikt dat op twee plekken: het lid filtert het aanbod, en het krijgt alleen een melding als er een wijn naar zijn smaak bij zit. Het voorbeeld is Vivino, dat wijnen laat filteren op soort, druif, streek, vier smaakschalen, smaken en eten. Het idee is van 21 november 2026 en nog niet met Marc besproken.
+
+Het bestaat uit drie stappen die elk los op te leveren zijn. De schattingen zijn grof en niet met een ontwerp onderbouwd.
+
+| Stap | Wat | Leunt op | Schatting |
+| --- | --- | --- | --- |
+| A. Kenmerken per wijn | Het model stelt kleur, land en smaak voor, Marc kijkt na, en het lid ziet ze bij de wijn | Het etiket lezen uit de pilot | 4 dagen |
+| B. Filteren | Een snelfilter boven het aanbod, en het scherm Mijn smaak met opgeslagen wensen | Stap A, en een ontwerp van Aidan | 4 dagen |
+| C. Melding op maat | "Alleen mijn smaak" als keuze bij de meldingen | Stap B, de meldingen uit de pilot en de regels van onderwerp 3 | 2 dagen |
+
+*Stap A: kenmerken per wijn*
+
+Een wijn heeft nu geen kleur, land of smaak in de tabel; kleur en land staan alleen in het prototype. Er komen velden bij op `wijnen`, allemaal optioneel. Een wijn zonder kenmerken blijft gewoon te koop.
+
+| Veld | Waarden | Bij Vivino |
+| --- | --- | --- |
+| `kleur` | `rood`, `wit`, `rosé`, `bubbels`, `zoet` | Soort wijn |
+| `land` | Tekst, hoogstens 40 tekens | Land |
+| `druiven` | Een lijst, hoogstens vier | Druiven |
+| `vol` | 1 tot 5, van licht tot vol | Light – Bold |
+| `tannine` | 1 tot 5, van soepel tot stevig; alleen bij rood | Smooth – Tannic |
+| `zoet` | 1 tot 5, van droog tot zoet | Dry – Sweet |
+| `zuur` | 1 tot 5, van zacht tot fris | Soft – Acidic |
+| `smaken` | Hoogstens vijf uit een vaste lijst van twaalf: rood fruit, zwart fruit, citrus, steenfruit, tropisch fruit, gedroogd fruit, bloemen, kruiden, aards, hout, brood en gist, mineraal | Smaken |
+| `spijzen` | Hoogstens vier uit een vaste lijst van tien: rood vlees, wild, gevogelte, vis, schaal- en schelpdieren, pasta, kaas, groente, borrel, dessert | Eten erbij |
+| `kenmerkenBron` | `model` of `marc` | |
+
+- **Het model vult in, Marc kijkt na.** Na het etiket doet de app één extra aanroep naar Bedrock met naam, producent, jaargang, streek, druif en Marcs steekwoorden. Het voorstel staat ingevuld op het nakijkscherm. Bewaren is goedkeuren. Past Marc iets aan, dan wordt `kenmerkenBron` `marc`, zoals nu bij de tekst.
+- **Alleen vaste waarden.** De regels komen in `domein/kenmerken.py`, met dezelfde opzet als het herkennen van een bericht. Het antwoord van het model is onbetrouwbare invoer: alles buiten de lijsten en de grenzen valt weg. Weet het model iets niet, dan blijft het veld leeg.
+- **Dit wijkt af van een regel van onderwerp 1:** het model verzint geen smaken die Marc niet noemde. Die regel blijft voor de tekst in Marcs stem. De kenmerken zijn een schatting uit druif, streek en jaargang. Ze staan bij de wijn als schaal, niet als woorden van Marc. Marc moet hiermee instemmen.
+- **Eerst testen.** Laat het model twintig wijnen van eerdere lijsten invullen en laat Marc ze nakijken. Moet hij bij meer dan één op de vijf iets wezenlijks verbeteren, dan vult hij alleen kleur en licht tot vol zelf in en vervalt de rest.
+- De aanroep telt mee in de grens van 100 per dag voor `beheer`. Er komt geen nieuwe dienst, sleutel of afhankelijkheid bij.
+
+*Stap B: filteren*
+
+- **Snelfilter.** Boven het aanbod staat een rij segmenten in de huisstijl: ALLES · ROOD · WIT · ROSÉ · BUBBELS. Het filter geldt voor dit bezoek en wordt niet bewaard.
+- **Mijn smaak.** Een nieuw scherm, bereikbaar via "MIJN SMAAK →" naast het snelfilter. Het lid kiest kleuren, per schaal een bereik, smaken en spijzen uit de vaste lijsten, favoriete producenten, streken en druiven, en een bedrag per fles "tot en met". Favorieten kiest het lid uit wat Marc eerder verkocht; er is geen vrije tekst. Alles is optioneel: een leeg scherm betekent "toon alles".
+- **Eén regel voor "past".** Binnen een groep geldt "of", tussen groepen "en". Ontbreekt een kenmerk bij de wijn, dan telt die groep als passend: een leeg veld verbergt nooit een wijn. Een wijn van een favoriete producent past altijd. De regel staat in `domein/smaak.py` en gespiegeld in de web-app.
+- **Niets verdwijnt stil.** Staat een filter aan, dan staat onderaan "3 wijnen passen niet bij je smaak · TOON ALLES". Berichten van Marc blijven altijd staan. De veiling wordt niet gefilterd: dat is één fles.
+- **Opslag.** De wensen staan als één veld `smaak` op het `lid`. Er komt geen tabel bij. De aanroepen zijn `GET`, `PUT` en `DELETE /api/mijn/smaak`; het lid komt uit het token, en `PUT` weigert alles buiten de vaste lijsten en grenzen.
+- **De app filtert zelf.** `GET /api/aanbod` geeft de kenmerken mee. Het aanbod is klein, en de server hoeft zo niet te weten wat een lid bekijkt.
+- **Ontwerp.** Design-v4 heeft geen profielscherm en geen filter. Aidan levert drie tekeningen: het snelfilter op het aanbod, Mijn smaak, en de schalen bij een wijn en op het nakijkscherm. De eisen voor de telefoon gelden: tikvlakken van 44 px, en geen schuif die alleen met slepen werkt.
+
+*Stap C: melding op maat*
+
+- Bij de meldingen kiest een lid "ALLE WIJNEN" of "ALLEEN MIJN SMAAK".
+- Met "alleen mijn smaak" krijgt het lid de melding van een nieuwe lijst of een nieuwe bieding alleen als minstens één wijn past, met het aantal erbij: "3 wijnen naar jouw smaak".
+- Meldingen over een eigen bestelling of bod worden nooit gefilterd: het betaalverzoek, overboden en gewonnen.
+- De regels van de campagnes gelden ook hier: toestemming per kanaal, een maximum per week, niets na 21:30.
+- De app legt niet vast welk lid op welke wijn paste. `bericht` blijft zonder lid.
+
+*Privacy*
+
+- Smaakwensen zijn persoonsgegevens. Onder Juridisch en privacy staat dat de app alleen bewaart wat nodig is; bij het bouwen komen de wensen in die lijst en in de privacyverklaring.
+- Ze zijn vrijwillig. Het lid wist ze zelf met één knop, en ze verdwijnen als een lid zijn gegevens laat verwijderen.
+- Marc ziet geen wensen per lid. Tellingen voor inkoop, zoals "14 leden zoeken vol rood", horen hier niet bij; ze kunnen later bij onderwerp 5.
+- De wensen komen niet in het logboek.
+- Punt E8 van onderwerp 15 geldt ook hier: wie in het gedeelde account de ledentabel kan lezen, leest ook de wensen.
+
+*Wat het niet doet*
+
+- Geen sterren of scores van leden, en geen "anderen kochten ook". Het oordeel "Lekker" of "Niet voor mij" hoort bij onderwerp 14.
+- Geen smaak afleiden uit aankopen. Dat kan later, als onderwerp 14 de oordelen vastlegt.
+
+*Risico's*
+
+- **Weinig wijnen.** Bij een lijst van zes tot tien wijnen en twintig tot dertig leden levert filteren weinig op. De waarde zit in de melding en in een grotere club, onderwerp 8. Daarom begint dit pas als leden er zelf om vragen.
+- **Minder verkoop voor Marc.** Wie filtert, ziet minder. Het antwoord is de regel "niets verdwijnt stil".
+- **Het model schat verkeerd.** Het antwoord is de test met twintig wijnen, Marcs blik bij het nakijken, en de regel dat een leeg veld nooit een wijn verbergt.
+
+*Vragen voor Marc*
+
+1. Mag het model de smaak van een wijn schatten, als hij het nakijkt?
+2. Wil hij dat leden kunnen filteren, nu dat een deel van zijn aanbod uit beeld haalt?
+3. Passen de twaalf smaken en de tien spijzen bij hoe hij over wijn praat?
+
+Dit onderwerp is geslaagd als een derde van de leden wensen instelt, leden met "alleen mijn smaak" vaker op een melding tikken dan leden zonder, weinig leden hun meldingen uitzetten, en de kenmerken Marc per wijn minder dan een halve minuut kosten.
 
 **Bewust niet**
 
@@ -806,3 +911,5 @@ Drie tellingen maken de keuze tussen deze onderwerpen na acht weken makkelijker.
 - Welk deel van de leden op een tweede en derde lijst bestelt: of terugkomen een probleem is.
 - Bij een bieding: hoeveel leden de fles bekeken zonder te bieden, en hoeveel biedingen de eindtijd verlengden: de vraag naar volgen en een maximaal bod.
 - Per melding: wanneer hij verstuurd is, hoeveel leden erop tikten en hoeveel er binnen 24 uur bestelden of boden: het beste moment, voor de campagnes.
+
+Voor onderwerp 16 komt er geen telling bij. Vraag in de vijf gesprekken na afloop of een lid lijsten of meldingen oversloeg omdat er weinig voor hem bij zat.

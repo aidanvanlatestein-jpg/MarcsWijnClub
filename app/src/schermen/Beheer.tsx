@@ -1,5 +1,5 @@
 import { Camera, Check, ClipboardPaste, Mic, Pencil, Send, Truck, X, ZapOff } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react'
 import { LiveBalk } from '../onderdelen/Avond'
 import { BonRegels } from '../onderdelen/Bon'
 import { Blad } from '../onderdelen/Blad'
@@ -55,6 +55,9 @@ interface Formulier {
 
 type Stap = 'foto' | 'na' | 'soort' | 'klaar'
 
+/** Wat de bouwspecificatie als foto toestaat. Een camera levert JPEG. */
+const FOTO_SOORTEN = ['image/jpeg', 'image/png', 'image/webp']
+
 function NieuweFles({ ga }: { ga: Ga }) {
   const [staat, dispatch] = useStaat()
   const { lijst } = staat
@@ -101,6 +104,18 @@ function NieuweFles({ ga }: { ga: Ga }) {
     setTwijfel(new Set(h.jaargang ? ['jaar'] : []))
     setFout(null)
     setStap('na')
+  }
+  /**
+   * Een foto uit de camera of de fotorol. Let op: dit is een bestand van de gebruiker. Het prototype toont het
+   * alleen als afbeelding in deze browser en stuurt het nergens heen. De echte upload volgt de regels uit de
+   * bouwspecificatie: verkleinen, opnieuw wegschrijven als JPEG en het type controleren aan de inhoud.
+   */
+  const kiesFoto = (e: ChangeEvent<HTMLInputElement>) => {
+    const bestand = e.target.files?.[0]
+    e.target.value = ''
+    if (!bestand) return
+    if (!FOTO_SOORTEN.includes(bestand.type) || bestand.size > 10_000_000) return setFout('Kies een JPEG, PNG of WebP van hoogstens 10 MB.')
+    herken(URL.createObjectURL(bestand))
   }
   const zet = (veld: keyof Formulier) => (waarde: string) => {
     setForm((f) => (f ? { ...f, [veld]: waarde } : f))
@@ -196,18 +211,13 @@ function NieuweFles({ ga }: { ga: Ga }) {
           <label className="camera-zij">
             <img src="/voorbeeld/candido.jpg" alt="" />
             Fotorol
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={(e) => {
-                const bestand = e.target.files?.[0]
-                if (!bestand) return
-                if (!bestand.type.startsWith('image/') || bestand.size > 10_000_000) return setFout('Kies een foto van hoogstens 10 MB.')
-                herken(URL.createObjectURL(bestand))
-              }}
-            />
+            <input type="file" accept={FOTO_SOORTEN.join(',')} onChange={kiesFoto} />
           </label>
-          <button type="button" className="sluiter" aria-label="Maak de foto" onClick={() => herken(voorbeeldEtiket.foto)}><span /></button>
+          {/* De sluiter opent de camera van de telefoon, aan de achterkant. Een computer zonder camera opent de bestandskiezer. */}
+          <label className="sluiter">
+            <span aria-hidden />
+            <input type="file" accept="image/*" capture="environment" aria-label="Maak de foto" onChange={kiesFoto} />
+          </label>
           <button type="button" className="camera-zij" onClick={() => setPlakken(true)}>
             <span className="camera-plak"><ClipboardPaste size={24} aria-hidden /></span>
             Plak tekst
@@ -215,7 +225,10 @@ function NieuweFles({ ga }: { ga: Ga }) {
         </div>
         {fout && <p className="fout" role="alert" style={{ textAlign: 'center' }}>{fout}</p>}
         <p className="camera-voet">De app leest je WhatsApp-tekst en het etiket. Jij kijkt het na.</p>
-        <p className="uitleg-voorbeeld camera-voet">Voorbeeld: de knop maakt geen echte foto en de app leest het etiket niet echt.</p>
+        <p className="uitleg-voorbeeld camera-voet">
+          Voorbeeld: je foto blijft op dit toestel en de app leest het etiket niet echt.{' '}
+          <button type="button" className="tekstlink gedempt" onClick={() => herken(voorbeeldEtiket.foto)}>Gebruik de voorbeeldfoto</button>
+        </p>
         {plakken && (
           <Blad titel="Plak je WhatsApp-bericht" onSluit={() => setPlakken(false)}>
             <label className="sr" htmlFor="bericht">Je WhatsApp-bericht</label>
