@@ -18,7 +18,7 @@ Spreken ze elkaar tegen, of staat iets nergens: vraag het na en pas het document
 
 Daarnaast, niet nodig voor de bouw van de pilot:
 
-- [docs/roadmap.md](docs/roadmap.md): wat er na de pilot kan komen, onderwerp 1 tot en met 17. Alleen onderwerp 13 (eigen domein) en 15 (beveiliging) moeten vóór de eerste uitnodiging af; ze staan in week 8.
+- [docs/roadmap.md](docs/roadmap.md): wat er na de pilot kan komen, onderwerp 1 tot en met 18. Alleen onderwerp 13 (eigen domein) en 15 (beveiliging) moeten vóór de eerste uitnodiging af; ze staan in week 8. Stap A van onderwerp 18, de tijdlijn per bestelling, zit sinds 21 november 2026 in de pilot en staat in week 7.
 - [docs/beveiliging.md](docs/beveiliging.md): de verbeterpunten uit de beveiligingsscan van 20 november 2026, A1 tot en met E10.
 - [docs/marktonderzoek.md](docs/marktonderzoek.md): wie hetzelfde doet en wat dat betekent, van 19 november 2026.
 
@@ -73,6 +73,8 @@ Alles wat de vorm van de app bepaalt, op één plek. **Besloten** staat vast. **
 | Etiket en tekstvoorstellen | Besloten, 20 november 2026 | In de pilot, week 4. De stijl is op 21 november 2026 afgeleid van Marcs omschrijvingen in WhatsApp; zeven ervan staan met zijn toestemming als voorbeeld in `domein/tekst.py` |
 | Eigen collectie en bewaren | Besloten, 19 november 2026 | Niet in de pilot. Roadmap onderwerp 14 en 9 |
 | Live bijwerken | Besloten, 21 november 2026 | De web-app vraagt elke 3 seconden wat er nieuw is, zolang het scherm zichtbaar is. Een WebSocket is roadmap onderwerp 17. Een bod wordt altijd op de server tegen de actuele stand beoordeeld |
+| Volgen en ingrijpen | Besloten, 21 november 2026 | Elke bestelling krijgt een tijdlijn: de stappen met een tijdstip, zonder naam, adres of bedrag. Vraagt een bestelling aandacht, dan krijgt Marc of Aidan een signaal. In de pilot, week 7. Fouten uit de web-app, de trechter en een platform blijven roadmap onderwerp 18 |
+| Bericht bij een bon die vervalt na een betaalpoging | Voorlopige bouwkeuze · Marc | Vervalt een bon van de lijst terwijl het lid wel probeerde te betalen, dan krijgt Marc een signaal. Zonder betaalpoging krijgt hij niets, zoals eerder |
 | Rol van Marc | Voorlopige bouwkeuze · Marc | Marc zet tijdens de avond de wijnen zelf op tafel en zegt er iets bij. Een wijn die klaarstaat is niet te koop. Wat bij het sluiten nog klaarstaat, is niet verkocht |
 | Veiling en avond | Voorlopige bouwkeuze · Aidan en Marc | Een veiling hoort bij één avond, hoogstens één per avond. Hij opent op een tijd die Marc kiest, of eerder met één tik, en sluit op zijn eigen eindtijd |
 | De avond sluiten | Voorlopige bouwkeuze · Marc | Op de eindtijd, of eerder als Marc op Sluit de avond tikt, met een bevestiging |
@@ -127,6 +129,7 @@ Leden hebben één startpagina, het aanbod, zonder tabbalk. Marc heeft zes behee
 | Advies | Bij elke wijn Marcs tekst. Marc schrijft hem zelf, neemt hem over uit zijn WhatsApp-bericht, of kiest uit drie voorstellen die de app maakt uit zijn steekwoorden en het etiket. "Wat eet je erbij" en "wanneer drinken" mogen leeg blijven. Bij een veiling ook herkomst, bewaring en een spraakbericht | Algemeen wijnadvies los van het aanbod. Een tekst uit een spraakbericht, en voorstellen die leren van Marcs eerdere teksten (roadmap onderwerp 1) |
 | Betalen | iDEAL via Mollie. Lijst: meteen bij het bestellen, één betaling per bon. Marc houdt de flessen 15 minuten vast; daarna vervalt een onbetaalde bon en komt de voorraad terug. Namens een lid: het lid krijgt een betaallink en heeft 48 uur. Veiling: binnen 48 uur na het winnen | Credits, creditcard, betalen tussen leden, één betaling per lid voor een hele avond |
 | Je bestellingen | Wat het lid op de lopende avond bestelde en de fles die het won, met brengen of halen, de status en betalen. Het lid komt er via de terugblik na de avond, en via de link in een melding | Een eigen collectie: eerder gekocht, een oordeel per wijn, opnieuw bestellen en flessen in bewaring (roadmap onderwerp 14) |
+| Volgen en ingrijpen | Per bestelling een tijdlijn van de stappen, en een signaal aan Marc of Aidan als een bestelling aandacht vraagt. Bovenaan Beheer: afleveren staat wat aandacht vraagt | Fouten uit de web-app, de trechter, een platform van een derde en schermopnames (roadmap onderwerp 18, stap B en C) |
 | Levering | Brengen of halen, door Marc per avond ingesteld. Brengen: Marc brengt de flessen naar het adres van het lid, op een moment dat hij kiest. Halen: het lid haalt ze bij Marc op, op een moment en een plek die hij kiest. Ook voor een gewonnen fles kiest het lid brengen of halen | Bewaren bij Marc (roadmap onderwerp 9), pakketverzending, afhaalpunten per regio |
 | Contact | Knop "Vraag Marc", naar WhatsApp met de wijn ingevuld | Chat in de app, een bot, een boekingssysteem voor diners |
 | Meldingen | Nieuwe avond aangekondigd, de avond begint (voor wie "herinner mij" koos), één herinnering "nog beschikbaar" vóór het sluiten, de veiling begint, overboden, gewonnen. Een betaallink bij een bon namens een lid, en één herinnering om te betalen bij een bon namens een lid of een gewonnen fles. "Ik ben onderweg" aan wie Marc gaat brengen. Bij elke melding legt de app vast wanneer hij verstuurd is en hoeveel leden erop tikten | Marketingberichten en geplande campagnes (roadmap onderwerp 3) |
@@ -430,6 +433,7 @@ Tien tabellen in DynamoDB, met betalen naar gebruik. Je bestellingen en de terug
 | `weergaven` | `wijnId` + `lidId` | het eerste moment waarop het lid een veiling opende. Verdwijnt na 180 dagen |
 | `berichten` | `berichtId` | soort (aankondiging, begin, nog beschikbaar, de veiling begint, overboden, gewonnen, betaallink, betaalherinnering, onderweg), kanaal (melding, e-mail, groep), de avond of wijn waar het over gaat, verzonden op, aantal ontvangers. Nooit een lid |
 | `tikken` | `berichtId` + `lidId` | het eerste moment waarop het lid op de melding tikte. Verdwijnt na 180 dagen |
+| `tijdlijn` | `bestellingId` + tijdstip | de stap die een bestelling doorliep, zoals gemaakt, betaling gestart, melding van Mollie, betaald, verlopen, afgeleverd. Nooit een naam, adres of bedrag. Verdwijnt na 180 dagen |
 
 Drie regels houden de gegevens kloppend:
 
@@ -437,7 +441,7 @@ Drie regels houden de gegevens kloppend:
 - **Voorraad** gaat omlaag op het moment van bestellen, voor alle wijnen in de bon tegelijk. Is één wijn net op, dan gaat de hele bon niet door en ziet het lid welke wijn het is. Is een bon van de lijst 15 minuten na het bestellen niet betaald, of een bon namens een lid na 48 uur, dan komt de voorraad terug.
 - **Eén betaling per bon.** Elke bon wordt apart betaald, ook wat het lid bijbestelde en wat Marc namens hem invoerde. Er is geen gezamenlijke betaling per lid per avond.
 
-`berichten`, `tikken` en `weergaven` dienen alleen om te meten, zie Succescriteria. Wie na een bericht bestelde of bood, leidt de app af uit de bestellingen en biedingen; dat wordt niet apart opgeslagen.
+`berichten`, `tikken` en `weergaven` dienen alleen om te meten, zie Succescriteria. `tijdlijn` dient om te zien wat er met een bestelling gebeurde en om in te grijpen; de signalen staan in de bouwspecificatie, hoofdstuk 3. Wie na een bericht bestelde of bood, leidt de app af uit de bestellingen en biedingen; dat wordt niet apart opgeslagen.
 
 ## Betaling
 
@@ -475,6 +479,7 @@ Zes punten moeten door een jurist bekeken worden voordat de pilot start. De midd
 - Gebeurtenissen in de feed en de biedlog noemen nooit een lid.
 - Voor de tellingen van de pilot legt de app 180 dagen vast welk lid een veiling opende. Marc en de bouwer zien daarvan alleen aantallen. Dit staat in de privacyverklaring, en de grondslag hoort bij de juridische check.
 - De app legt vast op welke melding een lid tikte, om te meten welk moment werkt. Dat staat in de privacyverklaring. Na 180 dagen verdwijnt dat gegeven vanzelf. Laat toetsen of hiervoor toestemming nodig is.
+- De app legt per bestelling de stappen vast, met een tijdstip: gemaakt, betaling gestart, betaald, vervallen, afgeleverd. Dat dient om een bestelling uit te voeren en een fout te herstellen. Er staat geen naam, adres of bedrag in, en na 180 dagen verdwijnt het vanzelf. Het staat in de privacyverklaring; laat toetsen of de uitvoering van de bestelling hiervoor de grondslag is.
 - Alle gegevens staan in een AWS-regio binnen de EU. Ook het taalmodel in Bedrock draait in de EU.
 - De foto van een fles en Marcs steekwoorden gaan naar het taalmodel. De web-app haalt de locatie en andere gegevens uit de foto voordat hij wordt geüpload. Op de foto hoort alleen de fles; laat de jurist meekijken naar wat AWS met deze gegevens doet.
 - Het AWS-account is gedeeld met andere eigen projecten. Wie daar beheerrechten heeft, kan de gegevens van leden lezen; dat hoort in de privacyverklaring. Zie punt E8 en E9 in [docs/beveiliging.md](docs/beveiliging.md).
@@ -507,7 +512,7 @@ Elke ruit is een voorwaarde om door te gaan; de punten staan onder Voorwaarden.
 | 4 | Beheer: een avond plannen met brengen en halen, leden uitnodigen met hun afleveradres. Nieuwe fles: de fles fotograferen, het etiket lezen, het WhatsApp-bericht plakken en herkennen, nakijken met kleur en land, tekstvoorstellen uit steekwoorden (twee tot drie dagen extra), lijst of veiling, klaarzetten. Voor leden de aankondiging en de wijnpagina |
 | 5 | De avond: aankondigen, vanzelf beginnen, wijnen op tafel zetten, berichten van Marc, de feed, en pollen elke 3 seconden. Bestellen met brengen of halen, voorraad en 15 minuten houdtijd, meteen betalen via Mollie in testmodus, een onbetaalde bon laten vervallen, bijbestellen als nieuwe bon. De avond sluiten en de terugblik. Je bestellingen |
 | 6 | Veiling: de bijzondere fles, de zaal met biedlog en bijnamen, bieden, verlengen, de hamer, betalen binnen 48 uur, daarna brengen of halen kiezen. Vastleggen wie een veiling opent en welk bod de eindtijd verlengt |
-| 7 | Meldingen met service worker en e-mail als terugval, "herinner mij", "nog beschikbaar" en de betaalherinnering, met een meting per melding. Bon namens een lid met een betaallink, afleveren met brengen en halen en "ik ben onderweg", Vraag Marc, de pagina van Marc met voorwaarden en privacyverklaring, een lid verwijderen, alarmen. De tellingen voor de roadmap opvraagbaar |
+| 7 | Meldingen met service worker en e-mail als terugval, "herinner mij", "nog beschikbaar" en de betaalherinnering, met een meting per melding. Bon namens een lid met een betaallink, afleveren met brengen en halen en "ik ben onderweg", Vraag Marc, de pagina van Marc met voorwaarden en privacyverklaring, een lid verwijderen, alarmen. De tijdlijn per bestelling met de signalen, en "Vraagt aandacht" bij afleveren (naar schatting drie dagen extra). De tellingen voor de roadmap opvraagbaar |
 | 8 | Klaar voor echte leden: eigen domein, certificaat en afzender in SES, SES buiten de proefomgeving, beveiliging groep A, B en E, handtest op een echte iPhone en Android-telefoon. Eerste release naar productie |
 | 9 | Proefdraaien met Marc en vijf leden, met één echte avond en echte betalingen |
 | 10 tot en met 17 | Pilot. Marc houdt zijn avonden in de app en houdt minstens twee veilingen. Alleen fouten worden hersteld; er komen geen nieuwe functies bij |
@@ -611,3 +616,4 @@ Elk onderdeel van de scope, met waar het staat. Schermen zijn die uit de tabel o
 | Afleveren | Beheer: afleveren | `GET /api/beheer/lijsten/{lijstId}/afleverlijst`, `PUT /api/beheer/bestellingen/{id}/afgeleverd`, `POST /api/beheer/lijsten/{lijstId}/onderweg` | `bestellingen`, `leden`, `berichten` | 7 | Unit, browsertest |
 | Vraag Marc, voorwaarden en privacy | Wijn van de lijst, Marc | – | – | 7 | Browsertest |
 | Tellingen | – | `GET /api/beheer/tellingen` | `bestellingen`, `weergaven`, `berichten`, `tikken`, `biedingen` | 6 en 7 | Unit |
+| Volgen en ingrijpen | Beheer: afleveren | `POST /api/bestellingen/{id}/terug`, `GET /api/beheer/bestellingen/{id}/tijdlijn`, `GET /api/beheer/signalen`, geplande taak | `tijdlijn`, `bestellingen`, `leden` | 7 | Unit, browsertest, integratie |

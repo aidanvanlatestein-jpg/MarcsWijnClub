@@ -62,7 +62,7 @@ Elk scherm heeft een eigen adres achter een hekje. Een link uit een melding krij
 
 ## 2. Tabellen en sleutels
 
-Tien tabellen, alle met betalen naar gebruik en herstel naar een tijdstip. `betalingen` is erbij gekomen om een melding van Mollie aan een bestelling te koppelen, `weergaven`, `berichten` en `tikken` voor de tellingen in hoofdstuk 5, en `feed` voor de avond. Zes zijn gebouwd; `feed`, `weergaven`, `berichten` en `tikken` nog niet. De tabel `oordelen` is op 19 november 2026 vervallen: de eigen collectie van een lid is uit de pilot gehaald en staat als onderwerp 14 op de [roadmap](roadmap.md).
+Elf tabellen, alle met betalen naar gebruik en herstel naar een tijdstip. `betalingen` is erbij gekomen om een melding van Mollie aan een bestelling te koppelen, `weergaven`, `berichten` en `tikken` voor de tellingen in hoofdstuk 5, `feed` voor de avond, en `tijdlijn` voor het volgen van een bestelling (sinds 21 november 2026, zie Tijdlijn en signalen in hoofdstuk 3). Zes zijn gebouwd; `feed`, `weergaven`, `berichten`, `tikken` en `tijdlijn` nog niet. De tabel `oordelen` is op 19 november 2026 vervallen: de eigen collectie van een lid is uit de pilot gehaald en staat als onderwerp 14 op de [roadmap](roadmap.md).
 
 | Tabel | Sleutel | Extra index | Waarvoor de index dient |
 | --- | --- | --- | --- |
@@ -79,6 +79,7 @@ Tien tabellen, alle met betalen naar gebruik en herstel naar een tijdstip. `beta
 | `berichten` | `berichtId` | geen | Per melding vastleggen wanneer hij verstuurd is. Bij enkele honderden berichten is alles doorlopen geen probleem |
 | `tikken` | `berichtId` + `lidId` | geen | Per melding tellen hoeveel leden erop tikten |
 | `feed` | `lijstId` + `tijdstipId` | geen | De feed van één avond, op volgorde. Met `sinds` alleen wat nieuw is |
+| `tijdlijn` | `bestellingId` + `tijdstipId` | geen | De stappen van één bestelling, op volgorde |
 
 `lidId` is de `sub` uit Cognito. Abonnementen op meldingen staan als lijst op het lid; bij 120 leden is alle leden doorlopen voor een melding geen probleem.
 
@@ -104,6 +105,7 @@ Tien tabellen, alle met betalen naar gebruik en herstel naar een tijdstip. `beta
 - **`berichten`**: `berichtId`, `soort` (`aankondiging`, `begin` (aan wie "herinner mij" koos), `nog-beschikbaar`, `veiling-begint`, `overboden`, `gewonnen`, `betaallink` (bij een bestelling namens een lid), `betaalherinnering`, `onderweg`), `kanaal` (`melding`, `email`, `groep`), `lijstId` of `wijnId`, `verzondenOp`, `ontvangers` (aantal). Er staat geen `lidId` in, ook niet bij een bericht aan één lid.
 - **`tikken`**: `berichtId`, `lidId`, `eerst`, `vervaltOp`. Eén rij per lid per bericht, alleen voor de tellingen.
 - **`feed`**: `lijstId`, `tijdstipId` (`<tijdstip>#<korte willekeurige tekst>`, zodat twee rijen in dezelfde seconde niet botsen), `tijdstip`, `soort` (`wijn`: Marc zette een wijn op tafel; `bericht`: Marc zei iets; `gebeurtenis`: iets wat gebeurde), en `wijnId` of `tekst`. Gebeurtenissen zijn "een lid nam 2 × Janasse", "de Verdejo is op", "de veiling begint", "de Barolo ging voor € 380" en "Marc sloot de avond". Een rij bevat nooit een `lidId` of een naam. Wie schrijft wat: `wijn` bij het op tafel zetten; `bericht` bij `POST /api/beheer/lijsten/{lijstId}/feed`; "een lid nam" bij de melding van Mollie die de bestelling op `betaald` zet, zodat een bon die vervalt niet in de feed komt; "is op" in de bestel-transactie als de voorraad 0 wordt, samen met `opSinds`. Komt er door een vervallen bon weer voorraad, dan wist de taak voor verlopen `opSinds` en schrijft hij "de … is weer te bestellen". De veiling schrijft bij openen en sluiten, en "Marc sloot de avond" komt bij eerder sluiten.
+- **`tijdlijn`**: `bestellingId`, `tijdstipId` (zoals bij `feed`), `tijdstip`, `stap`, bij `betaling-gestart` de `poging` (1, 2, 3), bij `melding-mollie` de `mollieStatus`, en `vervaltOp` (180 dagen na `tijdstip`, in seconden sinds 1970, zoals bij `weergaven`). Een rij bevat nooit een `lidId`, een naam, een adres of een bedrag. De stappen staan onder Tijdlijn en signalen in hoofdstuk 3.
 
 `minimaalVolgendBod` bestaat omdat DynamoDB in een voorwaarde niet kan rekenen. Bij het klaarzetten is het `startbod`; na elk bod wordt het `bod + minimaleVerhoging`.
 
@@ -225,13 +227,50 @@ Een taak in EventBridge Scheduler draait elke minuut. Hij zoekt via `betaal-inde
 
 - Eén ervan betaald: verwerken als een melding.
 - Geen betaald, maar één nog bezig (`open`, `pending`, `authorized`): niets doen. De volgende ronde kijkt opnieuw.
-- Anders: één transactie zet de status op `verlopen`, schrijft `verlopenOp` en geeft de voorraad terug, op voorwaarde dat de status nog `open` is. Bij een bestelling van de lijst krijgt Marc geen bericht: de flessen zijn meteen weer te bestellen. Bij een bestelling namens een lid krijgt hij wel bericht.
+- Anders: één transactie zet de status op `verlopen`, schrijft `verlopenOp` en geeft de voorraad terug, op voorwaarde dat de status nog `open` is. Bij een bestelling van de lijst krijgt Marc geen bericht: de flessen zijn meteen weer te bestellen. Was er wel een betaalpoging, dan volgt een signaal; zie Tijdlijn en signalen. Bij een bestelling namens een lid krijgt hij wel bericht.
 
 Bij een verlopen bestelling uit een bieding komt er geen voorraad terug. Marc krijgt bericht en beslist of de fles naar de volgende bieder gaat.
 
 **Bericht aan Marc** is een melding aan de leden van de groep `beheer`, met e-mail als terugval, en de bestelling staat bij Afleveren als vervallen. Het telt niet in `berichten`.
 
 Dezelfde taak stuurt bij een bestelling `namens` of `bieding` die 24 uur vóór `betaalVoor` nog open is één herinnering, en zet `herinnerdOp` zodat het bij één blijft. Bij een bestelling van de lijst is er geen herinnering: het lid betaalt meteen.
+
+### Tijdlijn en signalen
+
+Besloten op 21 november 2026: stap A van onderwerp 18 op de [roadmap](roadmap.md) zit in de pilot. Elke bestelling krijgt een tijdlijn in de tabel `tijdlijn`, en een regel over die tijdlijn kan een signaal geven aan Marc of Aidan.
+
+| `stap` | Wie schrijft hem |
+| --- | --- |
+| `gemaakt` | Bestellen van de lijst, namens een lid, en het sluiten van een bieding |
+| `betaling-gestart`, met `poging` | Betalen |
+| `betaling-niet-gestart` | Betalen, als Mollie geen betaling teruggeeft |
+| `terug-van-betalen` | `POST /api/bestellingen/{id}/terug`, als het lid van de betaalpagina terugkomt op de bon |
+| `melding-mollie`, met `mollieStatus` | De melding van Mollie |
+| `betaald`, `verlopen`, `terugbetaald` | De overgang van de status |
+| `herinnerd`, `betaallink-verstuurd` | De taak voor verlopen, en Marc |
+| `afgeleverd` | Afleveren. Haalt Marc het vinkje weg, dan komt er `niet-afgeleverd` bij |
+
+- **Schrijven mag een bestelling nooit raken.** De rij wordt na de transactie geschreven, niet erin. Mislukt het schrijven, dan staat dat in het logboek en gaat de bestelling of betaling gewoon door. Een tijdlijn kan dus een stap missen; de status op de bestelling blijft de waarheid.
+- **`terug-van-betalen` heeft geen velden.** Het lid komt uit het token; een bestelling van een ander geeft `404`. De stap wordt hoogstens één keer per betaalpoging geschreven.
+- **Geen persoonsgegevens.** Geen `lidId`, naam, adres of bedrag in de rij. Wie het lid is, staat op de bestelling.
+
+**Signalen.** De regels staan in `domein/signalen.py`, met tests. De taak voor verlopen rekent ze elke minuut uit voor de bestellingen van de lopende en de laatst gesloten avond, en zet het resultaat als `signalen` op de bestelling. Die schrijfactie raakt de status niet en heeft geen voorwaarde op de status.
+
+| Signaal | Regel | Voor | Ingrijpen |
+| --- | --- | --- | --- |
+| `betaalpoging-vervallen` | Soort `lijst`, status `verlopen`, en minstens één `betaling-gestart` | Marc | De bestelling opnieuw invoeren namens het lid |
+| `veel-betaalpogingen` | Drie of meer keer `betaling-gestart`, en nog `open` | Marc | Het lid een bericht sturen, of de betaallink |
+| `betaling-niet-gestart` | De stap staat in de tijdlijn | Aidan | De storing nakijken. Het lid kan opnieuw op Betaal tikken |
+| `melding-blijft-uit` | `terug-van-betalen`, en twee minuten later geen `melding-mollie` | Aidan | De taak voor verlopen vraagt de status zelf op, dus de bestelling komt goed. De oorzaak nakijken |
+| `controle-nodig` | `controleNodig` staat aan | Marc | Terugbetalen in Mollie, of alsnog leveren |
+| `niet-afgeleverd` | Status `betaald`, geen `afgeleverdOp`, en het moment van brengen of halen is een dag voorbij | Marc | Afleveren of afvinken |
+| `niet-ingelogd` | Een lid met `uitgenodigdOp` van drie dagen of langer geleden en zonder `eersteLoginOp` | Marc | Het e-mailadres nakijken en opnieuw uitnodigen |
+
+- **Bericht.** Een signaal voor Marc gaat als melding naar de groep `beheer`, met e-mail als terugval, één keer per signaal per bestelling; `signaalGemeldOp` op de bestelling houdt dat bij. Het telt niet in `berichten`. Een signaal voor Aidan is een regel in het logboek met een alarm in CloudWatch.
+- **`niet-ingelogd` gaat over een lid, niet over een bestelling.** Het komt uit `leden` en gebruikt de tijdlijn niet. De taak rekent het één keer per dag uit, en Marc krijgt hoogstens één bericht per lid.
+- **Waar Marc het ziet.** Bovenaan Beheer: afleveren staat "Vraagt aandacht", met per signaal één regel in gewone taal. Een tik opent de tijdlijn van die bestelling in een paneel. Er komt geen beheerscherm bij.
+- **Ingrijpen is een handeling die al bestaat:** namens een lid bestellen, de betaallink sturen, afleveren, of terugbetalen in Mollie. Er is geen aanroep die een status met de hand zet.
+- **`betaalpoging-vervallen` is een voorlopige bouwkeuze.** Eerder kreeg Marc bij een bon van de lijst nooit bericht. Marc moet zeggen of hij dit bericht wil; zie de besluiten in het plan.
 
 ### Levering kiezen na een bieding
 
@@ -276,6 +315,7 @@ Alle paden beginnen met `/api`. Elke aanroep vraagt een geldig token van Cognito
 | `GET /api/wijnen/{wijnId}` | Eén wijn. Legt vast dat het lid een bieding opende, zie Tellingen voor de roadmap | `200`, `404` |
 | `POST /api/bestellingen` | Bestellen van de lijst: `regels`, `levering` (`brengen` of `halen`), `sleutel` (per bestelpoging), `bestelduur`. Houdt de voorraad 15 minuten vast en start meteen de betaling. Dezelfde sleutel nog eens geeft dezelfde bestelling terug, zonder nieuwe betaling | `201` met de bestelling en `betaalUrl`, `400` met `geen_levering`, `onbekende_levering`, `levering_niet_aangeboden` of `geen_adres`, `400` met `ongeldige_regels`, `403` met `niet_bevestigd`, `409` met `uitverkocht` en de wijnen die op zijn, `niet_op_tafel` of `avond_dicht`, of `503` bij aanhoudende drukte |
 | `GET /api/bestellingen/{id}` | Status, na terugkomst van de betaalpagina | `200`, `404` |
+| `POST /api/bestellingen/{id}/terug` | Het lid kwam terug van de betaalpagina. Zonder velden. Schrijft `terug-van-betalen` in de tijdlijn, zie Tijdlijn en signalen | altijd `200` voor een eigen bestelling, `404` voor een andere |
 | `POST /api/mijn/betalingen` | Een betaling starten voor één open bestelling: `bestellingId`. Voor elke soort, ook als de lijst nog open staat | `201` met `betaalUrl`, `409` als de bestelling niet open is of `betaalVoor` voorbij is |
 | `PUT /api/bestellingen/{id}/levering` | `brengen` of `halen`, voor een gewonnen fles na het betalen | `200`, `400` met `geen_levering`, `onbekende_levering`, `levering_niet_aangeboden` of `geen_adres`, `409` als de bestelling nog niet betaald of al afgeleverd is |
 | `POST /api/wijnen/{wijnId}/biedingen` | Een bod: `bedrag` | `201`, of `409` met `minimaalVolgendBod` en het hoogste toegestane bod. De fout zegt waarom: `bod_te_laag`, `bod_te_hoog`, `al_hoogste` of `bieding_gesloten` |
@@ -297,7 +337,9 @@ Alle paden beginnen met `/api`. Elke aanroep vraagt een geldig token van Cognito
 | `POST /api/beheer/wijnen` en `PUT /api/beheer/wijnen/{wijnId}` | Een wijn klaarzetten voor een avond, op de lijst of als de veiling, of wijzigen: een wijn van de lijst zolang hij niet op tafel staat, een veiling zolang hij `klaar` is. Foto en spraakbericht verwijzen naar een `uploadId`; de functie controleert dan het type aan de inhoud van elk bestand | `200`, `201`, `400` met `ongeldig_bestand`, `409` als de avond al een veiling heeft of de wijn niet meer te wijzigen is |
 | `POST /api/beheer/wijnen/{wijnId}/op-tafel` | Een wijn van de lijst op tafel zetten. Zie Een avond in hoofdstuk 3 | `200`, `409` als de avond niet open is of de wijn al op tafel staat |
 | `POST /api/beheer/wijnen/{wijnId}/veiling-starten` | De veiling eerder openen dan `veilingBegin` | `200`, `409` als de avond niet open is of de veiling al open is |
-| `GET /api/beheer/bestellingen` | Overzicht per lijst | `200` |
+| `GET /api/beheer/bestellingen` | Overzicht per lijst, per bestelling met `signalen` | `200` |
+| `GET /api/beheer/bestellingen/{id}/tijdlijn` | De stappen van één bestelling, op volgorde: `tijdstip`, `stap`, en `poging` of `mollieStatus` | `200`, `404` |
+| `GET /api/beheer/signalen` | Wat aandacht vraagt op de lopende en de laatst gesloten avond: per signaal de bestelling of het lid, en sinds wanneer. Voor "Vraagt aandacht" bij afleveren | `200` |
 | `POST /api/beheer/bestellingen` | Bestelling namens een lid: `lidId`, `regels`, `levering`. De web-app zet "C2 D2" om in regels. Het lid heeft 48 uur om te betalen | `201` met `betaalLink` (naar de bon in de app), `400` zoals bij bestellen, `409` |
 | `POST /api/beheer/bestellingen/{id}/betaallink` | De betaallink van een open bestelling opnieuw als melding sturen | `200`, `409` als de bestelling niet open is |
 | `PUT /api/beheer/bestellingen/{id}/afgeleverd` | Afvinken, of het vinkje weghalen | `200`, `409` met `niet_betaald` |
@@ -531,6 +573,7 @@ Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan g
 | Web-app: eisen voor de telefoon uit hoofdstuk 10. Het prototype voldoet aan M1, M2 en M6 en deels aan tien andere; de stand per eis staat in dat hoofdstuk | Deels | Week 4 tot en met 7 |
 | Web-app: manifest en een voorlopig icoon voor het beginscherm (`app/public/manifest.webmanifest`, `app/public/iconen/`). Geen service worker | Gebouwd | Week 4 |
 | Browsertests op telefoonformaat tegen het prototype: `tests/web`, Playwright in pytest, in Chromium en WebKit, op 375 × 667 en 320 × 568 px, en een eigen stap in de pipeline (`controles.yml`, job `telefoon`). Is `app/dist` ouder dan de broncode, dan falen ze. Ze meten M1, M2, M3, M4 (de bon, de bijzondere fles en het biedpaneel), M5, M6, M9, M10 en M11, controleren de uitkomsten (`test_uitkomsten.py`: het totaal op de bon, de voorraad die daalt en terugkomt, net op, het bod in de stand, de prijs van een gewonnen fles) en lopen de stromen van V4 door: inloggen, bestellen en betalen, niet betaald en vervallen, terugkomen met Face ID en een nieuwe fles klaarzetten | Gebouwd | Week 4 |
+| Tijdlijn per bestelling, de signalen en "Vraagt aandacht" bij afleveren | Nog niet | Week 7 |
 | End-to-end-tests tegen de teststack en de handtest op echte telefoons (M14) | Nog niet | Week 4 tot en met 7 |
 
 ## 9. Open punten
@@ -542,7 +585,8 @@ Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan g
 - **Bovengrens op een bod.** Een bod mag hoogstens drie keer het minimum zijn. De factor drie is een keuze van de bouwer na de review, geen wens van Marc. Hij staat op één plek in `domein/bieding.py` en in `app/src/staat.tsx`. Vraag Marc of dit past bij hoe er nu geboden wordt.
 - **Jezelf overbieden.** De hoogste bieder kan niet opnieuw bieden tot hij overboden is. Komt er later een maximaal bod waarbij de app namens het lid meebiedt (onderwerp 6 op de [roadmap](roadmap.md)), dan moet deze regel opnieuw bekeken worden.
 - **Een bestelling annuleren.** Een bestelling wordt nooit gewijzigd. Vergist een lid zich op de bon, dan betaalt het niet en vervalt de bon na 15 minuten. Een betaalde bestelling kan alleen Marc terugdraaien, met een terugbetaling in Mollie; de voorraad komt dan niet vanzelf terug. Een bestelling namens een lid houdt de voorraad 48 uur vast, en ook Marc kan dat nu niet eerder vrijgeven. Vraag Marc of hij in beheer een open bestelling wil kunnen annuleren, met de voorraad terug. Dat is dan een nieuwe status `geannuleerd` en een aanroep onder `/api/beheer`.
-- **Wie niet betaalt.** Een bon van de lijst vervalt na 15 minuten en de flessen zijn meteen weer te bestellen; Marc krijgt geen bericht. Een bestelling namens een lid en een gewonnen fles vervallen na 48 uur, met bericht aan Marc. Of Marc dat wil, of liever zelf beslist per lid, moet hij aangeven.
+- **Wie niet betaalt.** Een bon van de lijst vervalt na 15 minuten en de flessen zijn meteen weer te bestellen; Marc krijgt geen bericht. Een bestelling namens een lid en een gewonnen fles vervallen na 48 uur, met bericht aan Marc. Of Marc dat wil, of liever zelf beslist per lid, moet hij aangeven. Sinds 21 november 2026 krijgt hij als voorlopige bouwkeuze wel een signaal als een bon van de lijst vervalt na een betaalpoging; zie Tijdlijn en signalen in hoofdstuk 3.
+- **Volgen en ingrijpen.** "Vraagt aandacht" en het paneel met de tijdlijn zijn niet getekend in design-v4; Aidan levert een tekening. Of een `bestellingId` in het logboek mag staan, is open: het is via de tabel te herleiden tot een lid. Tot dat beslist is, noemt het logboek bij een signaal voor Aidan alleen de soort en het tijdstip, en zoekt Aidan de bestelling op via `GET /api/beheer/signalen`.
 - **Meldingen op de iPhone.** Werken alleen als de app op het beginscherm staat. De precieze eisen moeten in week 7 nagezocht worden.
 - **Bedrock.** Welk model en of het in de gekozen regio beschikbaar is, wordt in week 4 gekozen. Het model moet ook een foto kunnen lezen en goed Nederlands schrijven. Begin met een klein model, zoals Claude Haiku 5.5, en stap alleen over als de test met twintig etiketten en tien sets steekwoorden tegenvalt. Zoek op of het model in de EU draait of alleen via inferentie over meerdere regio's in de EU, wat Bedrock daarvoor rekent, en of het een abonnement in AWS Marketplace vraagt. Dat laatste is een handeling in het gedeelde account; vraag Aidan eerst.
 - **Stijl van de tekstvoorstellen.** Aangeleverd op 21 november 2026 en beschreven in `domein/tekst.py`, met zeven echte omschrijvingen van Marc als voorbeeld (21 november 2026). Aidan levert er meer aan: er zijn al meer omschrijvingen van Marc uit de WhatsApp-groep beschikbaar, maar die staan nog niet in de repository. Marc moet elke extra tekst eerst als openbaar voorbeeld goedkeuren, en de uitlezing van de groep is nog niet compleet. Of de voorbeelden genoeg zijn, moet de test met tien sets steekwoorden laten zien. Let daarbij op dat het model geen aroma's of gerechten uit de voorbeelden overneemt.

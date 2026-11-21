@@ -1,6 +1,6 @@
 # Roadmap: Marcs wijnclub
 
-Verhuisd uit het [pilotplan](../pilotplan-marcs-wijnclub.md) op 21 november 2026, met dezelfde nummers. Niets hiervan hoort in de pilot, behalve onderwerp 13 en 15: die moeten af vóór de eerste uitnodiging aan een lid en staan in de planning van het plan, in week 8.
+Verhuisd uit het [pilotplan](../pilotplan-marcs-wijnclub.md) op 21 november 2026, met dezelfde nummers. Niets hiervan hoort in de pilot, behalve onderwerp 13 en 15 en stap A van onderwerp 18. Onderwerp 13 en 15 moeten af vóór de eerste uitnodiging aan een lid en staan in de planning van het plan, in week 8. Stap A van onderwerp 18 staat in week 7.
 
 Na een geslaagde pilot volgen twee uitbreidingen met een taalmodel: eerst de omschrijving van een fles, daarna een assistent die vragen van leden beantwoordt. Die volgorde is bewust: de omschrijving bouwt voort op wat de pilot al doet en Marc keurt elke tekst goed. De assistent praat rechtstreeks met leden en vraagt meer waarborgen. Een derde uitbreiding staat los van het taalmodel: geplande campagnes, met een meting van het beste moment om leden te benaderen.
 
@@ -15,6 +15,8 @@ Onderwerp 15 is ook geen idee: het is de lijst met verbeterpunten uit de beveili
 Onderwerp 16 is een idee van Aidan van 21 november 2026, met Vivino als voorbeeld: een lid legt zijn smaak vast, filtert het aanbod en krijgt een melding op maat. Het is nog niet met Marc besproken en hoort niet in de pilot.
 
 Onderwerp 17 is een uitgestelde keuze van 21 november 2026: live bijwerken via een WebSocket in plaats van pollen.
+
+Onderwerp 18 is een idee van Aidan van 21 november 2026: zien wat er met een bestelling gebeurde en waar leden vastlopen, zodat Marc of Aidan kan ingrijpen. Het is nog niet met Marc besproken. Stap A, de tijdlijn per bestelling met de signalen, is dezelfde dag naar de pilot gehaald en staat in week 7 van het plan. Stap B en C blijven hier.
 
 | Onderwerp | Wat het oplevert | Start als |
 | --- | --- | --- |
@@ -35,6 +37,7 @@ Onderwerp 17 is een uitgestelde keuze van 21 november 2026: live bijwerken via e
 | 15. Security: verbeterpunten uit de scan | De pipeline, het inloggen en de API zijn dicht voordat er echte leden en betalingen zijn | Nu. Groep A vóór de eerste release-tag, groep B en E vóór de eerste uitnodiging aan een lid |
 | 16. Mijn smaak: wensen, filteren en een melding op maat | Een lid ziet eerst wat bij zijn smaak past en krijgt alleen een melding als er iets voor hem bij zit | De pilot geslaagd is, en leden zeggen dat ze lijsten of meldingen overslaan omdat er weinig voor hen bij zit |
 | 17. Live bijwerken via een WebSocket | De stand van de veiling binnen een seconde, zonder dat elke telefoon elke 3 seconden vraagt | Leden in de pilot een bod missen of zeggen dat de stand achterloopt |
+| 18. Volgen wat er gebeurt, en ingrijpen als een bestelling misgaat | Marc en Aidan zien per bestelling wat er gebeurde en krijgen een signaal als een lid vastloopt, voordat het lid erover appt | Stap A zit in de pilot, week 7. Stap B: fouten in de pilot Aidan meer dan een uur per maand kosten om uit te zoeken. Stap C: de club groeit voorbij de pilot |
 
 ## 1. Omschrijving via een taalmodel
 
@@ -362,6 +365,140 @@ In de pilot ververst de web-app de avond en de veiling door elke 3 seconden te v
 - **Wat het kost.** Naar schatting een week bouwtijd, een extra onderdeel om te beveiligen en te testen, en een tabel met open verbindingen.
 - **Start als** leden in de pilot een bod missen of zeggen dat de stand achterloopt, of als de club groeit voorbij enkele tientallen leden die tegelijk kijken.
 
+## 18. Volgen wat er gebeurt, en ingrijpen als een bestelling misgaat
+
+Twee vragen lopen hier door elkaar, en ze vragen iets anders:
+
+1. **Wat gebeurde er met deze bestelling?** Een lid wilde betalen en het lukte niet. Marc of Aidan wil dat zien en het oplossen, liefst voordat het lid erover appt.
+2. **Waar haken leden af?** Hoeveel leden openen de avond, vullen een bon, tikken op Betaal en betalen.
+
+Bij 20 tot 30 leden is de eerste vraag de belangrijke. Elk geval telt en is met de hand op te lossen. Voor de tweede zijn de aantallen te klein: een trechter over één avond gaat over een handvol mensen. De bestaande platformen zijn vooral voor de tweede vraag gemaakt. Dit onderwerp begint daarom met een eigen tijdlijn per bestelling en komt pas in stap C bij een platform uit.
+
+Het idee is van Aidan, van 21 november 2026, en is nog niet met Marc besproken. Dezelfde dag koos Aidan om stap A naar de pilot te halen: de pilot is het moment waarop de eerste bestelling misgaat.
+
+### Wat de pilot al heeft, en wat ontbreekt
+
+| De pilot heeft | Wat ontbreekt |
+| --- | --- |
+| Alarmen bij een mislukte betaalmelding, een dubbele betaling en een mislukte geplande taak | Een alarm zegt dat er iets misging, niet bij welke bestelling of wat eraan voorafging |
+| `controleNodig` op een bestelling die dubbel betaald is of betaald werd nadat hij verliep | Niemand ziet dat een lid drie keer probeerde te betalen en het opgaf |
+| Bericht aan Marc als een bon namens een lid of van een veiling vervalt | Bij een bon van de lijst krijgt Marc geen bericht, ook niet als het lid wel probeerde te betalen |
+| De tellingen voor de roadmap en de tijd tot de tik op Betaal | Een fout in de browser van een lid ziet niemand: een wit scherm, een knop die niets doet |
+| Het dashboard van Mollie: elke betaling met zijn status | Er is geen weg van een bestelling naar wat er in de app aan voorafging |
+
+### Drie stappen
+
+De schattingen zijn grof en niet met een ontwerp onderbouwd.
+
+| Stap | Wat | Platform | Schatting |
+| --- | --- | --- | --- |
+| A. Tijdlijn per bestelling en signalen | Per bestelling elke stap met een tijdstip, en een bericht als een bestelling aandacht vraagt | Geen. Een eigen tabel en een paneel in beheer | 3 dagen, in de pilot (week 7) |
+| B. Fouten op de telefoon van het lid | Fouten in de web-app en mislukte aanroepen komen in het logboek, met een alarm | Geen, of later Sentry | 1 dag |
+| C. De trechter | Per avond hoeveel leden elke stap haalden, als telling | Geen, of later PostHog | 2 dagen |
+
+### Stap A: de tijdlijn per bestelling
+
+Deze stap zit in de pilot. Hoe hij gebouwd wordt, staat in de [bouwspecificatie](bouwspecificatie.md), hoofdstuk 3 onder Tijdlijn en signalen; wijkt de tekst hier af, dan geldt de bouwspecificatie.
+
+Er komt één tabel bij, `tijdlijn`, met per rij `bestellingId`, `tijdstipId`, `stap` en `vervaltOp`. De app schrijft een rij op het moment dat de stap gebeurt.
+
+| `stap` | Wie schrijft hem |
+| --- | --- |
+| `gemaakt` | De bestel-transactie |
+| `betaling-gestart`, met het nummer van de poging | Betalen |
+| `betaling-niet-gestart` | Betalen, als Mollie geen betaling teruggeeft |
+| `terug-van-betalen` | De web-app, als het lid van de betaalpagina terugkomt op de bon |
+| `melding-mollie`, met de status van de betaling | De melding van Mollie |
+| `betaald`, `verlopen`, `terugbetaald` | De overgang van de status |
+| `herinnerd`, `betaallink-verstuurd` | De taak voor verlopen en Marc |
+| `afgeleverd` | Afleveren |
+
+- **Geen naam, adres of bedrag in de tijdlijn.** Alleen het `bestellingId`. Wie het lid is, staat op de bestelling, en die zien alleen het lid zelf en de groep `beheer`.
+- **Een eigen tabel, geen veld op de bestelling.** Dezelfde reden als bij `weergaven`: een schrijfactie voor het volgen mag een bestelling of betaling nooit laten mislukken. Mislukt het schrijven, dan staat dat in het logboek en gaat de bestelling gewoon door.
+- **De web-app schrijft één stap, de server de rest.** `terug-van-betalen` gaat via `POST /api/bestellingen/{id}/terug`; het lid komt uit het token en de aanroep weigert een bestelling van een ander. Wat een lid meestuurt, is onbetrouwbare invoer: de aanroep heeft geen velden.
+- **Bewaren.** `vervaltOp` staat op 180 dagen, zoals bij `weergaven` en `tikken`.
+
+**Signalen.** Een signaal is een regel over de tijdlijn die zegt dat een bestelling aandacht vraagt. De regels komen in `domein/signalen.py`, met tests. De taak die elke minuut de verlopen bestellingen zoekt, rekent ze uit.
+
+| Signaal | Wat het betekent | Wie | Ingrijpen |
+| --- | --- | --- | --- |
+| Een bon van de lijst vervalt na minstens één `betaling-gestart` | Het lid wilde betalen en het lukte niet | Marc | De bestelling opnieuw invoeren namens het lid: een betaallink met 48 uur |
+| Drie of meer betaalpogingen op één bon | Het lid loopt vast in de app van zijn bank | Marc | Het lid een bericht sturen, of de betaallink |
+| `betaling-niet-gestart` | Mollie is niet bereikbaar, of de sleutel klopt niet | Aidan | Storing nakijken. Het lid kan binnen de termijn opnieuw op Betaal tikken |
+| `terug-van-betalen`, en na twee minuten geen `melding-mollie` | De melding van Mollie kwam niet aan | Aidan | De taak voor verlopen vraagt de status zelf op bij Mollie, dus de bestelling komt goed. De oorzaak nakijken |
+| `controleNodig`, bestaat al | Dubbel betaald, of betaald nadat de bon verliep | Marc | Terugbetalen in Mollie, of alsnog leveren |
+| `betaald`, en een dag na het moment van brengen of halen nog niet `afgeleverd` | Een fles is blijven staan, of Marc vergat af te vinken | Marc | Afleveren of afvinken |
+| Een lid is drie dagen geleden uitgenodigd en heeft nog niet ingelogd | Het lid komt de app niet in, of de uitnodiging kwam niet aan | Marc | Het e-mailadres nakijken en opnieuw uitnodigen |
+
+- **Ingrijpen is altijd een handeling die al bestaat:** de betaallink sturen, namens een lid bestellen, terugbetalen in Mollie, afleveren. Er komt geen knop die een status met de hand zet. Bestellingen worden nooit achteraf gewijzigd.
+- **Waar Marc het ziet.** Bovenaan Beheer: afleveren staat "Vraagt aandacht", met per bestelling één regel in gewone taal: "Probeerde drie keer te betalen, bon vervallen om 21:14". Een tik opent de tijdlijn in een paneel. Design-v4 tekent dit niet; Aidan levert een tekening.
+- **Bericht.** Een signaal voor Marc gaat als melding naar de groep `beheer`, met e-mail als terugval, hoogstens één per bestelling. Een signaal voor Aidan is een alarm in CloudWatch.
+- **Het laatste signaal gaat niet over een bestelling** en gebruikt de tijdlijn niet. In de pilot komt het uit `uitgenodigdOp` en `eersteLoginOp` op het lid. Het staat hier omdat het dezelfde vraag beantwoordt: een lid loopt vast en niemand weet het.
+- **Na de pilot** kan dat signaal scherper: een inlogcode die twee keer is aangevraagd zonder dat het lid inlogde, uit Cognito, en een e-mail die terugkwam, uit de meldingen van SES. Dat vraagt extra opzet in SES en zit niet in de pilot.
+- **Een bestelpoging die geen bon werd**, omdat een wijn net op was, komt niet in de tijdlijn: er is geen bestelling. Na de pilot kan de app ze per wijn tellen, zonder lid. Dat getal zegt ook of er vraag is naar de wachtlijst van onderwerp 12. Het zit niet in de pilot.
+
+### Stap B: fouten op de telefoon van het lid
+
+De web-app vangt fouten op die nu niemand ziet: een fout in de code, een aanroep die mislukt, een scherm dat niet laadt. Ze stuurt per fout het scherm, de soort fout, de melding, de statuscode en de versie van de app naar `POST /api/mijn/fouten`. De functie schrijft één regel in het logboek, en een alarm gaat af als er binnen vijf minuten meer dan een paar binnenkomen.
+
+- **Zonder lid.** De aanroep vraagt een token, zodat een vreemde het logboek niet kan vullen, maar het `lidId` komt niet in de regel. Het gaat om de fout, niet om wie hem kreeg.
+- **Onbetrouwbare invoer.** Vaste velden, een vaste lijst van schermen, een grens op de lengte, geen regeleinden en een grens per lid per minuut. Het adres van de pagina gaat mee zonder nummers van bestellingen of berichten.
+- **Zit de fout in een bestelling,** dan stuurt de web-app het `bestellingId` mee en komt de fout als stap `fout-in-app` in de tijdlijn van stap A. Die stap bestaat in de pilot nog niet.
+
+| Mogelijkheid | Voor | Tegen |
+| --- | --- | --- |
+| Eigen aanroep naar het logboek van CloudWatch | Geen nieuwe dienst, verwerker, sleutel of afhankelijkheid. Een dag werk | De regel in het logboek wijst naar de gebouwde code; de plek in de broncode zoekt Aidan met de hand op |
+| [Amazon CloudWatch RUM](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-RUM.html) | Blijft in het eigen account en is beschikbaar in `eu-west-1`. Meet ook laadtijden | Een nieuw pakket in de web-app en een eigen toegangsregeling. Betalen per gebeurtenis; het tarief is niet nagezocht |
+| [Sentry](https://docs.sentry.io/organization/data-storage-location/) | De beste foutmeldingen: de plek in de broncode, gelijke fouten gegroepeerd, het toestel erbij. Opslag in Frankfurt kan op elk abonnement, ook het gratis | Een nieuwe verwerker, van een Amerikaans bedrijf. Volgens Sentry kan een deel van de gegevens over het account in de Verenigde Staten staan. De regio is na het aanmaken niet meer te wijzigen |
+
+**Keuze:** begin met de eigen aanroep. Kost het uitzoeken van fouten Aidan daarna meer dan een uur per maand, stap dan over op Sentry met opslag in de EU, zonder schermopnames en zonder `lidId`.
+
+### Stap C: de trechter
+
+Per avond vijf getallen: leden die de avond openden, die een wijn bekeken, die een bon maakten, die op Betaal tikten en die betaalden. Het zijn aantallen, zoals de tellingen die de pilot al heeft.
+
+- **De server ziet de meeste stappen al.** Een bon, een betaalpoging en een betaling staan in `bestellingen` en in de tijdlijn. Voor "opende de avond" en "bekeek een wijn" is een rij per lid per avond nodig, zoals `weergaven` dat nu voor een bieding doet.
+- **Geen nieuw scherm.** De getallen komen bij `GET /api/beheer/tellingen`.
+- **Waar het voor dient.** Het antwoord op het open punt uit de bouwspecificatie: of betalen bij het bestellen leden doet afhaken.
+
+Bestaande platformen, voor als de club groeit en er vragen komen die een telling niet beantwoordt:
+
+| Platform | Wat het is | Past het |
+| --- | --- | --- |
+| [PostHog](https://posthog.com/eu) | Gebeurtenissen, trechters en schermopnames in één dienst, met opslag in de EU. Gratis tot 1 miljoen gebeurtenissen en 5.000 opnames per maand; de club blijft daar ver onder. De code is open | De eerste keuze als er een platform komt. Een nieuwe verwerker, een nieuw pakket in de web-app, en waarschijnlijk toestemming van het lid |
+| Microsoft Clarity, Hotjar | Schermopnames en kaarten van waar bezoekers tikken | Nee. Het hele nut zit in de opname van het scherm, zie hieronder |
+| Plausible, Matomo | Bezoekcijfers zonder cookies, van Europese makers | Slecht. Ze tellen bezoeken aan openbare pagina's. De wijnclub is een app achter een login met enkele tientallen bekende leden |
+| Google Analytics, Amplitude, Mixpanel | Hetzelfde als PostHog, van Amerikaanse bedrijven | Nee. Geen voordeel boven PostHog, wel gegevens buiten de EU of een extra afweging daarover |
+
+Nagezocht op 21 november 2026 zijn PostHog, Sentry en CloudWatch RUM, op de pagina's waar de tabellen naar verwijzen. De andere platformen staan hier uit eerdere kennis en moeten bij een keuze opnieuw bekeken worden.
+
+**Schermopnames: niet doen.** PostHog, Sentry en Clarity kunnen opnemen wat een lid op zijn scherm ziet en doet. Voor de vraag "wat ging er mis" lijkt dat het snelste antwoord. Maar op het scherm staan naam, adres en wat iemand aan wijn bestelt, en maskeren gaat een keer mis. Bij dertig leden die Marc persoonlijk kent, weegt dat niet op tegen een tijdlijn die hetzelfde vertelt.
+
+### Privacy
+
+- **De tijdlijn hoort bij de bestelling.** Ze dient om een bestelling uit te voeren en een fout te herstellen. Waarschijnlijk is daar geen toestemming voor nodig; laat dat toetsen in de juridische check. Ze komt in de privacyverklaring en verdwijnt na 180 dagen.
+- **Volgen buiten een bestelling is iets anders.** Welk lid welke wijn bekeek, is een persoonsgegeven zonder bestelling erachter. Stap C bewaart het 180 dagen, en Marc en Aidan zien alleen aantallen, zoals nu bij `weergaven`.
+- **Een platform in de browser vraagt mogelijk toestemming.** Voor zover bekend mag een site volgens artikel 11.7a van de Telecommunicatiewet zonder toestemming alleen gegevens op een toestel zetten of uitlezen als dat nodig is voor de dienst, of voor statistiek die de privacy weinig raakt. Of PostHog in een app met bekende leden daaronder valt, is niet nagezocht. Laat het toetsen voordat er een platform komt.
+- **Een nieuwe verwerker** vraagt een verwerkersovereenkomst, opslag in de EU en een regel in de privacyverklaring. Nu is Mollie de enige externe partij.
+- **Het logboek blijft zonder namen, adressen en bedragen.** De regels van stap B noemen geen lid. Of een `bestellingId` in het logboek mag staan, is een open keuze: het is via de tabel te herleiden tot een lid.
+- Punt E8 in [beveiliging.md](beveiliging.md) geldt ook hier: wie in het gedeelde account de tabellen kan lezen, leest ook de tijdlijn.
+
+### Wat het niet doet
+
+- Geen schermopnames en geen live meekijken met een lid.
+- Geen profiel per lid: geen overzicht van wat één lid bekeek of hoe vaak het de app opende.
+- Geen status die Marc met de hand zet.
+- Geen advertentie- of volgcodes van derden.
+
+### Open keuzes voor Aidan
+
+1. Mag het `bestellingId` in het logboek? Dan is een bestelling ook buiten de app terug te vinden met CloudWatch Logs Insights, als elke regel over een bestelling het nummer en de stap noemt. Tot dat beslist is, staat het er niet in; zie de open punten in de bouwspecificatie.
+2. Wil Marc bericht bij een bon van de lijst die vervalt na een betaalpoging? Het is een voorlopige bouwkeuze in het plan; Marc moet het bevestigen.
+
+Beslist op 21 november 2026: stap A komt vóór de eerste uitnodiging aan een lid, in week 7. Dat kost naar schatting drie dagen in een volle planning.
+
+Dit onderwerp is geslaagd als Marc of Aidan bij elke bestelling die misging binnen een dag weet wat er gebeurde, zonder het lid ernaar te vragen, en geen lid een fout meldt waar de app niet al een signaal voor gaf.
+
 ## Bewust niet
 
 | Idee | Waarom niet |
@@ -380,3 +517,5 @@ Drie tellingen maken de keuze tussen deze onderwerpen na acht weken makkelijker.
 - Per melding: wanneer hij verstuurd is, hoeveel leden erop tikten en hoeveel er binnen 24 uur bestelden of boden: het beste moment, voor de campagnes.
 
 Voor onderwerp 16 komt er geen telling bij. Vraag in de vijf gesprekken na afloop of een lid lijsten of meldingen oversloeg omdat er weinig voor hem bij zat.
+
+Voor onderwerp 18 komt er geen telling bij: stap A zit in de pilot. Houd in de pilot bij hoe vaak een signaal afging, hoe vaak Marc of Aidan daarna ingreep, en hoe vaak een lid iets meldde waar geen signaal voor was. Dat zegt of stap B en C nodig zijn.

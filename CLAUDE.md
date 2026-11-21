@@ -31,7 +31,7 @@ Dit project is van Aidan persoonlijk. Het heeft niets te maken met een werkgever
 | --- | --- |
 | `pilotplan-marcs-wijnclub.md` | Het plan: begrippen, besluiten, scope, schermen, architectuur, CI/CD, planning, succescriteria. Begint met wat je leest om de app opnieuw te bouwen |
 | `docs/bouwspecificatie.md` | Bouwniveau: tabellen en sleutels, levensloop van een avond en een bestelling, bieding, API. Hoofdstuk 8 zegt wat al gebouwd is |
-| `docs/roadmap.md` | Wat er na de pilot kan komen, onderwerp 1 tot en met 17 |
+| `docs/roadmap.md` | Wat er na de pilot kan komen, onderwerp 1 tot en met 18 |
 | `docs/beveiliging.md` | Verbeterpunten uit de beveiligingsscan, A1 tot en met E10 |
 | `docs/marktonderzoek.md` | Wie hetzelfde doet en wat dat betekent |
 | `design-v4/` | Het ontwerp sinds 20 november 2026: `DESIGN.md` en de schermen. De specificatie van de schermen; wat V4 niet tekent, staat in `design-v3/` |
