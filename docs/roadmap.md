@@ -20,6 +20,8 @@ Onderwerp 18 is een idee van Aidan van 21 november 2026: elke flesfoto krijgt de
 
 Onderwerp 19 is een idee van Aidan van 21 november 2026: zien wat er met een bestelling gebeurde en waar leden vastlopen, zodat Marc of Aidan kan ingrijpen. Het is nog niet met Marc besproken. Stap A, de tijdlijn per bestelling met de signalen, is dezelfde dag naar de pilot gehaald en staat in week 7 van het plan. Stap B en C blijven hier.
 
+Onderwerp 20 is een verbeterpunt van 21 november 2026: het tabblad van de browser toont nu een algemeen plaatje en krijgt het logo van de club. Het hoort niet in de pilot.
+
 | Onderwerp | Wat het oplevert | Start als |
 | --- | --- | --- |
 | 1. Omschrijving via een taalmodel | Marc zet een fles in enkele minuten online, in zijn eigen woorden. Het etiket lezen en tekstvoorstellen uit steekwoorden in zijn stijl, met echte teksten van Marc als voorbeeld, zitten al in de pilot. Hier volgen spraak naar tekst en het leren van zijn stijl uit de teksten die hij in de app goedkeurt | De pilot geslaagd is en Marc in de pilot geregeld een voorstel koos |
@@ -41,6 +43,7 @@ Onderwerp 19 is een idee van Aidan van 21 november 2026: zien wat er met een bes
 | 17. Live bijwerken via een WebSocket | De stand van de veiling binnen een seconde, zonder dat elke telefoon elke 3 seconden vraagt | Leden in de pilot een bod missen of zeggen dat de stand achterloopt |
 | 18. Flesfoto's in één stijl | Elke fles staat vrij, even groot en op dezelfde donkere achtergrond, zonder dat Marc er iets extra voor doet | Een proef op Marcs eigen foto's goed genoeg uitvalt, en de foto's in de pilot naast elkaar onrustig ogen |
 | 19. Volgen wat er gebeurt, en ingrijpen als een bestelling misgaat | Marc en Aidan zien per bestelling wat er gebeurde en krijgen een signaal als een lid vastloopt, voordat het lid erover appt | Stap A zit in de pilot, week 7. Stap B: fouten in de pilot Aidan meer dan een uur per maand kosten om uit te zoeken. Stap C: de club groeit voorbij de pilot |
+| 20. Een logo op het tabblad van de browser | Wie de app in een browser opent, herkent het tabblad aan het logo van de club in plaats van aan een algemeen plaatje | Marc het logo heeft geleverd |
 
 ## 1. Omschrijving via een taalmodel
 
@@ -534,6 +537,16 @@ Nagezocht op 21 november 2026 zijn PostHog, Sentry en CloudWatch RUM, op de pagi
 Beslist op 21 november 2026: stap A komt vóór de eerste uitnodiging aan een lid, in week 7. Dat kost naar schatting drie dagen in een volle planning.
 
 Dit onderwerp is geslaagd als Marc of Aidan bij elke bestelling die misging binnen een dag weet wat er gebeurde, zonder het lid ernaar te vragen, en geen lid een fout meldt waar de app niet al een signaal voor gaf.
+
+## 20. Een logo op het tabblad van de browser
+
+Het tabblad van de browser toont nu het algemene plaatje van de browser zelf: `app/index.html` noemt geen icoon voor het tabblad. De app heeft wel iconen voor het beginscherm van een telefoon, in `app/public/iconen/`, maar die zijn voorlopig. Vastgesteld op 21 november 2026.
+
+- **Wat het is.** Het logo van de club als icoon op het tabblad, in de lijst met bladwijzers en in de geschiedenis van de browser.
+- **Wat erbij komt.** Een regel `<link rel="icon">` in `app/index.html`, met het logo als SVG en als klein PNG voor browsers die geen SVG tonen. Het icoon moet op 16 bij 16 beeldpunten herkenbaar blijven, op een licht en op een donker tabblad.
+- **Samen met het beginscherm.** De voorlopige iconen in `app/public/iconen/` en in `manifest.webmanifest` worden in dezelfde wijziging het echte logo. Zo ziet een lid op het tabblad en op het beginscherm hetzelfde beeld.
+- **Wat het kost.** Naar schatting een uur, zodra het logo er is.
+- **Start als** Marc het logo heeft geleverd. Het logo en de naam van de club zijn van Marc; zie onderwerp 13. Er komt geen logo dat zonder hem is bedacht.
 
 ## Bewust niet
 
