@@ -1,11 +1,14 @@
 # Marcs wijnclub
 
-Een besloten web-app waarin leden van Marcs WhatsApp-groep wijn kopen: van de lijst tegen vaste prijs, of via een bieding op een bijzondere fles.
+Een besloten web-app waarin leden van Marcs WhatsApp-groep wijn kopen op een avond bij Marc: van de lijst tegen vaste prijs, of in een veiling van een bijzondere fles.
 
 | Document | Inhoud |
 | --- | --- |
-| [pilotplan-marcs-wijnclub.md](pilotplan-marcs-wijnclub.md) | Wat er komt, voor wie, planning en succescriteria |
-| [docs/bouwspecificatie.md](docs/bouwspecificatie.md) | Hoe het in elkaar zit: tabellen, levensloop van een bestelling, API, indeling |
+| [pilotplan-marcs-wijnclub.md](pilotplan-marcs-wijnclub.md) | Wat er komt, voor wie, de besluiten, planning en succescriteria. Begint met wat je leest om de app opnieuw te bouwen |
+| [docs/bouwspecificatie.md](docs/bouwspecificatie.md) | Hoe het in elkaar zit: tabellen, levensloop van een avond en een bestelling, API, indeling |
+| [docs/roadmap.md](docs/roadmap.md) | Wat er na de pilot kan komen |
+| [docs/beveiliging.md](docs/beveiliging.md) | Verbeterpunten uit de beveiligingsscan van 20 november 2026 |
+| [docs/marktonderzoek.md](docs/marktonderzoek.md) | Wie hetzelfde doet, van 19 november 2026 |
 | [design-v4/DESIGN.md](design-v4/DESIGN.md) | Het ontwerp sinds 20 november 2026, met de schermen in `design-v4/schermen/`: de specificatie van de schermen. Wat V4 niet tekent, staat in `design-v3/` |
 | [wijnclub-prototype.html](wijnclub-prototype.html) | Het eerste klikbare prototype, van vóór de ontwerpen. Achterhaald: het klikbare prototype is nu de web-app in `app/` |
 

@@ -4,8 +4,8 @@
 
 Een besloten web-app voor de wijnverkoop van Marc, een privéchef in Roermond (marckookt.com). Marc verkoopt nu wijn via een WhatsApp-groep van ongeveer 120 mensen. De app vervangt het bestellen in die groep door twee vormen:
 
-- **De lijst:** wijnen tegen vaste prijs, enkele uren open. Een lid bestelt meerdere wijnen in één keer en kiest een afhaalpunt. Betalen met iDEAL volgt zodra de lijst sluit.
-- **De bieding:** bijzondere flessen, het hoogste bod op de eindtijd wint.
+- **De lijst:** wijnen tegen vaste prijs, op een avond die enkele uren duurt. Marc zet ze een voor een op tafel. Een lid bestelt meerdere wijnen in één keer, kiest brengen of halen en betaalt meteen met iDEAL.
+- **De veiling** (in code: de bieding): één bijzondere fles aan het eind van de avond, het hoogste bod op de eindtijd wint.
 
 Het doel is een pilot met 20 tot 30 leden. Het is geen marktplaats tussen leden en geen product voor andere verkopers.
 
@@ -29,8 +29,11 @@ Dit project is van Aidan persoonlijk. Het heeft niets te maken met een werkgever
 
 | Bestand of map | Inhoud |
 | --- | --- |
-| `pilotplan-marcs-wijnclub.md` | Het plan: scope, schermen, architectuur, CI/CD, planning, succescriteria |
-| `docs/bouwspecificatie.md` | Bouwniveau: tabellen en sleutels, levensloop van een bestelling, bieding, API. Hoofdstuk 8 zegt wat al gebouwd is |
+| `pilotplan-marcs-wijnclub.md` | Het plan: begrippen, besluiten, scope, schermen, architectuur, CI/CD, planning, succescriteria. Begint met wat je leest om de app opnieuw te bouwen |
+| `docs/bouwspecificatie.md` | Bouwniveau: tabellen en sleutels, levensloop van een avond en een bestelling, bieding, API. Hoofdstuk 8 zegt wat al gebouwd is |
+| `docs/roadmap.md` | Wat er na de pilot kan komen, onderwerp 1 tot en met 17 |
+| `docs/beveiliging.md` | Verbeterpunten uit de beveiligingsscan, A1 tot en met E10 |
+| `docs/marktonderzoek.md` | Wie hetzelfde doet en wat dat betekent |
 | `design-v4/` | Het ontwerp sinds 20 november 2026: `DESIGN.md` en de schermen. De specificatie van de schermen; wat V4 niet tekent, staat in `design-v3/` |
 | `wijnclub-prototype.html` | Het eerste klikbare prototype, achterhaald. Het klikbare prototype is nu de web-app in `app/` |
 | `functions/wijnclub/` | Lambda-functies in Python. `domein/` bevat de regels zonder AWS |
@@ -61,6 +64,7 @@ cd infra && npx aws-cdk@2.1149.0 synth -c afzender_email=noreply@voorbeeld.nl
 - Draai de tests voordat je zegt dat iets werkt. `cdk synth` bouwt de sjablonen lokaal en verandert niets in AWS.
 - **Rol nooit uit zonder uitdrukkelijke toestemming.** `cdk deploy`, `cdk bootstrap` en `cdk destroy` maken of verwijderen echte onderdelen en kosten geld. Noem eerst het actieve AWS-account en de omgeving, en wacht op een ja.
 - Commit en push alleen als erom gevraagd wordt.
+- **Auto-fix staat altijd aan.** Zet na elke push naar een branch met een PR, en na het openen van een PR, meteen Auto-fix aan voor die PR. Zo worden falende CI, conflicten en reviewcommentaar vanzelf opgepakt. Vraag hier niet eerst om toestemming.
 
 ## Afspraken in de code
 
