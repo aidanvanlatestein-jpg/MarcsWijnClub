@@ -68,6 +68,22 @@ def test_aanbod_geeft_de_druif_mee_als_die_er_is(monkeypatch, gevuld):
     assert wijn["streek"] == "Puglia, Italië"
 
 
+def test_aanbod_geeft_kleur_land_en_volheid_mee(monkeypatch, gevuld):
+    monkeypatch.setattr(opslag, "wijnen_van_lijst", lambda lijst_id: [
+        {"wijnId": "g", "letter": "G", "naam": "Chianti Classico", "kleur": "rood", "land": "Italië",
+         "volheid": "midden", "kenmerkenBron": "model", "prijs": Decimal("1600"), "voorraad": Decimal("6")},
+        {"wijnId": "h", "letter": "H", "naam": "Côtes du Rhône", "kleur": "rood", "land": "Frankrijk",
+         "prijs": Decimal("1350"), "voorraad": Decimal("6")},
+    ])
+    tekst = aanbod.handler(aanvraag(), None)["body"]
+    met, zonder = json.loads(tekst)["lijsten"][0]["wijnen"]
+    assert (met["kleur"], met["land"], met["volheid"]) == ("rood", "Italië", "midden")
+    assert (zonder["kleur"], zonder["land"]) == ("rood", "Frankrijk")
+    assert "volheid" not in zonder
+    # Waar een kenmerk vandaan komt, is voor de tellingen en niet voor leden.
+    assert "kenmerkenBron" not in tekst
+
+
 def test_aanbod_lekt_geen_interne_velden(gevuld):
     tekst = aanbod.handler(aanvraag(), None)["body"]
     assert "hoogsteBieder" not in tekst

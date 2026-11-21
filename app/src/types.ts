@@ -10,6 +10,12 @@ export interface Levering {
   halen?: { van: string; tot: string; waar: string }
 }
 
+/** Hoe vol een wijn is (onderwerp 16 op de roadmap). */
+export type Volheid = 'licht' | 'midden' | 'vol'
+
+/** De kleuren die Marc op het nakijkscherm kiest. */
+export type Kleur = 'rood' | 'wit' | 'rosé' | 'bubbels' | 'zoet'
+
 export interface Wijn {
   wijnId: string
   /**
@@ -22,11 +28,13 @@ export interface Wijn {
   korteNaam?: string
   producent?: string
   jaargang?: number
-  /** "rood", "wit", "rosé". Dit veld zit nog niet in de API; zie de open punten in docs/bouwspecificatie.md. */
+  /** "rood", "wit", "rosé", "bubbels" of "zoet". */
   kleur?: string
   druif?: string
   streek?: string
   land?: string
+  /** Licht tot vol. Optioneel: zonder waarde toont de app alleen kleur en land. */
+  volheid?: Volheid
   tekst: string
   spijs?: string
   drinken?: string

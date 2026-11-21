@@ -28,7 +28,7 @@ export function WijnVanDeLijst({ wijnId, ga }: { wijnId: string; ga: Ga }) {
   const op = wijn.voorraad <= 0
   const partij = wijn.partij ?? wijn.voorraad
   const streek = [wijn.streek, wijn.land].filter(Boolean).join(', ')
-  const herkomst = [wijn.kleur, wijn.druif, streek].filter(Boolean).join(' · ')
+  const herkomst = [wijn.kleur, wijn.druif, streek, wijn.volheid].filter(Boolean).join(' · ')
   const kies = (aantal: number) => dispatch({ type: 'mandje', wijnId: wijn.wijnId, aantal })
 
   return (

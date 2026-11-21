@@ -81,6 +81,7 @@ Alles wat de vorm van de app bepaalt, op één plek. **Besloten** staat vast. **
 | Rust | Voorlopige bouwkeuze · Aidan en Marc | Een live-stip die niet knippert, het label "net op tafel" en een rustige klok in de laatste twee minuten van een veiling. Samen uit te zetten met één instelling. Verder geen badges, punten of knipperende aftelklok |
 | Wie bood | Voorlopige bouwkeuze · jurist | In de biedlog staat per bieder een vast nummer per veiling, zoals "Bieder 7", dat niet herleidbaar is tot het lid. Uit te zetten in de configuratie van de omgeving: dan stuurt de API het nummer niet mee en toont de biedlog alleen bedragen en tijden |
 | Kleur, land, korte naam en partij van een wijn | Voorlopige bouwkeuze · Aidan | Velden op de wijn, voorgesteld uit etiket en bericht en nagekeken door Marc. Ze sluiten roadmap onderwerp 16 niet uit |
+| Licht tot vol van een wijn | Voorlopige bouwkeuze · Marc | Gebouwd, staat uit in productie tot Marc instemt. Roadmap onderwerp 16, stap A |
 | Bovengrens op een bod | Voorlopige bouwkeuze · Marc | Een bod is hoogstens drie keer het minimum, om een tikfout op te vangen |
 | Een winnaar die niet betaalt | Open · Marc | Na 48 uur vervalt de bon en krijgt Marc bericht. Hoe de fles naar de volgende bieder gaat, regelt Marc in de pilot buiten de app |
 | Een open bon annuleren | Open · Marc | Kan nu niet; een bon vervalt vanzelf. Zie de bouwspecificatie, hoofdstuk 9 |

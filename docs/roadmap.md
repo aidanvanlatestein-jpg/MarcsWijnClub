@@ -12,7 +12,7 @@ Onderwerp 14 stond eerst in de pilot en is er op 19 november 2026 uitgehaald: de
 
 Onderwerp 15 is ook geen idee: het is de lijst met verbeterpunten uit de beveiligingsscan van 20 november 2026, nu in [beveiliging.md](beveiliging.md). Een deel moet af vóór de eerste uitrol naar productie. Onderwerp 13 en 15 staan daarom ook in de planning van het plan, in week 8.
 
-Onderwerp 16 is een idee van Aidan van 21 november 2026, met Vivino als aanleiding: een lid ziet bij elke wijn hoe die is, ziet wat bij zijn smaak past en krijgt een melding op maat. Het is dezelfde dag verfijnd na een marktonderzoek en nog niet met Marc besproken. Het hoort niet in de pilot. Stap A heeft een eigen [bouwplan](bouwplannen/16a-kenmerken-per-wijn.md) en wordt gebouwd met een schakelaar die in productie uit staat tot Marc instemt.
+Onderwerp 16 is een idee van Aidan van 21 november 2026, met Vivino als aanleiding: een lid ziet bij elke wijn hoe die is, ziet wat bij zijn smaak past en krijgt een melding op maat. Het is dezelfde dag verfijnd na een marktonderzoek en nog niet met Marc besproken. Het hoort niet in de pilot. Stap A is gebouwd met een schakelaar die in productie uit staat tot Marc instemt.
 
 Onderwerp 17 is een uitgestelde keuze van 21 november 2026: live bijwerken via een WebSocket in plaats van pollen.
 
@@ -43,7 +43,7 @@ Onderwerp 22 is een besluit van 21 november 2026: de passkey ("Face ID") die des
 | 13. Eigen domein en eigen afzenderadres | Een adres dat leden herkennen, en een inlogcode die van de club komt | De naam van de club gekozen is. Uiterlijk vóór de eerste uitnodiging aan een lid |
 | 14. Mijn flessen: de eigen collectie | Een lid ziet terug wat het kocht, wat het ervan vond en wat bij Marc ligt, en bestelt opnieuw | De pilot geslaagd is en leden vragen wat ze eerder kochten, of onderwerp 4 aan de beurt is |
 | 15. Security: verbeterpunten uit de scan | De pipeline, het inloggen en de API zijn dicht voordat er echte leden en betalingen zijn | Nu. Groep A vóór de eerste release-tag, groep B en E vóór de eerste uitnodiging aan een lid |
-| 16. Mijn smaak: kenmerken, markeren en een melding op maat | Een lid ziet bij elke wijn hoe die is, ziet welke wijnen bij zijn smaak passen, en krijgt alleen een melding als er iets voor hem bij zit | Stap A: nu, met een schakelaar die in productie uit staat tot Marc instemt. Stap B en C: de pilot geslaagd is, en leden zeggen dat ze lijsten of meldingen overslaan omdat er weinig voor hen bij zit |
+| 16. Mijn smaak: kenmerken, markeren en een melding op maat | Een lid ziet bij elke wijn hoe die is, ziet welke wijnen bij zijn smaak passen, en krijgt alleen een melding als er iets voor hem bij zit | Stap A: gebouwd, staat uit in productie tot Marc instemt. Stap B en C: de pilot geslaagd is, en leden zeggen dat ze lijsten of meldingen overslaan omdat er weinig voor hen bij zit |
 | 17. Live bijwerken via een WebSocket | De stand van de veiling binnen een seconde, zonder dat elke telefoon elke 3 seconden vraagt | Leden in de pilot een bod missen of zeggen dat de stand achterloopt |
 | 18. Flesfoto's in één stijl | Elke fles staat vrij, even groot en op dezelfde donkere achtergrond, zonder dat Marc er iets extra voor doet | Een proef op Marcs eigen foto's goed genoeg uitvalt, en de foto's in de pilot naast elkaar onrustig ogen |
 | 19. Volgen wat er gebeurt, en ingrijpen als een bestelling misgaat | Marc en Aidan zien per bestelling wat er gebeurde en krijgen een signaal als een lid vastloopt, voordat het lid erover appt | Stap A zit in de pilot, week 7. Stap B: fouten in de pilot Aidan meer dan een uur per maand kosten om uit te zoeken. Stap C: de club groeit voorbij de pilot |
@@ -360,13 +360,13 @@ Een lid ziet bij elke wijn hoe die is, ziet welke wijnen bij zijn smaak passen, 
 
 | Stap | Wat | Leunt op | Schatting |
 | --- | --- | --- | --- |
-| A. Kenmerken per wijn | Het model stelt licht, midden of vol voor, Marc kijkt na, en het lid ziet het bij de wijn: "ROOD · ITALIË · VOL" | Het etiket lezen uit de pilot | 2 dagen |
+| A. Kenmerken per wijn | Het model stelt licht, midden of vol voor, Marc kijkt na, en het lid ziet het bij de wijn: "ROOD · ITALIË · VOL" | Het etiket lezen uit de pilot | Gebouwd, staat uit |
 | B. Markeren | Een lid legt een paar wensen vast; passende wijnen krijgen een merkje. Niets verdwijnt | Stap A, en een ontwerp van Aidan | 3 dagen |
 | C. Melding op maat | "Alleen mijn smaak" als keuze bij de meldingen | Stap B, de meldingen uit week 7 en de regels van onderwerp 3 | 2 dagen, nog niet uitgewerkt |
 
 ### Stap A: kenmerken per wijn
 
-Uitgewerkt in [bouwplannen/16a-kenmerken-per-wijn.md](bouwplannen/16a-kenmerken-per-wijn.md), om in een eigen sessie te bouwen. In het kort:
+**Gebouwd op 21 november 2026, staat uit** in productie tot Marc instemt. De regels staan in `domein/kenmerken.py`, de feiten in de [bouwspecificatie](bouwspecificatie.md), hoofdstuk 5 onder Kenmerken voorstellen. In het kort:
 
 - Eén nieuw veld `volheid` op `wijnen`: `licht`, `midden` of `vol`, optioneel. Plus `kenmerkenBron`: `model` of `marc`, zoals bij de tekst. Drie woorden in plaats van een schaal van 1 tot 5: het verschil tussen 3 en 4 is gokwerk, en drie woorden passen in de bestaande onderdelen en in de regel bij de wijn.
 - De regels komen in `domein/kenmerken.py`, met dezelfde opzet als het herkennen van een bericht. Het antwoord van het model is onbetrouwbare invoer: alles buiten de lijst valt weg. Wat het etiket of Marc al gaf, wint.
