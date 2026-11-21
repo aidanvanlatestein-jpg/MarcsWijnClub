@@ -12333,7 +12333,8 @@
                       "content": "Krachtige Negroamaro uit Puglia, boordevol rijp zwart fruit, pruimen en warme kruiden. Vol en soepel in de mond, met zwoele tannines en een rijke, lange afdronk. Een echte Italiaanse krachtpatser.",
                       "lineHeight": 1.25,
                       "fontFamily": "Barlow Condensed",
-                      "fontSize": 21
+                      "fontSize": 21,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "text",
@@ -18737,7 +18738,8 @@
               "content": "Welkom, Sanne. Ik heb je een code gemaild op sanne@voorbeeld.nl.",
               "lineHeight": 1.3,
               "fontFamily": "Barlow Condensed",
-              "fontSize": 19
+              "fontSize": 19,
+              "fontWeight": "normal"
             },
             {
               "type": "frame",
@@ -19725,7 +19727,8 @@
               "content": "Ik kook bij mensen thuis en ik drink graag goede wijn. In deze club deel ik flessen die ik zelf inkoop en lekker vind. Vraag gerust wat je wilt weten, ik antwoord zelf.",
               "lineHeight": 1.3,
               "fontFamily": "Barlow Condensed",
-              "fontSize": 20
+              "fontSize": 20,
+              "fontWeight": "normal"
             },
             {
               "type": "frame",
@@ -21278,7 +21281,8 @@
               "content": "Dank je. Ik breng je flessen donderdagavond. — Marc",
               "lineHeight": 1.3,
               "fontFamily": "Barlow Condensed",
-              "fontSize": 18
+              "fontSize": 18,
+              "fontWeight": "normal"
             },
             {
               "type": "frame",
@@ -21573,7 +21577,8 @@
               "content": "De volgende lijst zet ik donderdag online. Je krijgt een melding. — Marc",
               "lineHeight": 1.3,
               "fontFamily": "Barlow Condensed",
-              "fontSize": 18
+              "fontSize": 18,
+              "fontWeight": "normal"
             }
           ]
         },
@@ -21987,7 +21992,8 @@
                       "content": "Ik heb deze week een paar mooie flessen kunnen kopen, alleen voor jullie. Vanaf 19:30 kun je bestellen.",
                       "lineHeight": 1.3,
                       "fontFamily": "Barlow Condensed",
-                      "fontSize": 18
+                      "fontSize": 18,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "text",
@@ -22588,7 +22594,8 @@
                       "content": "Goedenavond! Ik zet ze een voor een op tafel. Wie het eerst is, die het eerst maalt.",
                       "lineHeight": 1.3,
                       "fontFamily": "Barlow Condensed",
-                      "fontSize": 18
+                      "fontSize": 18,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "text",
@@ -23137,7 +23144,8 @@
                       "content": "En de laatste van vandaag 👇",
                       "lineHeight": 1.3,
                       "fontFamily": "Barlow Condensed",
-                      "fontSize": 18
+                      "fontSize": 18,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "text",
@@ -25305,7 +25313,8 @@
                   "content": "Gefeliciteerd! Deze fles lag al tien jaar in mijn kelder te wachten op de juiste persoon. Proost.",
                   "lineHeight": 1.3,
                   "fontFamily": "Barlow Condensed",
-                  "fontSize": 18
+                  "fontSize": 18,
+                  "fontWeight": "normal"
                 },
                 {
                   "type": "text",
@@ -28287,7 +28296,8 @@
                   "content": "Krachtige Negroamaro uit Puglia, boordevol rijp zwart fruit, pruimen en warme kruiden. Vol en soepel in de mond, met zwoele tannines en een rijke, lange afdronk. Een echte Italiaanse krachtpatser.",
                   "lineHeight": 1.3,
                   "fontFamily": "Barlow Condensed",
-                  "fontSize": 17
+                  "fontSize": 17,
+                  "fontWeight": "normal"
                 }
               ]
             },
@@ -29724,7 +29734,8 @@
               "content": "Wijn I staat klaar voor dinsdag. Zo zien leden hem als jij hem op tafel zet:",
               "lineHeight": 1.3,
               "fontFamily": "Barlow Condensed",
-              "fontSize": 17
+              "fontSize": 17,
+              "fontWeight": "normal"
             }
           ]
         },
@@ -30271,7 +30282,8 @@
                       "content": "Ik heb deze week een paar mooie flessen kunnen kopen, alleen voor jullie. Vanaf 19:30 kun je bestellen.",
                       "lineHeight": 1.3,
                       "fontFamily": "Barlow Condensed",
-                      "fontSize": 18
+                      "fontSize": 18,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "text",
@@ -30884,7 +30896,8 @@
                       "content": "Goedenavond! Ik zet ze een voor een op tafel. Wie het eerst is, die het eerst maalt.",
                       "lineHeight": 1.3,
                       "fontFamily": "Barlow Condensed",
-                      "fontSize": 18
+                      "fontSize": 18,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "text",
@@ -31411,7 +31424,8 @@
                       "content": "En de laatste van vandaag 👇",
                       "lineHeight": 1.3,
                       "fontFamily": "Barlow Condensed",
-                      "fontSize": 18
+                      "fontSize": 18,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "text",
@@ -32538,7 +32552,8 @@
                       "content": "Krachtige Negroamaro uit Puglia, boordevol rijp zwart fruit, pruimen en warme kruiden. Vol en soepel in de mond, met zwoele tannines en een rijke, lange afdronk. Een echte Italiaanse krachtpatser.",
                       "lineHeight": 1.25,
                       "fontFamily": "Barlow Condensed",
-                      "fontSize": 21
+                      "fontSize": 21,
+                      "fontWeight": "normal"
                     },
                     {
                       "type": "text",
@@ -37387,7 +37402,8 @@
                   "content": "Gefeliciteerd! Deze fles lag al tien jaar in mijn kelder te wachten op de juiste persoon. Proost.",
                   "lineHeight": 1.3,
                   "fontFamily": "Barlow Condensed",
-                  "fontSize": 18
+                  "fontSize": 18,
+                  "fontWeight": "normal"
                 },
                 {
                   "type": "text",
@@ -38133,7 +38149,8 @@
                   "content": "Dank je! Je krijgt een berichtje als ik onderweg ben.",
                   "lineHeight": 1.3,
                   "fontFamily": "Barlow Condensed",
-                  "fontSize": 18
+                  "fontSize": 18,
+                  "fontWeight": "normal"
                 },
                 {
                   "type": "text",
@@ -39432,7 +39449,8 @@
                   "content": "Krachtige Negroamaro uit Puglia, boordevol rijp zwart fruit, pruimen en warme kruiden. Vol en soepel in de mond, met zwoele tannines en een rijke, lange afdronk. Een echte Italiaanse krachtpatser.",
                   "lineHeight": 1.3,
                   "fontFamily": "Barlow Condensed",
-                  "fontSize": 17
+                  "fontSize": 17,
+                  "fontWeight": "normal"
                 }
               ]
             },
@@ -40847,7 +40865,8 @@
               "content": "De Cándido staat klaar voor dinsdag. Zo zien leden hem als jij hem op tafel zet:",
               "lineHeight": 1.3,
               "fontFamily": "Barlow Condensed",
-              "fontSize": 17
+              "fontSize": 17,
+              "fontWeight": "normal"
             }
           ]
         },
@@ -44507,7 +44526,8 @@
               "content": "Ik verkoop wijn, dus ik moet het even vragen:",
               "lineHeight": 1.3,
               "fontFamily": "Barlow Condensed",
-              "fontSize": 19
+              "fontSize": 19,
+              "fontWeight": "normal"
             },
             {
               "type": "text",
@@ -44625,9 +44645,9 @@
     {
       "type": "frame",
       "id": "mkftA",
-      "x": 1350,
+      "x": 5090,
       "y": 11500,
-      "name": "V4 Login – 4 Voortaan met Face ID",
+      "name": "Later – Login 4 Voortaan met Face ID",
       "clip": true,
       "width": 390,
       "height": 844,
@@ -44753,7 +44773,8 @@
               "lineHeight": 1.3,
               "textAlign": "center",
               "fontFamily": "Barlow Condensed",
-              "fontSize": 18
+              "fontSize": 18,
+              "fontWeight": "normal"
             }
           ]
         },
@@ -44826,9 +44847,9 @@
     {
       "type": "frame",
       "id": "A0K73",
-      "x": 1800,
+      "x": 5540,
       "y": 11500,
-      "name": "V4 Login – 5 Terugkomen",
+      "name": "Later – Login 5 Terugkomen",
       "clip": true,
       "width": 390,
       "height": 844,
@@ -45021,6 +45042,40 @@
               "letterSpacing": 1.2
             }
           ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "JErGP",
+      "x": 5090,
+      "y": 11380,
+      "name": "Later: passkey (roadmap 22)",
+      "width": 840,
+      "layout": "vertical",
+      "gap": 6,
+      "children": [
+        {
+          "type": "text",
+          "id": "waBS7",
+          "name": "Titel",
+          "fill": "#C9A24A",
+          "content": "Later: passkey (roadmap 22)",
+          "fontFamily": "Barlow Condensed",
+          "fontSize": 40,
+          "fontWeight": "700"
+        },
+        {
+          "type": "text",
+          "id": "Ayp0J",
+          "name": "Uitleg",
+          "fill": "#8A8A8A",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Buiten de pilot sinds 21 november 2026. De pilot logt alleen in met een code per e-mail. Zie docs/roadmap.md, onderwerp 22.",
+          "fontFamily": "Barlow",
+          "fontSize": 20,
+          "fontWeight": "normal"
         }
       ]
     }
