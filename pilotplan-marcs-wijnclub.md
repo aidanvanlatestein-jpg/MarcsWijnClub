@@ -257,7 +257,7 @@ Dit moet Marc aanleveren voordat het prototype naar leden gaat:
 - [ ] Vijf tot tien eigen foto's, waaronder één portret, en twee of drie sfeerfoto's voor aankondigingen
 - [ ] Eén echte fles met zijn advies in eigen woorden en een spraakbericht van 30 seconden
 - [ ] Zijn WhatsApp-nummer, de momenten van brengen en halen, en zijn snelle zinnen voor de avond
-- [x] Omschrijvingen uit WhatsApp als voorbeeld voor de stijl van de tekstvoorstellen. Aangeleverd op 21 november 2026; zeven staan met zijn toestemming in `domein/tekst.py`
+- [x] Omschrijvingen uit WhatsApp als voorbeeld voor de stijl van de tekstvoorstellen. Aangeleverd op 21 november 2026; zeven staan met zijn toestemming in `domein/tekst.py`. Meer omschrijvingen uit de groep zijn beschikbaar en worden pas toegevoegd nadat Marc ze als openbaar voorbeeld heeft goedgekeurd
 - [ ] Zijn oordeel over het prototype, daarna een test met drie leden op hun eigen telefoon
 
 ## Architectuur op AWS
