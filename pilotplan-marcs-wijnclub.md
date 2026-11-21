@@ -169,7 +169,7 @@ De stijl volgt marckookt.com: de avond op één scherm, een bijzondere fles met 
 - Een wijn is alleen te bestellen als hij op tafel staat en de avond open is.
 - Een betaalde bon is bindend. Annuleren kan alleen via Marc, met een terugbetaling in Mollie.
 - Een avond sluit op de eindtijd die Marc kiest, of eerder als hij hem zelf sluit. Het sluiten verandert niets aan een betaling: een bon van vlak voor het sluiten blijft binnen zijn 15 minuten te betalen.
-- Het lid betaalt meteen bij het bestellen, per bon. Marc houdt de flessen 15 minuten vast. Is er dan niet betaald, dan vervalt de bon en komen de flessen terug in de voorraad. Marc krijgt daar geen bericht van. Marc levert pas uit na betaling. Startte het lid vlak voor het einde nog een betaling, dan wacht de app tot Mollie die afrondt; de flessen staan dan hoogstens ongeveer een half uur vast.
+- Het lid betaalt meteen bij het bestellen, per bon. Marc houdt de flessen 15 minuten vast. Is er dan niet betaald, dan vervalt de bon en komen de flessen terug in de voorraad. Marc krijgt daar geen bericht van, behalve een signaal als het lid wel probeerde te betalen (voorlopige bouwkeuze, zie de besluiten). Marc levert pas uit na betaling. Startte het lid vlak voor het einde nog een betaling, dan wacht de app tot Mollie die afrondt; de flessen staan dan hoogstens ongeveer een half uur vast.
 - Een bon namens een lid heeft 48 uur. Na 24 uur volgt één herinnering. Daarna vervalt de bon: de flessen komen terug in Marcs voorraad en hij krijgt bericht.
 - Brengen kan alleen als Marc het voor die avond aanbiedt en het lid een afleveradres heeft. Halen kan alleen als Marc het aanbiedt.
 - Bestellen is de aantallen kiezen, brengen of halen kiezen, en betalen. Door de betaalstap duurt dat langer dan een WhatsApp-bericht.
@@ -183,7 +183,7 @@ De stijl volgt marckookt.com: de avond op één scherm, een bijzondere fles met 
 - Bieden kost niets. Het bod is de prijs: er komt geen opgeld bij. Dat staat op het scherm van de bijzondere fles.
 - De winnaar heeft 48 uur om te betalen. Na 24 uur volgt één herinnering. Daarna vervalt de bon en krijgt Marc bericht; wat er met de fles gebeurt, is een open besluit.
 - Na het betalen kiest de winnaar brengen of halen. Het moment is dat van de avond. Is dat al voorbij, dan spreekt Marc het met hem af.
-- De veiling opent niet vóór de begintijd van de avond en heeft een eindtijd vóór het einde van de avond. Loopt hij door verlenging langer, dan sluit de avond pas na de hamer. Zolang de veiling open is, kan Marc de avond niet eerder sluiten; sluit hij de avond voordat de veiling opende, dan gaat de veiling niet door.
+- De veiling opent niet vóór de begintijd van de avond en heeft een eindtijd uiterlijk op het einde van de avond. Loopt hij door verlenging langer, dan sluit de avond pas na de hamer. Zolang de veiling open is, kan Marc de avond niet eerder sluiten; sluit hij de avond voordat de veiling opende, dan gaat de veiling niet door.
 
 ## Schermen en UX
 
@@ -218,7 +218,7 @@ Het lid heeft één startpagina, het aanbod: de aankondiging vóór de avond, de
 | Marc | Nog niet in V4; V3 13 | Zijn foto, een korte tekst, voorwaarden en privacy. Bereikbaar via een link onderaan het aanbod | Vraag Marc |
 | Beheer: de avond (`/beheer`) | V4 20 | Wijnen op tafel zetten, iets tegen de tafel zeggen met snelle zinnen, de veiling eerder starten, "nog beschikbaar" delen en de avond sluiten, met tellers: flessen, bonnen en betaald bedrag. Het delen van "nog beschikbaar" is nog niet getekend | Zet de volgende wijn op tafel, daarna Sluit de avond |
 | Beheer: nieuwe fles (`/beheer/nieuw`) | V4 15 tot en met 19 | Fotograferen of de WhatsApp-tekst plakken, nakijken wat de app herkende, lijst of veiling, en klaar. Steekwoorden geven en een tekstvoorstel kiezen hoort bij nakijken (16) en is nog niet getekend | Zet klaar voor de avond |
-| Beheer: afleveren (`/beheer/afleveren`) | V4 21 | Brengen, halen en klaar, een betaallink sturen en "laat weten: ik ben onderweg" | Laat weten: ik ben onderweg |
+| Beheer: afleveren (`/beheer/afleveren`) | V4 21 | Brengen, halen en klaar, een betaallink sturen en "laat weten: ik ben onderweg". Bovenaan "Vraagt aandacht" met de signalen, en een paneel met de tijdlijn van een bestelling: nog niet getekend | Laat weten: ik ben onderweg |
 | Beheer: een avond plannen | Nog niet | Titel, aankondiging, datum, begin- en eindtijd, de momenten van brengen en halen, en Aankondigen | Kondig aan |
 | Beheer: leden | Nog niet | Uitnodigen met naam en e-mail, en bevestigen dat het lid 18 jaar of ouder is. Het afleveradres bijhouden, en een lid verwijderen | Nodig uit |
 | Beheer: namens een lid | Nog niet in V4 | Een lid kiezen, letters en aantallen zoals "C2 D2", brengen of halen | Voer in |
@@ -311,12 +311,12 @@ flowchart LR
 | Web-app | S3 + CloudFront | Statische bestanden, gebouwd met React en Vite in TypeScript. Eén pagina met adressen achter een hekje, zoals `#/wijn/…`. Installeerbaar op het beginscherm met een manifest |
 | Inloggen | Cognito | Code per e-mail of passkey, geen wachtwoorden. Alleen op uitnodiging. Eén groep `beheer` voor Marc en de bouwer; elk ander is lid |
 | Toegang tot gegevens | API Gateway (HTTP API) + Lambda in Python | Onder `/api/*` op hetzelfde adres als de web-app, via CloudFront. Eén functie per taak. Lambda-runtime `python3.14` |
-| Opslag | DynamoDB | Tien tabellen met betalen naar gebruik, zie Gegevensmodel |
+| Opslag | DynamoDB | Elf tabellen met betalen naar gebruik, zie Gegevensmodel |
 | Foto's en spraakberichten | S3 achter CloudFront | Niet publiek toegankelijk buiten CloudFront om. Uploaden via een tijdelijke uploadlink |
 | Geplande taken | EventBridge Scheduler | Eenmalige taken op de begintijd van een avond, het begin van de veiling, de hamer en de eindtijd van de avond. Een taak die elke minuut draait, laat onbetaalde bonnen vervallen, geeft de voorraad terug en stuurt de betaalherinnering |
 | Live bijwerken | Pollen op de HTTP API | Elke 3 seconden zolang het scherm zichtbaar is, voor de avond en de zaal. Bij 30 leden is dat ongeveer 10 aanroepen per seconde; de begrenzing van de API moet daarop zijn ingesteld. Een WebSocket is roadmap onderwerp 17 |
-| Meldingen | Web Push vanuit Lambda, met een service worker in de web-app; e-mail via SES als terugval | De service worker dient alleen voor meldingen, niet om offline te werken. Op een iPhone werkt een melding pas als de app op het beginscherm staat. E-mail is de terugval voor meldingen over een eigen bon of bod en voor "ik ben onderweg", als het lid geen werkend abonnement heeft. Marc krijgt een melding als een bon namens een lid of een gewonnen fles vervalt |
-| Bericht en etiket herkennen, tekst voorstellen | Bedrock, in een regio in de EU | Haalt naam, jaargang, aantal, prijs en tekst uit Marcs WhatsApp-bericht, en naam, producent, jaargang en streek van de foto van het etiket. Maakt drie tekstvoorstellen uit Marcs steekwoorden. Marc controleert het resultaat en kiest. Eén model dat ook afbeeldingen leest |
+| Meldingen | Web Push vanuit Lambda, met een service worker in de web-app; e-mail via SES als terugval | De service worker dient alleen voor meldingen, niet om offline te werken. Op een iPhone werkt een melding pas als de app op het beginscherm staat. E-mail is de terugval voor meldingen over een eigen bon of bod en voor "ik ben onderweg", als het lid geen werkend abonnement heeft. Marc krijgt een melding als een bon namens een lid of een gewonnen fles vervalt, en bij een signaal dat voor hem is (zie Volgen en ingrijpen in de besluiten) |
+| Bericht en etiket herkennen, tekst voorstellen | Bedrock, in een regio in de EU | Haalt naam, producent, jaargang, aantal, prijs en tekst uit Marcs WhatsApp-bericht, en naam, producent, jaargang, streek, kleur en land van de foto van het etiket. Maakt drie tekstvoorstellen uit Marcs steekwoorden. Marc controleert het resultaat en kiest. Eén model dat ook afbeeldingen leest |
 | Sleutels | Secrets Manager | Mollie-sleutel en de sleutels voor meldingen. In `test` de testsleutel van Mollie |
 | Instellingen | CDK-context bij het uitrollen | Afzenderadres en Marcs WhatsApp-nummer gaan als context mee en komen in de configuratie van de web-app, niet in de repository |
 | Logboek en alarmen | CloudWatch | Alarm bij mislukte betaalmeldingen, een dubbele betaling, een mislukte geplande taak en pieken in geweigerde aanroepen |
@@ -388,21 +388,23 @@ De repository is openbaar. Daardoor kan productie een echte goedkeuringsstap kri
 
 Alle tests draaien in pytest, ook de browsertests via Playwright voor Python. Zo heeft de bouwer één testtaal.
 
+**De documenten zijn de maatstaf.** Elke test toetst een regel die in dit plan of in de bouwspecificatie staat: een regel voor de lijst of de veiling, een overgang uit de levensloop, een aanroep met zijn foutcodes, of een eis voor de telefoon (M1 tot en met M14). Toetst een test iets wat nergens staat, dan komt de regel eerst in het document, of de test vervalt. Staat er een regel zonder test, dan is dat een gat dat in de week van dat onderdeel dicht moet. De tabel Dekking onderaan zegt per onderdeel welke laag hem toetst.
+
 | Laag | Wat het controleert | Wanneer | Waartegen |
 | --- | --- | --- | --- |
-| Unit-tests | Regels voor bieden (minimale verhoging, bovengrens, niet jezelf overbieden, verlenging in de laatste twee minuten, eindtijd), bestelling, voorraad en levering, het verwerken van een Mollie-melding, het herkennen van een WhatsApp-bericht en een etiket en het controleren van tekstvoorstellen met een nagebootst taalmodel, het tellen van een tik op een melding: één keer per lid. Stacktests op de sjablonen | Elke pull request | Alleen de code, geen AWS |
+| Unit-tests | Regels voor bieden (minimale verhoging, bovengrens, niet jezelf overbieden, verlenging in de laatste twee minuten, eindtijd), bestelling, voorraad en levering, het verwerken van een Mollie-melding, het herkennen van een WhatsApp-bericht en een etiket en het controleren van tekstvoorstellen met een nagebootst taalmodel, het tellen van een tik op een melding: één keer per lid. Stacktests op de sjablonen. De tests voor het etiket, de tikken, de overgangen van de avond en de signalen volgen met die onderdelen | Elke pull request | Alleen de code, geen AWS |
 | Browsertests | De stromen op telefoonformaat van 375 × 667 en 320 × 568 px, in Chromium en WebKit: inloggen, bestellen en betalen, een bon die niet betaald wordt en vervalt, bieden en winnen, Je bestellingen, een nieuwe fles klaarzetten. Bij elke stroom ook de eisen voor de telefoon die een test kan meten: tikvlakken, geen horizontaal scrollen, contrast, tekstgrootte en wat zonder scrollen in beeld moet staan | Elke pull request | De gebouwde web-app, nu met voorbeeldgegevens |
 | Integratietests | Twintig gelijktijdige biedingen: precies één winnaar per bedrag. Gelijktijdige bestellingen: de voorraad komt nooit onder nul. Een veiling sluit op de eindtijd. Dezelfde Mollie-melding twee keer: één betaling. Volgt | Elke merge | Teststack, met echte DynamoDB en Mollie in testmodus |
 | End-to-end-tests | Dezelfde stromen als de browsertests, maar tegen de echte API: een avond die begint, van de lijst bestellen en meteen betalen, een bon die vervalt, bieden en winnen, en Marc die een wijn op tafel zet. Volgt | Elke merge | Teststack, via de browser |
 | Handtest op telefoons | Dezelfde stromen op een echte iPhone (in Safari en vanaf het beginscherm) en een echte Android-telefoon (in Chrome), één keer met de schermlezer aan | Elke release | Teststack |
-| Rooktest | De site laadt, het aanbod is op te vragen, inloggen werkt. Er worden geen bestellingen geplaatst | Elke merge en elke release | Test en productie |
+| Rooktest | De site laadt, de configuratie van de web-app is er, en het aanbod weigert een aanroep zonder token met `401`. Het aanbod opvragen met een testlid en inloggen volgen. Er worden geen bestellingen geplaatst | Elke merge en elke release | Test en productie |
 | Herkennen en voorstellen | Twintig echte aanbiedingen van Marc met de juiste naam, jaargang, aantal en prijs als antwoord, en twintig foto's van etiketten met de juiste naam, producent, jaargang en streek. Minstens 95% van de velden moet kloppen. Tien sets steekwoorden: bij elk voorstel is met de hand nagekeken dat er geen smaak, score of prijs bij verzonnen is. Volgt | Bij een wijziging van prompt of model, en wekelijks | Teststack, met het echte taalmodel |
 | Beveiliging | pip-audit en npm audit op bekende kwetsbaarheden, secret scanning op de repository. cdk-nag op de infrastructuur volgt | Elke pull request, en wekelijks | De code |
 
 **Testgegevens en inloggen in de test**
 
 - De teststack krijgt bij elke uitrol vaste voorbeeldwijnen, een voorbeeldavond en testleden uit een seed-script. Productiegegevens gaan nooit naar test.
-- Inloggen met een code per e-mail is niet te automatiseren. In de teststack krijgen testleden daarom een wachtwoord dat de pipeline zelf aanmaakt en in Secrets Manager zet. In productie staat inloggen met een wachtwoord uit.
+- Inloggen met een code per e-mail is niet te automatiseren. In de teststack krijgen testleden daarom een wachtwoord dat de pipeline zelf aanmaakt en in Secrets Manager zet. In productie staat inloggen met een wachtwoord uit; nu staat het in beide omgevingen nog aan, zie punt B1 in [docs/beveiliging.md](docs/beveiliging.md).
 - Betalingen op test lopen via de testsleutel van Mollie. De browsertest kiest op de testbetaalpagina van Mollie of de betaling lukt of mislukt.
 - Een avond of veiling sluit in de test niet na uren: de test zet de eindtijd op één minuut.
 
@@ -413,13 +415,13 @@ Eén AWS-account met een aparte set stacks voor test en productie is voor de pil
 - Alles van de wijnclub begint met `Wijnclub-` of `wijnclub-`, en niets anders in het account wordt aangeraakt. Het account is gedeeld met andere eigen projecten. De pipeline kan alles in het account, ook daar; dat risico is bewust genomen voor de pilot, zie "Een gedeeld account" in de README.
 - Pull requests krijgen een rol die alleen de sjablonen van de stacks kan lezen, geen gegevens. Alleen `main` mag naar test uitrollen, en alleen de omgeving `productie` naar productie.
 - Elke naam begint met de stacknaam, en geen functie of rol van test heeft rechten op tabellen of sleutels van productie.
-- De productiestacks hebben beëindigingsbeveiliging, en de productietabellen hebben verwijderbeveiliging en herstel tot op de seconde (point-in-time recovery).
+- De productiestacks hebben beëindigingsbeveiliging, en de productietabellen hebben verwijderbeveiliging en herstel tot op de seconde (point-in-time recovery). De beëindigingsbeveiliging staat nog niet aan: punt A7 in [docs/beveiliging.md](docs/beveiliging.md).
 
 Komen er meer leden, andere verkopers of een tweede ontwikkelaar bij, dan is een eigen AWS-account voor de wijnclub de volgende stap.
 
 ## Gegevensmodel
 
-Tien tabellen in DynamoDB, met betalen naar gebruik. Je bestellingen en de terugblik hebben geen eigen tabel: ze lezen de bestellingen, de avond en de feed. De velden, sleutels en indexen staan in de bouwspecificatie, hoofdstuk 2; de namen hieronder zijn dezelfde.
+Elf tabellen in DynamoDB, met betalen naar gebruik. Je bestellingen en de terugblik hebben geen eigen tabel: ze lezen de bestellingen, de avond en de feed. De velden, sleutels en indexen staan in de bouwspecificatie, hoofdstuk 2; de namen hieronder zijn dezelfde.
 
 | Tabel | Sleutel | Belangrijkste velden |
 | --- | --- | --- |
@@ -616,4 +618,4 @@ Elk onderdeel van de scope, met waar het staat. Schermen zijn die uit de tabel o
 | Afleveren | Beheer: afleveren | `GET /api/beheer/lijsten/{lijstId}/afleverlijst`, `PUT /api/beheer/bestellingen/{id}/afgeleverd`, `POST /api/beheer/lijsten/{lijstId}/onderweg` | `bestellingen`, `leden`, `berichten` | 7 | Unit, browsertest |
 | Vraag Marc, voorwaarden en privacy | Wijn van de lijst, Marc | – | – | 7 | Browsertest |
 | Tellingen | – | `GET /api/beheer/tellingen` | `bestellingen`, `weergaven`, `berichten`, `tikken`, `biedingen` | 6 en 7 | Unit |
-| Volgen en ingrijpen | Beheer: afleveren | `POST /api/bestellingen/{id}/terug`, `GET /api/beheer/bestellingen/{id}/tijdlijn`, `GET /api/beheer/signalen`, geplande taak | `tijdlijn`, `bestellingen`, `leden` | 7 | Unit, browsertest, integratie |
+| Volgen en ingrijpen | Beheer: afleveren | `POST /api/bestellingen/{id}/terug`, `GET /api/beheer/bestellingen`, `GET /api/beheer/bestellingen/{id}/tijdlijn`, `GET /api/beheer/signalen`, geplande taak | `tijdlijn`, `bestellingen`, `leden` | 7 | Unit, browsertest, integratie |

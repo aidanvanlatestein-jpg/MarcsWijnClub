@@ -148,7 +148,7 @@ De export bevat namen en telefoonnummers van leden. Verwerk hem lokaal, bewaar a
 ### Techniek en kosten
 
 - EventBridge Scheduler plant elk bericht, zoals het ook het sluiten van een bieding plant. Een Lambda-functie verstuurt de melding of de e-mail, of stuurt Marc de herinnering met het klaargezette groepsbericht.
-- Er komt één tabel bij: `campagne` (de lijst of bieding, de reeks, de status). `bericht` en `tik` bestaan sinds de pilot; `bericht` krijgt er de velden gepland op en tekst bij. De toestemming per kanaal staat bij het `lid`.
+- Er komt één tabel bij: `campagne` (de lijst of bieding, de reeks, de status). `berichten` en `tikken` bestaan sinds de pilot; `berichten` krijgt er de velden gepland op en tekst bij. De toestemming per kanaal staat in `leden`, bij het lid.
 - Er komen geen nieuwe externe diensten of sleutels bij. Meldingen zijn gratis en e-mail via SES kost een fractie van een cent per bericht.
 - Ter vergelijking: via de zakelijke WhatsApp-koppeling zou een marketingbericht naar een Nederlands nummer ongeveer €0,13 kosten, ruim €15 per bericht aan 120 leden. Dat bedrag komt uit tariefoverzichten van leveranciers; de tarieflijst van Meta zelf is niet geraadpleegd.
 
@@ -195,7 +195,7 @@ De pilot heeft de kern: een bindend bod, een minimale verhoging en verlenging in
 - Een maximaal bod is bindend tot het hele bedrag. Dat moet in de voorwaarden en op het scherm staan voordat het lid bevestigt.
 - Bij twee gelijke maxima wint wie het eerst opgaf. De regel hoort in `domein/` met tests, en de schrijfactie in DynamoDB moet het verborgen maximum in dezelfde stap controleren als het bod.
 - De richtprijs en de staat komen alleen van Marc en worden nooit gegenereerd, net als herkomst en bewaring.
-- Zet op het scherm van de bijzondere fles dat er geen opgeld is. Dat kost één zin en geen bouwtijd.
+- Dat er geen opgeld is, staat al in de pilot op het scherm van de bijzondere fles; zie Regels voor de veiling in het plan.
 
 ## 7. Wijn aan tafel: proeverijen en diners
 
@@ -323,7 +323,7 @@ Sinds 21 november 2026 staan `kleur` en `land` als voorlopige bouwkeuze in de pi
 - **Mijn smaak.** Een nieuw scherm, bereikbaar via "MIJN SMAAK →" naast het snelfilter. Het lid kiest kleuren, per schaal een bereik, smaken en spijzen uit de vaste lijsten, favoriete producenten, streken en druiven, en een bedrag per fles "tot en met". Favorieten kiest het lid uit wat Marc eerder verkocht; er is geen vrije tekst. Alles is optioneel: een leeg scherm betekent "toon alles".
 - **Eén regel voor "past".** Binnen een groep geldt "of", tussen groepen "en". Ontbreekt een kenmerk bij de wijn, dan telt die groep als passend: een leeg veld verbergt nooit een wijn. Een wijn van een favoriete producent past altijd. De regel staat in `domein/smaak.py` en gespiegeld in de web-app.
 - **Niets verdwijnt stil.** Staat een filter aan, dan staat onderaan "3 wijnen passen niet bij je smaak · TOON ALLES". Berichten van Marc blijven altijd staan. De veiling wordt niet gefilterd: dat is één fles.
-- **Opslag.** De wensen staan als één veld `smaak` op het `lid`. Er komt geen tabel bij. De aanroepen zijn `GET`, `PUT` en `DELETE /api/mijn/smaak`; het lid komt uit het token, en `PUT` weigert alles buiten de vaste lijsten en grenzen.
+- **Opslag.** De wensen staan als één veld `smaak` op het lid, in `leden`. Er komt geen tabel bij. De aanroepen zijn `GET`, `PUT` en `DELETE /api/mijn/smaak`; het lid komt uit het token, en `PUT` weigert alles buiten de vaste lijsten en grenzen.
 - **De app filtert zelf.** `GET /api/aanbod` geeft de kenmerken mee. Het aanbod is klein, en de server hoeft zo niet te weten wat een lid bekijkt.
 - **Ontwerp.** Design-v4 heeft geen profielscherm en geen filter. Aidan levert drie tekeningen: het snelfilter op het aanbod, Mijn smaak, en de schalen bij een wijn en op het nakijkscherm. De eisen voor de telefoon gelden: tikvlakken van 44 px, en geen schuif die alleen met slepen werkt.
 
@@ -333,7 +333,7 @@ Sinds 21 november 2026 staan `kleur` en `land` als voorlopige bouwkeuze in de pi
 - Met "alleen mijn smaak" krijgt het lid de melding van een nieuwe lijst of een nieuwe bieding alleen als minstens één wijn past, met het aantal erbij: "3 wijnen naar jouw smaak".
 - Meldingen over een eigen bestelling of bod worden nooit gefilterd: de betaallink, de betaalherinnering, overboden en gewonnen.
 - De regels van de campagnes gelden ook hier: toestemming per kanaal, een maximum per week, niets na 21:30.
-- De app legt niet vast welk lid op welke wijn paste. `bericht` blijft zonder lid.
+- De app legt niet vast welk lid op welke wijn paste. `berichten` blijft zonder lid.
 
 ### Privacy
 
@@ -417,6 +417,8 @@ Het idee is van Aidan, van 21 november 2026, en is nog niet met Marc besproken. 
 
 ### Wat de pilot al heeft, en wat ontbreekt
 
+De tabel beschrijft de pilot zonder stap A: het is de reden voor dit onderwerp. Wat stap A daarvan oplost, staat hieronder en in de bouwspecificatie.
+
 | De pilot heeft | Wat ontbreekt |
 | --- | --- |
 | Alarmen bij een mislukte betaalmelding, een dubbele betaling en een mislukte geplande taak | Een alarm zegt dat er iets misging, niet bij welke bestelling of wat eraan voorafging |
@@ -443,14 +445,14 @@ Er komt één tabel bij, `tijdlijn`, met per rij `bestellingId`, `tijdstipId`, `
 
 | `stap` | Wie schrijft hem |
 | --- | --- |
-| `gemaakt` | De bestel-transactie |
+| `gemaakt` | Bestellen van de lijst, namens een lid, en het sluiten van een bieding |
 | `betaling-gestart`, met het nummer van de poging | Betalen |
 | `betaling-niet-gestart` | Betalen, als Mollie geen betaling teruggeeft |
 | `terug-van-betalen` | De web-app, als het lid van de betaalpagina terugkomt op de bon |
 | `melding-mollie`, met de status van de betaling | De melding van Mollie |
 | `betaald`, `verlopen`, `terugbetaald` | De overgang van de status |
 | `herinnerd`, `betaallink-verstuurd` | De taak voor verlopen en Marc |
-| `afgeleverd` | Afleveren |
+| `afgeleverd` | Afleveren. Haalt Marc het vinkje weg, dan komt er `niet-afgeleverd` bij |
 
 - **Geen naam, adres of bedrag in de tijdlijn.** Alleen het `bestellingId`. Wie het lid is, staat op de bestelling, en die zien alleen het lid zelf en de groep `beheer`.
 - **Een eigen tabel, geen veld op de bestelling.** Dezelfde reden als bij `weergaven`: een schrijfactie voor het volgen mag een bestelling of betaling nooit laten mislukken. Mislukt het schrijven, dan staat dat in het logboek en gaat de bestelling gewoon door.
@@ -471,7 +473,7 @@ Er komt één tabel bij, `tijdlijn`, met per rij `bestellingId`, `tijdstipId`, `
 
 - **Ingrijpen is altijd een handeling die al bestaat:** de betaallink sturen, namens een lid bestellen, terugbetalen in Mollie, afleveren. Er komt geen knop die een status met de hand zet. Bestellingen worden nooit achteraf gewijzigd.
 - **Waar Marc het ziet.** Bovenaan Beheer: afleveren staat "Vraagt aandacht", met per bestelling één regel in gewone taal: "Probeerde drie keer te betalen, bon vervallen om 21:14". Een tik opent de tijdlijn in een paneel. Design-v4 tekent dit niet; Aidan levert een tekening.
-- **Bericht.** Een signaal voor Marc gaat als melding naar de groep `beheer`, met e-mail als terugval, hoogstens één per bestelling. Een signaal voor Aidan is een alarm in CloudWatch.
+- **Bericht.** Een signaal voor Marc gaat als melding naar de groep `beheer`, met e-mail als terugval, één keer per signaal per bestelling. Een signaal voor Aidan is een regel in het logboek met een alarm in CloudWatch.
 - **Het laatste signaal gaat niet over een bestelling** en gebruikt de tijdlijn niet. In de pilot komt het uit `uitgenodigdOp` en `eersteLoginOp` op het lid. Het staat hier omdat het dezelfde vraag beantwoordt: een lid loopt vast en niemand weet het.
 - **Na de pilot** kan dat signaal scherper: een inlogcode die twee keer is aangevraagd zonder dat het lid inlogde, uit Cognito, en een e-mail die terugkwam, uit de meldingen van SES. Dat vraagt extra opzet in SES en zit niet in de pilot.
 - **Een bestelpoging die geen bon werd**, omdat een wijn net op was, komt niet in de tijdlijn: er is geen bestelling. Na de pilot kan de app ze per wijn tellen, zonder lid. Dat getal zegt ook of er vraag is naar de wachtlijst van onderwerp 12. Het zit niet in de pilot.

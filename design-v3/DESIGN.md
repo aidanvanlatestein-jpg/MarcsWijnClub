@@ -2,6 +2,19 @@
 
 Ontwerp voor de pilot uit `../pilotplan-marcs-wijnclub.md`. Dit document en de map `schermen/` zijn samen de specificatie voor de bouw van de web-app.
 
+> **Stand op 21 november 2026: V3 is opgevolgd door `../design-v4/`.** Dit document blijft staan als aanvulling op V4 en is verder niet bijgewerkt. Bij een verschil winnen het pilotplan, de bouwspecificatie en V4.
+>
+> **Geldt nog:** de tokens, de typografie, de ruimte en de vorm, de componenten die V4 niet vervangt, de schermen 06 (bijzondere fles), 13 (Marc) en 16 (toestanden, zonder letters), en de hoofdstukken Toestanden, Beweging, Toegankelijkheid en Tekst en toon.
+>
+> **Geldt niet meer:**
+>
+> - De tabbalk, de reuzenletters voor leden, en de schermen 01 tot en met 05, 07 tot en met 10, 14 en 15: daarvoor staan de schermen van V4.
+> - Scherm 11 (bewaren) en 12 (mijn flessen): uit de pilot gehaald op 19 november 2026. Na een gewonnen fles kiest het lid brengen of halen; Je bestellingen vervangt Mijn flessen.
+> - De routes in de schermenlijst. De adressen van de web-app staan in de bouwspecificatie, hoofdstuk 1.
+> - "Live en realtime": besloten is pollen elke 3 seconden. De eis "binnen 1 seconde" vervalt daarmee; een WebSocket is roadmap onderwerp 17. De namen `avond`, `feeditem` en de status `live` zijn in de bouwspecificatie `lijsten`, `feed` en `open`.
+> - "Open beslissingen": alle vijf staan als besluit of voorlopige bouwkeuze in de besluiten van het plan.
+> - "Buiten deze opdracht": het etiket lezen en tekstvoorstellen zitten sinds 20 november 2026 wel in de pilot.
+
 **Wat waar wint**
 
 - **Functie, regels, data en beveiliging:** het pilotplan.

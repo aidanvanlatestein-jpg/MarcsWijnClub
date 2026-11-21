@@ -16,13 +16,13 @@ Een besloten web-app waarin leden van Marcs WhatsApp-groep wijn kopen op een avo
 
 | Map | Inhoud |
 | --- | --- |
-| `functions/wijnclub/domein` | De regels voor geld, bestelling en bieding, zonder AWS |
+| `functions/wijnclub/domein` | De regels zonder AWS: geld, bestelling en levering, bieding, een bericht herkennen en tekstvoorstellen |
 | `functions/wijnclub/handlers` | Eén bestand per Lambda-functie. Nu alleen `GET /api/aanbod` |
 | `infra` | De omgeving als code, in AWS CDK met Python: vier stacks |
 | `app` | De web-app. Nu een klikbaar prototype van de schermen uit `design-v4`, nog zonder koppeling met de API |
 | `tests` | Tests voor de functies en voor de stacks |
 
-Dit is de basis van week 3 uit het plan, plus de regels van week 5 en 6. Hoofdstuk 8 van de bouwspecificatie zegt wat er nog niet is.
+Dit is de basis van week 3 uit het plan, plus het prototype en de regels voor herkennen en tekstvoorstellen van week 4, en de regels van week 5 en 6. Hoofdstuk 8 van de bouwspecificatie zegt wat er nog niet is.
 
 ## Beginnen
 

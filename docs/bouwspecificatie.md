@@ -4,6 +4,10 @@
 
 Dit document werkt het pilotplan uit tot bouwniveau: sleutels in DynamoDB, de levensloop van een avond en een bestelling, de bieding, de API-aanroepen en de indeling van het project. Het plan zegt wat er komt; dit document zegt hoe het in elkaar zit.
 
+Het document heeft twee lagen. Hoofdstuk 1 tot en met 6 en hoofdstuk 10 zijn de specificatie: wat de app moet doen, los van wat er al staat. Daar toetsen de tests tegen, en dat neem je mee bij een herbouw. Hoofdstuk 7 tot en met 9 en de stand van het prototype onderaan hoofdstuk 10 beschrijven de huidige opzet: wat er gebouwd is, met welke versies, en wat nog open is. Die delen verouderen met de code.
+
+In schermteksten en in het plan heet het de avond, de veiling, de bon en vervallen; in gegevens en in dit document de lijst (`lijsten`), de bieding, de bestelling en `verlopen`. De volledige lijst staat in het plan onder Begrippen.
+
 ## 1. Uitgangspunten
 
 | Onderdeel | Keuze |
@@ -125,13 +129,14 @@ stateDiagram-v2
 ```
 
 - **`concept`.** Marc plant de avond en zet wijnen klaar. Leden zien niets. `POST /api/beheer/lijsten` controleert de levering, zoals onder Levering.
-- **`aangekondigd`.** Met `PUT /api/beheer/lijsten` en `status` `aangekondigd` gaat er een melding `aankondiging` naar alle leden met meldingen aan, en komen er eenmalige taken in EventBridge Scheduler op `openVan` en `openTot`, en op `veilingBegin` en `eindtijd` als er een veiling is. Worden na het aankondigen de tijden gewijzigd of komt de veiling er later bij, dan zet `PUT /api/beheer/lijsten/{lijstId}` of `POST /api/beheer/wijnen` de taken opnieuw. Dit is de enige plek die taken voor een avond en zijn veiling aanmaakt. Er kan hoogstens één avond tegelijk aangekondigd of open zijn. De tijden moeten kloppen: `openVan` vóór `openTot`, en bij een veiling `openVan` ≤ `veilingBegin` < `eindtijd` ≤ `openTot`; anders `400` met `ongeldig_moment`. Het aanbod toont de aankondiging met alle wijnen die klaarstaan; geen ervan is te bestellen.
+- **`aangekondigd`.** Met `PUT /api/beheer/lijsten/{lijstId}` en `status` `aangekondigd` gaat er een melding `aankondiging` naar alle leden met meldingen aan, en komen er eenmalige taken in EventBridge Scheduler op `openVan` en `openTot`, en op `veilingBegin` en `eindtijd` als er een veiling is. Worden na het aankondigen de tijden gewijzigd of komt de veiling er later bij, dan zet `PUT /api/beheer/lijsten/{lijstId}` of `POST /api/beheer/wijnen` de taken opnieuw. Dit is de enige plek die taken voor een avond en zijn veiling aanmaakt. Er kan hoogstens één avond tegelijk aangekondigd of open zijn. De tijden moeten kloppen: `openVan` vóór `openTot`, en bij een veiling `openVan` ≤ `veilingBegin` < `eindtijd` ≤ `openTot`; anders `400` met `ongeldig_moment`. Het aanbod toont de aankondiging met alle wijnen die klaarstaan; geen ervan is te bestellen.
 - **`open`.** De taak op `openVan` zet de status op `open`, op voorwaarde dat die nog `aangekondigd` is, en stuurt de melding `begin` aan de leden met de `lijstId` in `herinneren`. Marc zet wijnen op tafel met `POST /api/beheer/wijnen/{wijnId}/op-tafel`: dat zet `opTafelSinds` en `partij` (de voorraad op dat moment) en schrijft een rij in `feed`. Alleen een wijn op tafel is te bestellen. Wat Marc zegt, komt met `POST /api/beheer/lijsten/{lijstId}/feed` in de feed.
 - **`gesloten`.** Zie De lijst sluiten. Het aanbod toont dan de terugblik, uit de wijnen en de feed van deze avond, tot er een nieuwe avond aangekondigd is. Wat nooit op tafel kwam, staat niet in de terugblik; de veiling wel, met de uitkomst.
 - **De veiling en het sluiten.** De taak op `openTot` sluit de avond niet zolang de veiling open is: hij plant zichzelf opnieuw op de `eindtijd` en sluit de avond na de hamer. Eerder sluiten kan niet zolang de veiling open is (`409` met `veiling_loopt`). Staat de veiling nog op `klaar` als de avond sluit, dan gaat hij naar `gesloten` zonder winnaar en vervallen zijn taken.
 
 **Pollen.** De web-app roept `GET /api/aanbod?sinds=<tijdstip>` elke 3 seconden aan zolang het scherm zichtbaar is (`document.visibilityState`), met het `tijdstip` van de laatste rij uit de feed die ze al heeft. `sinds` is inclusief; de web-app laat rijen vallen waarvan ze de `tijdstipId` al kent. Het antwoord bevat de status van de avond, de voorraad van elke wijn op tafel, de stand van de veiling en alleen de nieuwe rijen uit de feed. Bij terugkomst in de app vraagt ze meteen. Bij 30 leden is dat ongeveer 10 aanroepen per seconde; de begrenzing van de API moet daar ruim boven liggen, met een eigen grens per lid voor bieden en bestellen.
 
+### Een bestelling
 
 Eén regel bepaalt alles: **een bestelling blijft open tot `betaalVoor`, en alleen een geslaagde betaling of het verstrijken van die tijd verandert de status.** Een mislukte of afgebroken betaling verandert niets; het lid kan binnen de termijn opnieuw betalen.
 
@@ -162,7 +167,7 @@ Een bestelling wordt gebracht of gehaald:
 - **`brengen`**: Marc brengt de flessen aan huis, in het tijdvak dat hij voor de lijst instelt, zoals donderdagavond van 18:00 tot 20:00.
 - **`halen`**: het lid haalt de flessen bij Marc op, op het moment en de plek die hij voor de lijst instelt.
 
-Per lijst kiest Marc of hij brengen, halen of beide aanbiedt, met `van` en `tot` en bij halen `waar` (zie `lijsten` in hoofdstuk 2). De app controleert dat er minstens één is, dat `van` vóór `tot` ligt en dat halen een plek heeft.
+Per lijst kiest Marc of hij brengen, halen of beide aanbiedt, met `van` en `tot` en bij halen `waar` (zie `lijsten` in hoofdstuk 2). De app controleert dat er minstens één is, dat `van` vóór `tot` ligt en dat halen een plek heeft, van hoogstens 200 tekens.
 
 Bij bestellen controleert de app de levering met wat in de opslag staat, nooit met wat de aanvraag zegt:
 
@@ -198,7 +203,7 @@ Het adres komt niet op de bestelling. De afleverlijst leest het uit `leden`, zod
 ### De lijst sluiten
 
 1. Een eenmalige taak in EventBridge Scheduler staat op `openTot`. Marc kan de lijst ook eerder sluiten.
-2. De taak, of `PUT /api/beheer/lijsten` met `status` `gesloten`, zet de status van de lijst op `gesloten`, op voorwaarde dat die nog `open` is, schrijft `geslotenOp` en zet "Marc sloot de avond" in de feed als Marc eerder sloot. Een taak die daarna afgaat, doet niets.
+2. De taak, of `PUT /api/beheer/lijsten/{lijstId}` met `status` `gesloten`, zet de status van de lijst op `gesloten`, op voorwaarde dat die nog `open` is, schrijft `geslotenOp` en zet "Marc sloot de avond" in de feed als Marc eerder sloot. Een taak die daarna afgaat, doet niets.
 3. Er volgt geen betaling achteraf: elke bestelling is al betaald of heeft een eigen termijn. Een bestelling van vlak voor het sluiten blijft binnen zijn 15 minuten te betalen. Verloopt hij toch, dan komt de voorraad terug op een gesloten lijst en is hij niet meer te bestellen.
 
 ### Betalen
@@ -254,7 +259,7 @@ Besloten op 21 november 2026: stap A van onderwerp 19 op de [roadmap](roadmap.md
 - **`terug-van-betalen` heeft geen velden.** Het lid komt uit het token; een bestelling van een ander geeft `404`. De stap wordt hoogstens één keer per betaalpoging geschreven.
 - **Geen persoonsgegevens.** Geen `lidId`, naam, adres of bedrag in de rij. Wie het lid is, staat op de bestelling.
 
-**Signalen.** De regels staan in `domein/signalen.py`, met tests. De taak voor verlopen rekent ze elke minuut uit voor de bestellingen van de lopende en de laatst gesloten avond, en zet het resultaat als `signalen` op de bestelling. Die schrijfactie raakt de status niet en heeft geen voorwaarde op de status.
+**Signalen.** De regels komen in `domein/signalen.py`, met tests; dat bestand is er nog niet, zie hoofdstuk 8. De taak voor verlopen rekent ze elke minuut uit voor de bestellingen van de lopende en de laatst gesloten avond, en zet het resultaat als `signalen` op de bestelling. Die schrijfactie raakt de status niet en heeft geen voorwaarde op de status.
 
 | Signaal | Regel | Voor | Ingrijpen |
 | --- | --- | --- | --- |
@@ -288,7 +293,7 @@ In schermteksten heet dit de veiling; in gegevens en code de bieding.
 ### Een bod plaatsen
 
 1. De app leest de wijn en controleert: `biedingStatus` is `open`, `eindtijd` is niet voorbij, het lid is niet zelf de hoogste bieder, en het bod is minstens `minimaalVolgendBod` en hoogstens drie keer dat bedrag. De bovengrens vangt een tikfout op: een bod is bindend en zet het minimum voor iedereen vast.
-2. Valt het bod in de laatste twee minuten, dan wordt de nieuwe eindtijd het moment van bieden plus twee minuten.
+2. Valt het bod in de laatste twee minuten, dan wordt de nieuwe eindtijd het moment van bieden plus twee minuten. Een bod op precies twee minuten voor de eindtijd verlengt ook.
 3. Eén transactie schrijft het bod, met `verlengd` als stap 2 de eindtijd verschoof en met `bieder`, en werkt de wijn bij, op voorwaarde dat `minimaalVolgendBod` en `eindtijd` nog zijn zoals gelezen. Faalt de transactie, dan leest de app de wijn opnieuw en beoordeelt het bod nog eens, hoogstens drie keer. Was iemand net eerder, dan krijgt het lid `409` met het nieuwe minimum. Botsten twee biedingen alleen in de tijd, dan gaat het bod bij de volgende poging gewoon door.
 4. De vorige hoogste bieder krijgt een melding dat hij overboden is.
 
@@ -361,7 +366,7 @@ Een fout heeft altijd dezelfde vorm, zonder interne details:
 
 Details staan in het logboek, zonder namen, adressen of bedragen per persoon.
 
-**Grenzen en algemene fouten.** Bestellen en bieden zonder `volwassenBevestigdOp` op het lid geeft `403` met `niet_bevestigd`. Elke functie onder `/api/beheer` geeft een gewoon lid `403` met `geen_toegang`. Bestellen en bieden hebben een grens per lid; voorstel: 20 aanroepen per minuut, daarboven `429` met `te_veel`. Een fout die niet bij een aanroep staat, is `500` met `fout`.
+**Grenzen en algemene fouten.** Een aanroep zonder geldig token geeft `401` met `niet_ingelogd`. Bestellen en bieden zonder `volwassenBevestigdOp` op het lid geeft `403` met `niet_bevestigd`. Elke functie onder `/api/beheer` geeft een gewoon lid `403` met `geen_toegang`. Bestellen en bieden hebben een grens per lid; voorstel: 20 aanroepen per minuut, daarboven `429` met `te_veel`. Een fout die niet bij een aanroep staat, is `500` met `fout`.
 
 **Meldingen en e-mail.** Een melding gaat naar elk abonnement van het lid. Meldingen over een eigen bon of bod (`betaallink`, `betaalherinnering`, `overboden`, `gewonnen`) en `onderweg` gaan per e-mail als het lid geen abonnement heeft, of als de pushdienst het abonnement weigert; dat abonnement wordt dan verwijderd. Meldingen aan iedereen (`aankondiging`, `begin`, `nog-beschikbaar`, `veiling-begint`) gaan alleen als melding: Marc deelt de avond toch in de groep.
 
@@ -397,12 +402,13 @@ Details staan in het logboek, zonder namen, adressen of bedragen per persoon.
 - Het bericht is hoogstens 2000 tekens, anders `400` zonder aanroep van het model. Het gaat tussen `<bericht>` en `</bericht>` naar het model, als tekst om te lezen en nooit als opdracht.
 - Het model geeft JSON terug. De prijs komt terug zoals Marc hem schreef, zoals `10,5`. De app rekent hem om naar centen, niet het model.
 - Alleen wat in het bericht staat, wordt overgenomen. Naam en producent staan er woord voor woord in. Elk woord van de tekst staat in het bericht, dus geen verzonnen smaken. Jaargang, aantal en prijs staan er als los getal in: 18 telt niet als het alleen in 2018 voorkomt.
-- Daarnaast gelden grenzen: jaargang 1900 tot 2100, aantal 1 tot 999, prijs boven nul en hoogstens € 1000.
+- Daarnaast gelden grenzen: naam en producent hoogstens 120 tekens, de tekst hoogstens 1000 tekens, jaargang 1900 tot 2100, aantal 1 tot 999, prijs boven nul en hoogstens € 1000.
+- Opmaak van WhatsApp om een veld, zoals sterretjes voor vet, valt weg. Geeft het model de JSON in een codeblok terug, dan wordt die ook gelezen.
 - Klopt een veld niet, of is het antwoord geen leesbare JSON, dan blijft dat veld leeg en staat het in `ontbreekt`. Marc vult het dan zelf in. Een fout van het model zelf geeft de algemene fout; Marc kan dan alles zelf invullen.
 - De letter wordt niet herkend: de app geeft de volgende letter van de lijst.
 - Het bericht en het antwoord komen niet in het logboek, alleen of het lukte en welke velden ontbraken.
 
-**Een etiket lezen.** Besloten op 20 november 2026: dit komt in de pilot, in week 4. Hetzelfde taalmodel als bij een bericht kijkt naar de foto. De regels staan in `domein/etiket.py`; de handler haalt de foto uit de bucket en roept het model aan.
+**Een etiket lezen.** Besloten op 20 november 2026: dit komt in de pilot, in week 4. Hetzelfde taalmodel als bij een bericht kijkt naar de foto. De regels komen in `domein/etiket.py` (nog niet gebouwd, zie hoofdstuk 8); de handler haalt de foto uit de bucket en roept het model aan.
 
 - Marc begint met een foto, met zijn bericht of met beide. Bij beide gelden de velden uit het bericht, en het etiket vult aan wat het bericht niet noemt. Verschillen naam of jaargang, dan toont de app beide met "Klopt dit?".
 - Er is geen tekst om tegen te controleren, dus gelden alleen grenzen: naam en producent hoogstens 120 tekens, zonder regeleinden en zonder links, streek hoogstens 60 tekens, land hoogstens 40 tekens, jaargang 1900 tot 2100, en kleur één van `rood`, `wit`, `rosé`, `bubbels` of `zoet`. Marc kijkt kleur en land na, net als de andere velden. Aantal en prijs komen nooit van het etiket.
@@ -412,7 +418,7 @@ Details staan in het logboek, zonder namen, adressen of bedragen per persoon.
 **Een tekst voorstellen.** Ook in de pilot, in week 4. Marc geeft een `notitie`: een paar steekwoorden, getypt of gedicteerd met de microfoon van zijn toetsenbord, zoals "fris, citrus, bij asperges, nu drinken". Het model maakt er drie korte teksten van in een vaste stijl. De regels staan in `domein/tekst.py`.
 
 - De notitie is verplicht en hoogstens 500 tekens. Zonder notitie geen voorstel: dan heeft het model niets van Marc om op te schrijven.
-- Een voorstel is hoogstens 600 tekens, met regeleinden tussen de alinea's. Het model verzint geen smaak, score, prijs of jaartal: een getal dat niet in de notitie of de velden staat, of een link, laat het voorstel vallen. De velden die het model krijgt, zijn naam, producent, jaargang, streek en druif; aantal en prijs niet.
+- Een voorstel is hoogstens 600 tekens, met regeleinden tussen de alinea's. Het model verzint geen smaak, score, prijs of jaartal: een getal dat niet in de notitie of de velden staat, of een link, laat het voorstel vallen. De velden die het model krijgt, zijn naam, producent, jaargang, streek en druif, elk hoogstens 120 tekens; aantal en prijs niet.
 - Een woord dat niet in de notitie of de velden staat en geen gewoon woord als "de", "met" of "lekker" is, komt in `nieuw`. De web-app markeert die woorden, zodat Marc ziet wat het model toevoegde. Ze worden niet weggegooid.
 - Gerechten, het verhaal van de maker en bewaaradvies komen alleen in een voorstel als Marc ze in zijn notitie noemt. Het model werkt ze uit tot volzinnen, maar voegt er niets aan toe. De velden `spijs`, `drinken`, herkomst en bewaring vult Marc zelf in.
 - De stijl is één vaste beschrijving in `domein/tekst.py`, op 21 november 2026 afgeleid van Marcs omschrijvingen in WhatsApp: warm en deskundig zonder reclametaal; eerst het karakter met drie of vier aroma's, dan tannine, zuren en afdronk, een typering, op een nieuwe regel de gerechten ("Lekker bij ... maar ook heel goed met ...") en soms een droge regel over de waarde. De drie voorstellen verschillen in opbouw: de wijn, het verhaal van de maker en Marc zelf in de ik-vorm over hoe gewild of schaars de wijn is. Geeft de notitie geen stof voor het tweede of derde, dan wordt het een variant van het eerste. In `VOORBEELDEN` staan echte omschrijvingen van Marc, als voorbeeld van toon en opbouw. Marc vond het op 21 november 2026 goed dat ze in de openbare repository staan. Alleen tikfouten zijn verbeterd. Nieuwe omschrijvingen van Marc komen erbij zodra Aidan ze aanlevert. Het voorbeeld met een notitie is verzonnen.
@@ -449,7 +455,7 @@ De pilot legt drie tellingen vast, zodat na acht weken te kiezen is tussen de on
 - Een aanroep uit de groep `beheer` telt niet mee.
 - Het scherm Bijzondere fles roept `GET /api/wijnen/{wijnId}` altijd aan bij het openen, ook als de gegevens al uit `GET /api/aanbod` bekend zijn.
 
-**Terugkomende bestellers.** Een lid telt voor een lijst mee als het daar minstens één bestelling van soort `lijst` of `namens` heeft die niet `verlopen` is. De telling loopt over alle gesloten lijsten. De regel staat in `domein/`, met tests.
+**Terugkomende bestellers.** Een lid telt voor een lijst mee als het daar minstens één bestelling van soort `lijst` of `namens` heeft die niet `verlopen` is. De telling loopt over alle gesloten lijsten. De regel komt in `domein/`, met tests; hij is er nog niet.
 
 **Een tik op een melding vastleggen.** Elke melding die de app verstuurt, krijgt een rij in `berichten` en een link met het `berichtId`, zoals `/?b=<berichtId>`.
 
@@ -495,6 +501,7 @@ wine/
 │   ├── handlers/                    één bestand per Lambda-functie
 │   ├── opslag.py                    lezen en schrijven in DynamoDB
 │   └── antwoord.py                  antwoorden en gegevens uit het token
+├── promo/                           een teaserfilmpje voor de groep; geen deel van de app
 ├── infra/
 │   ├── app.py                       de CDK-app
 │   ├── cdk.json
@@ -512,7 +519,7 @@ De regels in `domein/` gebruiken geen AWS en zijn daardoor los te testen. De fun
 | --- | --- |
 | `Wijnclub-<omgeving>-Data` | De tabellen uit hoofdstuk 2 |
 | `Wijnclub-<omgeving>-Inloggen` | Gebruikerspool, groep `beheer`, client voor de web-app |
-| `Wijnclub-<omgeving>-Api` | HTTP API en de Lambda-functies |
+| `Wijnclub-<omgeving>-Api` | HTTP API en de Lambda-functies. De functies draaien op `arm64`, het logboek blijft 30 dagen, en de API begrenst op 20 aanroepen per seconde met een piek van 40, voor iedereen samen (zie Live bijwerken in hoofdstuk 9) |
 | `Wijnclub-<omgeving>-Web` | Bucket, CloudFront, uitrol van de web-app |
 
 In `test` worden tabellen en bucket weggegooid als je de stack verwijdert. In `prod` blijven ze staan.
@@ -551,7 +558,8 @@ Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan g
 | --- | --- | --- |
 | Zes tabellen met indexen | Gebouwd | Week 3 |
 | Gebruikerspool met code per e-mail | Gebouwd | Week 3 |
-| HTTP API met `GET /api/aanbod` | Gebouwd | Week 3 en 4 |
+| HTTP API met `GET /api/aanbod`, in de vorm van vóór de avond: `{ "lijsten": […], "biedingen": […] }`, alleen voor lijsten met status `open`, en met `letter` en `volgorde` per wijn. De vorm uit hoofdstuk 5 (`avond`, `wijnen`, `veiling`, `feed`, zonder letter, met `korteNaam`, `kleur`, `land`, `partij`, `opTafelSinds` en `opSinds`) is er nog niet; `tests/functions/test_aanbod.py` legt nog de oude vorm vast en moet mee veranderen | Gebouwd, oude vorm | Week 3 en 4 |
+| Configuratie van de web-app (`config.json`): regio, gebruikerspool, client en het adres van de API. Marcs WhatsApp-nummer en de instellingen Rust en Wie bood staan er nog niet in | Deels | Week 3 en 7 |
 | Bucket, CloudFront, uitrol van `app/dist` | Gebouwd | Week 3 |
 | Regels voor geld, bestelling en bieding, met tests | Gebouwd | Week 5 en 6 |
 | Regels voor betalen bij het bestellen en levering (V4), met tests in `domein/bestelling.py`: 15 minuten houdtijd voor een bestelling van de lijst en 48 uur namens een lid of na een bieding, één betaling per bestelling, bijbestellen als nieuwe bestelling, verlopen met de voorraad terug, brengen of halen controleren tegen wat de lijst aanbiedt en of het lid een adres heeft, de levering van een lijst controleren, en levering kiezen na een gewonnen bieding. `GET /api/aanbod` geeft de levering van de lijst mee. Deze regels vervangen die voor afhaalpunten en één betaling per lid per lijst | Gebouwd | Week 5 |
@@ -613,6 +621,13 @@ Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan g
 - **Andere aanpassingen voor de telefoon die van het ontwerp afwijken.** De foto van een wijn en de poster van een bijzondere fles zijn niet vast 430 en 640 px hoog, maar schalen mee met de hoogte van het scherm. In het biedpaneel staat naast Bevestig een knop om te stoppen. Op een lage telefoon is de bon compacter, zodat brengen of halen, het totaal en Betaal zonder scrollen in beeld staan (M4). Het ontwerp moet hierop worden aangepast, of het prototype als Aidan en Marc anders kiezen.
 - **Spookwoorden in koppen.** Een deel van een grote kop staat in `--ghost` met een contrast van 1,4:1. In het prototype van 20 november 2026: "Namens" bij een bestelling namens een lid, de dag van de avond in beheer ("van dinsdag"), "Niets open." en de kop van een vervallen bon. Dat is het beeldmerk van het ontwerp, maar de woorden horen bij de kop en halen M5 niet. Kies: lichter grijs (minstens 3:1), of de eis voor deze woorden laten vallen.
 - **"Wanneer op tafel" op scherm 17.** Design-v4 vraagt bij een wijn van de lijst wanneer hij op tafel komt. In gegevens is dat `volgorde`: de volgorde waarin de hoofdknop van scherm 20 de wijnen voorstelt. Een geplande tijd bestaat niet, zolang het besluit "Zonder Marc op de avond" open is.
+- **Foutcodes: document en code verschillen.** Vastgesteld op 21 november 2026. Hoofdstuk 5 is van na de code; de tests in `tests/functions` toetsen de codes van de code. Kies per punt één naam en pas de andere kant aan, zodat elke foutcode in een test ook in hoofdstuk 5 staat:
+  - Regels van een bestelling. Hoofdstuk 5: één code `ongeldige_regels`. Code: `geen_regels`, `te_veel_regels`, `ongeldige_regel`, `ongeldig_aantal` en `dubbele_wijn`, en daarnaast `ongeldige_sleutel`, `onbekende_wijn` en `onbekende_soort`.
+  - Een bod. De code kent ook `ongeldig_bedrag`, voor een bedrag dat geen heel aantal centen boven nul is; hoofdstuk 5 noemt die niet.
+  - Een mislukte bestel-transactie. Hoofdstuk 5: `409` met `uitverkocht`, `niet_op_tafel` of `avond_dicht`. Code: één antwoord met `lijstGesloten` en de wijnen die op zijn; "niet op tafel" bestaat in de code nog niet.
+  - De onbekende fout. Hoofdstuk 5: `500` met `fout`. Code: `500` met `interne_fout`.
+- **De biedladder.** Hoofdstuk 4 beschrijft een biedpaneel met drie bedragen. Het prototype heeft een ladder van treden die je met vegen of het muiswiel kiest, en `tests/web/test_telefoon.py` toetst dat (`test_bod_loopt_mee_met_vegen`, `test_bod_scrollt_met_het_wiel`). Geen van de ontwerpdocumenten beschrijft de ladder. Leg vast welke van de twee geldt.
+- **Wat een bod nog niet schrijft.** `domein/bieding.py` schrijft bij een bod geen `verlengd` en geen `bieder`, kent de status `klaar` niet, en stuurt `bewaring`, `veilingBegin`, `geopend` en `hoogstToegestaan` niet naar de web-app. Dat hoort bij de avond en de tellingen in hoofdstuk 8.
 - **Vorm van de antwoorden.** Alleen `GET /api/aanbod` heeft een voorbeeld in hoofdstuk 5; de andere antwoorden gebruiken de veldnamen uit hoofdstuk 2. Schrijf per aanroep de vorm uit in de week waarin hij gebouwd wordt, met een test die hem vastlegt.
 - **Voorlopig icoon.** Het icoon voor het beginscherm is een gouden W op zwart, getekend zonder Marcs logo. Vervang het zodra Marc het logo aanlevert.
 - **De link uit WhatsApp en de app op het beginscherm.** Uit het hoofd opgeschreven en niet nagezocht: op een iPhone opent een link uit WhatsApp in de browser en niet in de app op het beginscherm, en die twee delen mogelijk geen login. Een lid dat de app heeft geïnstalleerd, zou dan na een tik op Marcs link opnieuw moeten inloggen. Zoek dit op en test het op een echte iPhone en een echte Android-telefoon vóór de eerste uitnodiging; het bepaalt of "zet de app op je beginscherm" de juiste tip is.
