@@ -29,6 +29,9 @@ jobs:
         run: ruff check --output-format=github .
       - name: Bekende kwetsbaarheden (pip-audit)
         run: pip-audit -r requirements-dev.txt
+      # De laag met anthropic staat vast met hashes voor ARM64; pip-audit leest de versies zonder te installeren.
+      - name: Bekende kwetsbaarheden in de laag met anthropic (pip-audit)
+        run: pip-audit -r functions/laag/requirements.txt --disable-pip
       - name: Typen controleren (mypy)
         run: mypy
       # De dekking gaat over functions/wijnclub, nu ook opslag.py via de integratietests tegen DynamoDB

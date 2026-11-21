@@ -32,6 +32,15 @@ AANTAL_VOORSTELLEN = 3
 # niet bij: die staan al op de lijst en horen niet in de omschrijving.
 VELDEN = ("naam", "producent", "jaargang", "streek", "druif")
 
+# Het vaste JSON-schema voor het antwoord van het model (output_config.format). Het schema kent geen
+# maximale lengte en geen maximaal aantal; die grenzen bewaakt lees_antwoord, dat de waarheid blijft.
+SCHEMA = {
+    "type": "object",
+    "properties": {"voorstellen": {"type": "array", "items": {"type": "string"}}},
+    "required": ["voorstellen"],
+    "additionalProperties": False,
+}
+
 # Echte omschrijvingen van Marc, met zijn toestemming. Per voorbeeld de opbouw
 # (zie de drie voorstellen in de instructie) en de tekst, zonder de naam van de
 # wijn als eerste regel. Het model leert er de toon van, niet de feiten.

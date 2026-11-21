@@ -16,8 +16,9 @@ VLAGGEN = {
 
 
 def sjablonen(naam, web_map):
-    # Dezelfde instellingen als een echte synthese, zodat de test hetzelfde bouwt.
-    app = cdk.App(context=VLAGGEN)
+    # Dezelfde instellingen als een echte synthese, zodat de test hetzelfde bouwt. Alleen de laag met
+    # anthropic wordt niet gebouwd: dat vraagt pip en internet, en zegt niets over het sjabloon.
+    app = cdk.App(context=dict(VLAGGEN, **{"aws:cdk:bundling-stacks": []}))
     omgeving = config.Omgeving(naam=naam, regio="eu-west-1", afzender_email="noreply@voorbeeld.nl")
     return {deel: Template.from_stack(stack) for deel, stack in opbouw.bouw(app, omgeving, web_map).items()}
 
@@ -40,9 +41,9 @@ def prod(web_map):
     return sjablonen("prod", web_map)
 
 
-def test_zes_tabellen_met_betalen_naar_gebruik_en_herstel(test):
+def test_zeven_tabellen_met_betalen_naar_gebruik_en_herstel(test):
     tabellen = test["data"].find_resources("AWS::DynamoDB::Table")
-    assert len(tabellen) == 6
+    assert len(tabellen) == 7
     for tabel in tabellen.values():
         eigenschappen = tabel["Properties"]
         assert eigenschappen["BillingMode"] == "PAY_PER_REQUEST"
@@ -80,6 +81,7 @@ SLEUTELS = {
     ("bestellingen", "lijst-index"): ["lijstId", "aangemaakt"],
     ("bestellingen", "betaal-index"): ["status", "betaalVoor"],
     ("betalingen",): ["mollieBetalingId"],
+    ("tellers",): ["tellerId"],
 }
 
 
@@ -164,7 +166,10 @@ def test_functie_draait_op_python_3_14_met_logboek_van_een_maand(test):
 
 
 def test_aanbod_mag_alleen_lezen(test):
-    beleid = test["api"].find_resources("AWS::IAM::Policy")
+    beleid = {
+        naam: document for naam, document in test["api"].find_resources("AWS::IAM::Policy").items()
+        if naam.startswith("Aanbod")
+    }
     acties = {
         actie
         for document in beleid.values()
@@ -218,3 +223,98 @@ def test_onbekende_omgeving_wordt_geweigerd():
     app = cdk.App(context={"omgeving": "acceptatie", "afzender_email": "a@b.nl"})
     with pytest.raises(ValueError, match="test of prod"):
         config.laad(app)
+
+
+# ---- Het taalmodel: herkennen en teksten ----
+
+MODELFUNCTIES = ("wijnclub.handlers.herken.handler", "wijnclub.handlers.teksten.handler")
+
+
+def _beleid_van(sjabloon, handler):
+    """De regels in het beleid van de rol van één functie."""
+    functies = sjabloon.find_resources("AWS::Lambda::Function", {"Properties": {"Handler": handler}})
+    assert len(functies) == 1
+    rol = next(iter(functies.values()))["Properties"]["Role"]["Fn::GetAtt"][0]
+    regels = [
+        regel
+        for document in sjabloon.find_resources("AWS::IAM::Policy").values()
+        if {"Ref": rol} in document["Properties"]["Roles"]
+        for regel in document["Properties"]["PolicyDocument"]["Statement"]
+    ]
+    assert regels, "geen rechten gevonden voor {}".format(handler)
+    return regels
+
+
+def _acties(regel):
+    return [regel["Action"]] if isinstance(regel["Action"], str) else regel["Action"]
+
+
+@pytest.mark.parametrize("naam", ["test", "prod"])
+@pytest.mark.parametrize("handler", MODELFUNCTIES)
+def test_modelfunctie_leest_precies_een_geheim_en_schrijft_alleen_in_tellers(naam, handler, test, prod):
+    sjabloon = {"test": test, "prod": prod}[naam]["api"]
+    regels = _beleid_van(sjabloon, handler)
+
+    geheimen = [regel for regel in regels if any(a.startswith("secretsmanager:") for a in _acties(regel))]
+    assert len(geheimen) == 1
+    assert json.dumps(geheimen[0]["Resource"]).count(":secret:") == 1
+    assert ":secret:wijnclub/{}/anthropic-api-sleutel-".format(naam) in json.dumps(geheimen[0]["Resource"])
+
+    schrijven = [regel for regel in regels if any(a.startswith("dynamodb:") for a in _acties(regel))]
+    assert [_acties(regel) for regel in schrijven] == [["dynamodb:UpdateItem"]]
+    assert "Tellers" in json.dumps(schrijven[0]["Resource"])
+
+    alle = {actie for regel in regels for actie in _acties(regel)}
+    assert alle <= {"secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret", "dynamodb:UpdateItem"}
+
+
+def test_geen_rechten_op_bedrock(test):
+    for document in test["api"].find_resources("AWS::IAM::Policy").values():
+        for regel in document["Properties"]["PolicyDocument"]["Statement"]:
+            assert not any(actie.startswith("bedrock") for actie in _acties(regel))
+
+
+@pytest.mark.parametrize("route", ["POST /api/beheer/herken", "POST /api/beheer/teksten"])
+def test_modelroutes_vragen_een_token(test, route):
+    test["api"].has_resource_properties("AWS::ApiGatewayV2::Route", {"RouteKey": route, "AuthorizationType": "JWT"})
+
+
+@pytest.mark.parametrize("handler", MODELFUNCTIES)
+def test_modelfunctie_heeft_30_seconden_de_laag_en_alleen_de_naam_van_het_geheim(test, handler):
+    functie = next(iter(test["api"].find_resources("AWS::Lambda::Function", {"Properties": {"Handler": handler}}).values()))
+    eigenschappen = functie["Properties"]
+    assert eigenschappen["Timeout"] == 30
+    assert len(eigenschappen["Layers"]) == 1
+    variabelen = eigenschappen["Environment"]["Variables"]
+    assert variabelen["GEHEIM_ANTHROPIC"] == "wijnclub/test/anthropic-api-sleutel"
+    assert set(variabelen) == {"GEHEIM_ANTHROPIC", "TABEL_TELLERS"}
+
+
+def test_andere_functies_houden_10_seconden_en_geen_laag(test):
+    test["api"].has_resource_properties(
+        "AWS::Lambda::Function",
+        {"Handler": "wijnclub.handlers.aanbod.handler", "Timeout": 10, "Layers": Match.absent()},
+    )
+
+
+def test_de_laag_is_voor_arm64_en_python_3_14(test):
+    test["api"].has_resource_properties(
+        "AWS::Lambda::LayerVersion", {"CompatibleArchitectures": ["arm64"], "CompatibleRuntimes": ["python3.14"]}
+    )
+
+
+def test_tellers_vervallen_vanzelf(test, prod):
+    for sjabloon in (test, prod):
+        sjabloon["data"].has_resource_properties(
+            "AWS::DynamoDB::Table",
+            {
+                "KeySchema": [{"AttributeName": "tellerId", "KeyType": "HASH"}],
+                "TimeToLiveSpecification": {"AttributeName": "vervaltOp", "Enabled": True},
+            },
+        )
+
+
+def test_geheim_van_anthropic_per_omgeving():
+    assert config.Omgeving(naam="prod", regio="eu-west-1", afzender_email="a@b.nl").anthropic_geheim == (
+        "wijnclub/prod/anthropic-api-sleutel"
+    )
