@@ -259,7 +259,10 @@ def test_bod_scrollt_met_het_wiel(telefoon):
     expect(gekozen).to_have_text(midden)
     # Een trackpad stuurt kleine stapjes: die tellen op tot één trede. Elke reeks gaat in één keer
     # naar de browser, zodat een trage machine er geen pauze tussen legt.
-    stapjes = "(el, n) => { for (let i = 0; i < n; i++) el.dispatchEvent(new WheelEvent('wheel', { deltaY: 10, bubbles: true, cancelable: true })) }"
+    stapjes = (
+        "(el, n) => { for (let i = 0; i < n; i++)"
+        " el.dispatchEvent(new WheelEvent('wheel', { deltaY: 10, bubbles: true, cancelable: true })) }"
+    )
     ladder.evaluate(stapjes, 2)
     telefoon.wait_for_timeout(150)
     expect(gekozen).to_have_text(midden)
