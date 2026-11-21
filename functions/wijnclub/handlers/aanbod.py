@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Mapping
+from typing import Any, Dict, Mapping, Sequence
 
 from wijnclub import antwoord, opslag
 from wijnclub.domein import bestelling, bieding, tijd
@@ -18,11 +18,11 @@ WIJN_VELDEN = (
 )
 
 
-def _kies(item: Mapping[str, Any], velden) -> Dict[str, Any]:
+def _kies(item: Mapping[str, Any], velden: Sequence[str]) -> Dict[str, Any]:
     return {veld: item[veld] for veld in velden if veld in item}
 
 
-def handler(event, context):
+def handler(event: Mapping[str, Any], context: Any) -> Dict[str, Any]:
     try:
         lid = antwoord.lid_id(event)
         nu = tijd.iso(tijd.nu())

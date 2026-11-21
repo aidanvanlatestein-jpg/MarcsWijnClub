@@ -21,6 +21,13 @@ pytest-cov==7.1.0
 playwright==1.64.1; python_version >= "3.10"
 playwright==1.60.0; python_version < "3.10"
 
+# Integratietests (tests/integratie): DynamoDB in het geheugen, zodat de transacties echt worden uitgevoerd.
+# Typecontrole van de functies (mypy.ini). Beide vragen Python 3.10 of hoger; op 3.9 worden de
+# integratietests overgeslagen en draait mypy alleen in de pipeline. Uitgebracht op 27 en 28 oktober 2026;
+# PyPI meldde op 21 november 2026 geen bekende kwetsbaarheden voor deze versies.
+moto==5.2.5; python_version >= "3.10"
+mypy==2.4.1; python_version >= "3.10"
+
 # Controles in de pipeline: stijl en fouten, en bekende kwetsbaarheden in de afhankelijkheden.
 ruff==0.17.6
 pip-audit==2.10.1; python_version >= "3.10"

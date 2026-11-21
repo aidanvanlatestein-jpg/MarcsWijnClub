@@ -14,14 +14,14 @@ from boto3.dynamodb.conditions import Key
 _bron = None
 
 
-def _tabel(naam: str):
+def _tabel(naam: str) -> Any:
     global _bron
     if _bron is None:
         _bron = boto3.resource("dynamodb")
     return _bron.Table(os.environ["TABEL_{}".format(naam.upper())])
 
 
-def _alles(tabel, **vraag) -> List[Dict[str, Any]]:
+def _alles(tabel: Any, **vraag: Any) -> List[Dict[str, Any]]:
     """Haalt alle pagina's van een query op."""
     items: List[Dict[str, Any]] = []
     while True:
