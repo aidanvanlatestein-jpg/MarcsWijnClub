@@ -44,7 +44,7 @@ Wat goed staat: geen geheimen of persoonsgegevens in de code of de geschiedenis,
 | C3 | Paden onder `/api/beheer` controleren de groep in de functie zelf. Eén vergeten controle zet een beheerroute open voor elk lid | Eén gedeelde controle die elke beheerfunctie als eerste aanroept, en per route een test dat een gewoon lid `403` krijgt |
 | C4 | Uploads van foto's en spraak | Wat de bouwspecificatie al zegt, plus: het bestandstype controleren op inhoud en niet op naam, en serveren met `nosniff` en als bijlage waar het kan |
 | C5 | `herkennen.py` haalt `<bericht>`-tags één keer weg. Een geneste tag, zoals `</beri</bericht>cht>`, blijft als geldige tag over. Het risico is laag: alleen Marc voert in, en elk veld wordt tegen het bericht gecontroleerd | Herhaal het weghalen tot er niets meer verandert, of vervang elke `<`. Met een test |
-| C6 | Bedrock en Secrets Manager komen er nog bij | Per functie alleen het ene model en het ene geheim dat hij nodig heeft, in een regio in de EU, met een stacktest op de rechten |
+| C6 | Het taalmodel (Bedrock of de API van Anthropic, zie onderwerp 1 van de [roadmap](roadmap.md)) en Secrets Manager komen er nog bij | Per functie alleen het ene model en het ene geheim dat hij nodig heeft, met een stacktest op de rechten. Bij de API van Anthropic: een eigen sleutel per omgeving met een bestedingslimiet. De sleutels van Mollie en de rest van de app blijven in een regio in de EU; het model hoeft dat sinds 21 november 2026 niet |
 
 ## Groep D: zicht houden
 

@@ -28,7 +28,7 @@ Onderwerp 22 is een besluit van 21 november 2026: de passkey ("Face ID") die des
 
 | Onderwerp | Wat het oplevert | Start als |
 | --- | --- | --- |
-| 1. Omschrijving via een taalmodel | Marc zet een fles in enkele minuten online, in zijn eigen woorden. Het etiket lezen en tekstvoorstellen uit steekwoorden in zijn stijl, met echte teksten van Marc als voorbeeld, zitten al in de pilot. Hier volgen spraak naar tekst en het leren van zijn stijl uit de teksten die hij in de app goedkeurt | De pilot geslaagd is en Marc in de pilot geregeld een voorstel koos |
+| 1. Omschrijving via een taalmodel | Marc zet een fles in enkele minuten online, in zijn eigen woorden. Het etiket lezen en tekstvoorstellen uit steekwoorden in zijn stijl, met echte teksten van Marc als voorbeeld, zitten al in de pilot. Hier volgen spraak naar tekst, het leren van zijn stijl uit de teksten die hij in de app goedkeurt, en feiten over de maker opzoeken met bron. De route naar het model is nog een keuze uit drie varianten | Spraak en stijl: de pilot geslaagd is en Marc in de pilot geregeld een voorstel koos. De route naar het model: vóór week 4 van de pilot. Opzoeken: Marc in de pilot feiten over de maker zelf blijft intypen |
 | 2. Assistent voor vragen van leden | Leden krijgen direct antwoord op veelgestelde vragen; Marc krijgt alleen de vragen die hem nodig hebben | Er minstens 20 flessen met goedgekeurde tekst zijn en Marc dezelfde vragen steeds terug ziet komen |
 | 3. Campagnes en het beste moment | Marc plant een reeks berichten rond een lijst of bieding en ziet welk moment de meeste bestellingen oplevert | De pilot geslaagd is en de app per melding heeft vastgelegd wanneer hij verstuurd is en wat hij opleverde |
 | 4. Terug op de lijst en op dronk | Leden komen terug voor een wijn die ze lekker vonden, en openen een fles op het goede moment | Onderwerp 14 gebouwd is en er drie maanden aan aankopen en oordelen ligt |
@@ -53,19 +53,87 @@ Onderwerp 22 is een besluit van 21 november 2026: de passkey ("Face ID") die des
 
 ## 1. Omschrijving via een taalmodel
 
-In de pilot herkent de app al naam, jaargang, aantal, prijs en tekst in Marcs WhatsApp-bericht. Op 20 november 2026 is de eerste stap van dit onderwerp naar de pilot gehaald: Marc fotografeert de fles, de app leest het etiket, en uit zijn steekwoorden maakt ze drie tekstvoorstellen in zijn stijl. Elk voorstel heeft een eigen opbouw: de wijn, het verhaal van de maker, en Marc zelf in de ik-vorm. De stijl is beschreven in `functions/wijnclub/domein/tekst.py`, met echte omschrijvingen van Marc als voorbeeld. Marc vond het op 21 november 2026 goed dat ze in de openbare repository staan. Zie Hoe het werkt in het [plan](../pilotplan-marcs-wijnclub.md) en de [bouwspecificatie](bouwspecificatie.md), hoofdstuk 5. Na de pilot volgen nog twee stappen:
+In de pilot herkent de app al naam, jaargang, aantal, prijs en tekst in Marcs WhatsApp-bericht. Op 20 november 2026 is de eerste stap van dit onderwerp naar de pilot gehaald: Marc fotografeert de fles, de app leest het etiket, en uit zijn steekwoorden maakt ze drie tekstvoorstellen in zijn stijl. Elk voorstel heeft een eigen opbouw: de wijn, het verhaal van de maker, en Marc zelf in de ik-vorm. De stijl is beschreven in `functions/wijnclub/domein/tekst.py`, met echte omschrijvingen van Marc als voorbeeld. Marc vond het op 21 november 2026 goed dat ze in de openbare repository staan. Zie Hoe het werkt in het [plan](../pilotplan-marcs-wijnclub.md) en de [bouwspecificatie](bouwspecificatie.md), hoofdstuk 5. Na de pilot volgen nog drie stappen. De derde kwam er op 21 november 2026 bij en kan alleen met variant C hieronder:
 
 1. **Van spraak naar tekst.** Marc spreekt 30 seconden in over de fles. De app maakt daar dezelfde drie voorstellen van als bij steekwoorden. Wat hij zegt over wanneer je de fles drinkt en wat je erbij eet, komt in de voorstellen. In de pilot spreekt Marc al in via de microfoon van zijn toetsenbord; deze stap neemt een langere opname op in de app zelf.
 2. **Zijn stijl leren.** In de pilot gaan vaste voorbeelden mee: teksten van Marc uit WhatsApp, die Aidan aanlevert. Na de pilot komen daar de teksten bij die Marc in de app ongewijzigd koos of zelf schreef, zodat de voorbeelden vanzelf aangroeien en bij de wijnen van dat moment passen.
+3. **Feiten opzoeken.** Marc noemt in zijn steekwoorden alleen wat hij proeft. De app zoekt feiten over de maker en de wijn op het web, toont elk feit met de bron, en Marc vinkt aan wat klopt. Alleen aangevinkte feiten komen in een voorstel.
 
 Vier regels gelden daarbij:
 
 - Marc keurt elke tekst goed voordat een lid hem ziet.
 - Herkomst, bewaring en gerechten worden nooit verzonnen. Noemt Marc ze in zijn steekwoorden, dan werkt het model ze uit tot volzinnen. Anders blijven ze uit de tekst. De velden voor herkomst, bewaring, `spijs` en `drinken` vult Marc zelf in.
-- Het model verzint geen scores, prijzen of smaken die Marc niet noemde. Die regel gaat over de tekst in Marcs stem. Licht tot vol bij onderwerp 16 is een schatting die Marc nakijkt, en staat los van zijn woorden.
+- Het model verzint geen scores, prijzen of smaken die Marc niet noemde. Met stap 3 wordt dat: elk feit komt van Marc of heeft een bron die Marc zag en aanvinkte. Smaken en gerechten komen altijd van Marc en nooit van het web. Die regel gaat over de tekst in Marcs stem. Licht tot vol bij onderwerp 16 is een schatting die Marc nakijkt, en staat los van zijn woorden.
 - We meten hoeveel tijd een fles Marc kost en welk deel van het concept hij ongewijzigd laat. In de pilot legt elke wijn vast waar de tekst vandaan komt.
 
-Technisch blijft dit binnen de bestaande opzet: een taalmodel via Bedrock voor tekst en etiket, en Amazon Transcribe voor de spraak. Of Transcribe Nederlands goed genoeg herkent, moet een proef met Marcs eigen opnames uitwijzen.
+Voor de spraak blijft Amazon Transcribe de kandidaat, naast de microfoon van het toetsenbord die Marc in de pilot al gebruikt. Of Transcribe Nederlands goed genoeg herkent, moet een proef met Marcs eigen opnames uitwijzen. Of de API van Anthropic zelf geluid aanneemt, staat niet in de documentatie die op 21 november 2026 is nagekeken.
+
+### Wat de voorbeeldteksten laten zien
+
+Er zijn nu zeven teksten van Marc als voorbeeld: vier van "de wijn", één van "het verhaal van de maker" en twee van "Marc zelf". Ze staan in `VOORBEELDEN` in `functions/wijnclub/domein/tekst.py`; twee daarvan staan ook in `app/src/voorbeeld.ts`. Vier dingen vallen op:
+
+- **Feiten die niet uit steekwoorden komen.** Marcs teksten noemen 1986, 5 en 14 hectare, de naam van de zoon die het domein overnam, Premier Cru Classé in 1855, de druiven van Barsac en edele rotting. Met de regel van de pilot valt een voorstel weg bij elk getal dat Marc niet zelf in zijn notitie typte. Voor het verhaal van de maker moet hij dus bijna de hele tekst al aanleveren. Daarom is er stap 3 en variant C.
+- **Weinig houvast voor voorstel 2 en 3.** Er is één voorbeeld van het verhaal van de maker, en de twee voorbeelden van Marc zelf zijn delen van een langer bericht.
+- **Een smalle basis.** Twee teksten gaan over hetzelfde domein en twee over zoete wijn. De kans dat "honing, abrikoos" of "edele rotting" in een tekst over een andere wijn belandt, is reëel. De test met tien sets steekwoorden moet daar per voorstel op letten.
+- **Eén bericht, drie delen.** De tekst over het domein en Marcs eigen tekst over dezelfde wijnen lijken uit één bericht te komen. Marc schrijft dus soms alle drie de opbouwen achter elkaar.
+
+### Drie varianten voor de route naar het model
+
+De regels in `domein/tekst.py` en `domein/herkennen.py` werken met elk model: de handler geeft een functie mee die de instructie en de vraag naar het model stuurt en de tekst terugkrijgt. Er is nog geen handler, geen aanroep van een model en geen sleutel. De keuze hieronder kost dus nog niets aan ombouw, en geldt voor herkennen, etiket en teksten samen.
+
+Op 21 november 2026 besloot Aidan dat het taalmodel niet in de EU hoeft te draaien. Bij het invoeren van een fles gaan alleen Marcs bericht, zijn steekwoorden en de foto van de fles naar het model, nooit gegevens van leden. De rest van de app blijft in de EU. Voor de assistent van onderwerp 2, die wel met leden praat, geldt dit besluit niet.
+
+#### A. Bedrock
+
+- **Wat Marc merkt:** drie voorstellen uit zijn steekwoorden, zoals in de pilot beschreven.
+- **De aanroep:** de handler roept `bedrock-runtime` aan met boto3 uit de runtime van Lambda. Geen nieuw pakket en geen sleutel; de functie mag via IAM precies één model aanroepen.
+- **Bouwen:** een handler per route, de rechten op het model en een stacktest daarop. `tekst.py` blijft zoals het is.
+- **Kosten:** de prijzen van Bedrock, die afwijken van die van Anthropic. Zie Kosten van het taalmodel in het plan.
+- **Voor:** het minste werk, geen nieuwe verwerker, alles in het eigen AWS-account.
+- **Tegen:** kan geen feiten opzoeken, dus stap 3 kan hier niet. Mogelijk vraagt een model een abonnement in AWS Marketplace; dat is een handeling in het gedeelde account.
+
+#### B. De API van Anthropic, zelfde werking
+
+- **Wat Marc merkt:** hetzelfde als bij A.
+- **De aanroep:** het pakket `anthropic` van Anthropic, met een vaste versie. Versie 2.12.0 van 20 november 2026 is puur Python en noemt Python 3.14. Het komt in een Lambda-layer, zoals de bouwspecificatie voorschrijft voor een pakket buiten de runtime, en `pip-audit` in de controles dekt het.
+- **De sleutel:** in Secrets Manager als `wijnclub/<omgeving>/anthropic-api-sleutel`, naast die van Mollie in `infra/wijnclub_infra/config.py`. In `test` een aparte sleutel met een lage bestedingslimiet in de Console van Anthropic. De functie mag alleen dit ene geheim lezen, met een stacktest (C6 in [beveiliging.md](beveiliging.md)).
+- **Het antwoord:** gestructureerde uitvoer van de API, met een JSON-schema voor `{"voorstellen": [...]}`. Dan is de JSON altijd geldig; de regel "geef alleen een JSON-object terug" kan uit de instructie. De controles in `lees_antwoord` blijven: getallen, links, lengte en de markering van nieuwe woorden.
+- **Een weigering:** de handler kijkt naar de reden waarom het model stopte. Weigert het model of loopt het antwoord af, dan krijgt Marc "vul zelf in", net als bij de limiet.
+- **Het model:** de test met tien sets steekwoorden draait op drie modellen. Per wijn kosten drie voorstellen, met 2.000 tokens in en 1.500 uit, ongeveer $0,001 met Claude Haiku 5.5, $0,02 met Claude Sonnet 5.5 en $0,04 met Claude Opus 5.5, naar de prijzen van Anthropic op 21 november 2026. Begin met Haiku 5.5 en stap alleen over als de test tegenvalt.
+- **Bouwen:** de layer, het geheim met de rechten, een klein hulpje dat de sleutel één keer per opstart leest, en een tijdslimiet van 30 in plaats van 10 seconden voor deze functies (`_functie()` in `infra/wijnclub_infra/api_stack.py`).
+- **Voor:** nieuwe modellen en functies zijn er meteen, en stap 3 bouwt hierop voort zonder een tweede route.
+- **Tegen:** Anthropic wordt een nieuwe verwerker, met een regel in de privacyverklaring. De verwerking is wereldwijd of in de VS: de API kent geen keuze voor de EU.
+- **Ondervariant: Claude op het platform van AWS.** Dezelfde API met dezelfde SDK, maar toegang via IAM zonder sleutel en de rekening via AWS. Aanmelden gebeurt in de console van AWS, die het abonnement in AWS Marketplace zelf regelt. Dat is een handeling in het gedeelde account en gebeurt alleen na een ja van Aidan.
+
+#### C. De API van Anthropic met opzoeken
+
+Bouwt voort op B en maakt stap 3 mogelijk. Het gaat in twee aanroepen, zodat Marc elk feit ziet voordat het in een tekst komt.
+
+1. **Feiten zoeken.** `POST /api/beheer/feiten` krijgt naam, producent, jaargang en streek. Het model zoekt met het zoekgereedschap van de API op het web, hoogstens drie keer, en geeft een lijst korte feiten. Elk feit heeft een bron: de link en de zin waar het staat. De API geeft die bronnen zelf mee. Een feit zonder bron uit dezelfde aanroep valt weg. Marc vinkt aan wat klopt.
+2. **Voorstellen.** `POST /api/beheer/teksten` krijgt naast de notitie de aangevinkte feiten. Die tellen mee als bron voor de controle op getallen en voor de markering van nieuwe woorden.
+
+- **Regels:** smaken, gerechten, herkomst en bewaring komen nooit van het web. Het model neemt feiten over, geen zinnen van een importeur of wijnhandel. Een webpagina is tekst om te lezen en nooit een opdracht. Een fout feit met een nette bron blijft mogelijk; daarom vinkt Marc aan.
+- **Wachten:** zoeken duurt langer dan de 30 seconden die de HTTP API een aanroep geeft. De aanroep geeft daarom `202` met een id. De functie zoekt verder, zet de feiten in DynamoDB met een vervaltijd van een dag, en de web-app vraagt de uitkomst op zoals hij de stand van de veiling opvraagt.
+- **Bewaren:** de aangevinkte feiten en hun bronnen komen bij de wijn, alleen zichtbaar voor Marc.
+- **Kosten:** het zoeken kost $10 per 1.000 zoekopdrachten, dus hoogstens $0,03 per wijn, en de gevonden pagina's tellen als tokens in. Samen met de voorstellen ongeveer $0,03 tot $0,11 per wijn, afhankelijk van het model. Bij veertig wijnen per maand is dat $1 tot $5.
+- **Bouwen:** een extra route, een tabel of item voor de uitkomst, een scherm om feiten aan te vinken (niet getekend in design-v4) en een uitbreiding van `tekst.py` met feiten als bron.
+- **Tegen:** de meeste bouwtijd, en Marc doet een stap extra per fles. Of dat minder tijd kost dan zelf intypen, moet een proef op tien flessen uitwijzen.
+
+#### Aanbeveling
+
+Kies B voor de pilot, in week 4, voor herkennen, etiket en teksten samen, zodat er één route naar het model is. Bouw C daarna als stap 3 van dit onderwerp, als Marc in de pilot feiten over de maker zelf blijft intypen. Kies A als opzoeken er nooit komt en een nieuwe verwerker zwaarder weegt dan de snelheid van nieuwe modellen: het is dan het minste werk.
+
+#### Nog nazoeken
+
+- Hoe lang Anthropic de invoer bewaart en of die voor training gebruikt wordt. De pagina over bewaren is nog niet nagekeken.
+- Welke Claude-modellen Bedrock aanbiedt, in welke regio en tegen welke prijs, als A in beeld blijft.
+- Of het zoekgereedschap voor de organisatie aan staat in de Console van Anthropic. Het staat standaard aan, tenzij een beheerder het uitzette.
+
+#### Vragen voor Marc
+
+- Wil je drie losse voorstellen, of ook een alinea uit het ene voorstel kunnen combineren met een alinea uit het andere?
+- Zoek je nu zelf feiten over een maker op voordat je een tekst schrijft? Waar kijk je dan?
+- Mogen meer van je teksten uit de WhatsApp-groep als openbaar voorbeeld in de repository? Vooral teksten over een maker en in de ik-vorm helpen.
 
 ## 2. Assistent voor vragen van leden
 
@@ -388,7 +456,7 @@ Er zijn twee routes. Ze sluiten elkaar niet uit.
 - **Diensten die wel foto's bewerken.** remove.bg lijkt in de EU te verwerken; dat moet in hun verwerkersovereenkomst bevestigd worden. Photoroom verwerkt in de VS, en het model van Stability op Bedrock draait alleen in de VS. Ze kosten enkele centen per foto. Elke dienst is een nieuwe verwerker, met een sleutel in Secrets Manager en een plek in de privacyverklaring.
 - **Beeldmodellen die een nieuwe foto maken.** Niet gebruiken. Ze kunnen het etiket, de jaargang of de vorm van de fles veranderen, en dan ziet een lid een andere fles dan het koopt.
 
-Voor Claude via de API van Anthropic geldt hetzelfde als voor elke dienst buiten AWS: nagaan waar de foto verwerkt wordt, want het plan eist dat ook het taalmodel in de EU draait. Via Bedrock is het dezelfde vraag als voor het etiket lezen in week 4.
+Voor Claude geldt de keuze van de route uit onderwerp 1: variant A (Bedrock) of B (de API van Anthropic). Sinds 21 november 2026 hoeft het taalmodel niet in de EU te draaien, omdat er alleen een foto van de fles naartoe gaat.
 
 Het voorstel is beide te combineren: route A maakt het pakshot, Claude controleert de foto en het resultaat. De keuze volgt na de proef.
 
