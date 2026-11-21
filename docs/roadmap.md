@@ -24,6 +24,8 @@ Onderwerp 20 is een verbeterpunt van 21 november 2026: het tabblad van de browse
 
 Onderwerp 21 is een idee van Aidan van 21 november 2026: de app ondersteunt naast de telefoon ook de browser op een pc, met een bredere indeling voor beheer. Leden gebruiken vooral hun telefoon; Marc doet zijn voorraad en planning naar verwachting ook achter de pc. Het is nog niet met Marc besproken en hoort niet in de pilot.
 
+Onderwerp 22 is een besluit van 21 november 2026: de passkey ("Face ID") die design-v4 tekende, gaat uit de pilot en wacht op het eigen domein van onderwerp 13.
+
 | Onderwerp | Wat het oplevert | Start als |
 | --- | --- | --- |
 | 1. Omschrijving via een taalmodel | Marc zet een fles in enkele minuten online, in zijn eigen woorden. Het etiket lezen en tekstvoorstellen uit steekwoorden in zijn stijl, met echte teksten van Marc als voorbeeld, zitten al in de pilot. Hier volgen spraak naar tekst en het leren van zijn stijl uit de teksten die hij in de app goedkeurt | De pilot geslaagd is en Marc in de pilot geregeld een voorstel koos |
@@ -47,6 +49,7 @@ Onderwerp 21 is een idee van Aidan van 21 november 2026: de app ondersteunt naas
 | 19. Volgen wat er gebeurt, en ingrijpen als een bestelling misgaat | Marc en Aidan zien per bestelling wat er gebeurde en krijgen een signaal als een lid vastloopt, voordat het lid erover appt | Stap A zit in de pilot, week 7. Stap B: fouten in de pilot Aidan meer dan een uur per maand kosten om uit te zoeken. Stap C: de club groeit voorbij de pilot |
 | 20. Een logo op het tabblad van de browser | Wie de app in een browser opent, herkent het tabblad aan het logo van de club in plaats van aan een algemeen plaatje | Marc het logo heeft geleverd |
 | 21. Ook op de pc: de app in een brede browser | Marc doet voorraad en planning op een groot scherm met toetsenbord, in tabellen in plaats van in een smalle kolom. Leden houden dezelfde app, vooral op hun telefoon | De zes beheerschermen gebouwd zijn en Marc zegt dat hij voorraad of planning liever achter de pc doet |
+| 22. Inloggen met een passkey ("Face ID") | Een lid komt na het uitloggen of op een nieuw apparaat binnen met één blik, zonder code uit de mail. Marc en Aidan krijgen een sterkere login voor het beheer | Het eigen domein van onderwerp 13 in gebruik is |
 
 ## 1. Omschrijving via een taalmodel
 
@@ -564,12 +567,24 @@ De telefoon blijft het uitgangspunt: daar gebruiken vrijwel alle leden de app, e
 - **Voorraad in één overzicht.** Op de pc ziet Marc alle flessen in één tabel: klaargezet, op tafel, verkocht en nog beschikbaar, te sorteren en te doorzoeken. De pilot heeft dat overzicht niet; daar zet Marc flessen één voor één klaar. Dit raakt onderwerp 5, het inkoopoverzicht.
 - **Voor leden.** Het aanbod, de bon en de veiling blijven dezelfde kolom, met op een breed scherm de foto ernaast in plaats van erboven. Meer niet: een lid bestelt op zijn telefoon.
 - **Muis en toetsenbord.** Alles is te bedienen met het toetsenbord, met een zichtbare focus. Vegen heeft altijd een knop of het muiswiel als tweede weg, zoals de biedladder nu al. Een foto van een fles kiest Marc op de pc uit een map of sleept hij erin; de camera blijft voor de telefoon. Voor zo'n bestand gelden dezelfde regels als voor elke upload; zie "Uploads zijn een risico" in de bouwspecificatie, hoofdstuk 5.
-- **Inloggen op de pc.** Een passkey op de telefoon werkt niet vanzelf op de pc. Marc logt daar in met een passkey van de pc zelf of via de telefoon, en een lid met de code per e-mail. Zoek uit wat Cognito hier toelaat voordat het ontwerp vastligt. Op een gedeelde pc blijft niemand een jaar ingelogd: daar hoort een kortere sessie of een duidelijke knop Uitloggen bij.
+- **Inloggen op de pc.** In de pilot logt iedereen in met de code per e-mail, ook op de pc. Komt er een passkey (onderwerp 22), dan werkt die van een iPhone of Android-telefoon via de sleutelhanger van Apple of Google, of via de telefoon naast de pc. Zoek uit wat Cognito hier toelaat voordat het ontwerp vastligt. Op een gedeelde pc blijft niemand een jaar ingelogd: daar hoort een kortere sessie of een duidelijke knop Uitloggen bij.
 - **Wat er verandert in de documenten.** Eis M1 krijgt een tweede deel voor brede schermen, en hoofdstuk 10 een referentiemaat voor de pc, bijvoorbeeld 1280 × 720 px. De browsertests draaien die maat erbij in Chromium, WebKit en Firefox, en de handtest krijgt een ronde op een pc. Het ontwerp tekent tot nu toe alleen frames van 390 px; Aidan levert de brede schermen voor beheer.
 - **Wat het kost.** Naar schatting drie tot vijf dagen: één voor de brede indeling van de bestaande schermen en het menu, twee tot drie voor het voorraadoverzicht, en één voor de tests en de handtest op de pc.
 - **Wat het niet doet.** Geen aparte app voor de pc, geen functie die alleen op de pc bestaat behalve het overzicht, en geen eisen voor de telefoon die soepeler worden.
 
 **Start als** de zes beheerschermen van de pilot gebouwd zijn en Marc zegt dat hij voorraad of planning liever achter de pc doet. Vraag het hem bij zijn oordeel over het prototype. Tot dan toont een pc de smalle kolom. Dat is in de pilot alleen in Chromium en WebKit op telefoonformaat getest, niet op een pc en niet in Firefox.
+
+## 22. Inloggen met een passkey ("Face ID")
+
+Design-v4 bood na de eerste login "Voortaan met Face ID" aan, en wie dat koos, zag de volgende keer "Welkom terug". Op 21 november 2026 is besloten dat de pilot alleen met de code per e-mail inlogt. Schermen 04 en 05 zijn uit het prototype gehaald; de frames staan nog in het Pencil-bestand.
+
+- **Wat het is.** Een passkey (WebAuthn) werkt gewoon in de browser: Safari op iPhone en Chrome op Android ondersteunen het zonder app uit de App Store. Op iPhone heet het Face ID of Touch ID, op Android ontgrendelen met je vingerafdruk of gezicht. De passkey staat in de sleutelhanger van Apple of Google en gaat mee naar de andere apparaten van het lid; "werkt alleen op deze telefoon", zoals V4 zei, klopt dus niet.
+- **Waarom niet in de pilot.** Een passkey zit vast aan het adres van de site. De pilot begint op het adres van CloudFront; bij de overstap naar een eigen domein (onderwerp 13) vervallen alle passkeys en moet elk lid het opnieuw instellen. Bovendien blijft een lid door het refresh-token van een jaar toch al ingelogd, dus het lid ziet het inloggen zelden.
+- **Wat erbij komt.** In `infra/wijnclub_infra/auth_stack.py` komt `passkey` naast `email_otp` bij de toegestane eerste factoren, met het eigen domein als relying party; het Essentials-plan volstaat. De web-app roept het registreren van een passkey aan na de eerste login en biedt hem aan bij het inloggen. Schermen 04 en 05 van V4 komen terug, met een tekst die zegt dat de passkey ook op je andere apparaten werkt. De code per e-mail blijft de terugvaloptie: voor een nieuwe telefoon of een lid zonder sleutelhanger.
+- **Eerst voor het beheer.** De groep `beheer` logt nu alleen in met de code per e-mail; wie de mailbox van Marc of Aidan heeft, heeft het beheer (punt B3 in [beveiliging.md](beveiliging.md)). Begin daar.
+- **Wat het niet doet.** Geen wachtwoorden, en geen passkey als enige manier om binnen te komen.
+
+**Start als** het eigen domein van onderwerp 13 in gebruik is. Omdat dat vóór de eerste uitnodiging af moet, kan de passkey er voor het beheer al in de pilot bij komen, als Aidan dat wil.
 
 ## Bewust niet
 

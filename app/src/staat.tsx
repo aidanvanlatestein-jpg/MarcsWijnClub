@@ -85,8 +85,6 @@ const STANDAARD_INSTELLINGEN: Instellingen = { bijnamen: true, levendig: true, v
 export interface Staat {
   versie: 4
   ingelogd: boolean
-  /** Het lid koos "Voortaan met Face ID" (een passkey). Dan begint de app met "Welkom terug". */
-  faceId: boolean
   lijst: LijstStaat
   biedingen: BiedingStaat[]
   bestellingen: Bestelling[]
@@ -107,7 +105,7 @@ export interface Staat {
 }
 
 export type Actie =
-  | { type: 'inloggen'; faceId?: boolean }
+  | { type: 'inloggen' }
   | { type: 'uitloggen' }
   | { type: 'mandje'; wijnId: string; aantal: number }
   | { type: 'pasMandjeAan' }
@@ -172,7 +170,6 @@ export function beginStaat(): Staat {
   return {
     versie: 4,
     ingelogd: false,
-    faceId: false,
     lijst: {
       ...voorbeeldLijst,
       levering: leveringNa(begin),
@@ -519,7 +516,6 @@ function lopendeAvond(s: Staat, nu: string): Staat {
   let na: Staat = {
     ...basis,
     ingelogd: s.ingelogd,
-    faceId: s.faceId,
     instellingen: s.instellingen,
     herinnering: s.herinnering,
     lijst: {
@@ -561,7 +557,7 @@ function reducer(s: Staat, a: Actie): Staat {
 function stap(s: Staat, a: Actie): Staat {
   switch (a.type) {
     case 'inloggen':
-      return { ...s, ingelogd: true, faceId: a.faceId ?? s.faceId }
+      return { ...s, ingelogd: true }
     case 'uitloggen':
       return { ...s, ingelogd: false, mandje: {} }
     case 'mandje': {

@@ -18,7 +18,7 @@ Spreken ze elkaar tegen, of staat iets nergens: vraag het na en pas het document
 
 Daarnaast, niet nodig voor de bouw van de pilot:
 
-- [docs/roadmap.md](docs/roadmap.md): wat er na de pilot kan komen, onderwerp 1 tot en met 21. Alleen onderwerp 13 (eigen domein) en 15 (beveiliging) moeten vóór de eerste uitnodiging af; ze staan in week 8. Stap A van onderwerp 19, de tijdlijn per bestelling, zit sinds 21 november 2026 in de pilot en staat in week 7.
+- [docs/roadmap.md](docs/roadmap.md): wat er na de pilot kan komen, onderwerp 1 tot en met 22. Alleen onderwerp 13 (eigen domein) en 15 (beveiliging) moeten vóór de eerste uitnodiging af; ze staan in week 8. Stap A van onderwerp 19, de tijdlijn per bestelling, zit sinds 21 november 2026 in de pilot en staat in week 7.
 - [docs/beveiliging.md](docs/beveiliging.md): de verbeterpunten uit de beveiligingsscan van 20 november 2026, A1 tot en met E10.
 - [docs/marktonderzoek.md](docs/marktonderzoek.md): wie hetzelfde doet en wat dat betekent, van 19 november 2026.
 
@@ -133,7 +133,7 @@ Leden hebben één startpagina, het aanbod, zonder tabbalk. Marc heeft zes behee
 | Levering | Brengen of halen, door Marc per avond ingesteld. Brengen: Marc brengt de flessen naar het adres van het lid, op een moment dat hij kiest. Halen: het lid haalt ze bij Marc op, op een moment en een plek die hij kiest. Ook voor een gewonnen fles kiest het lid brengen of halen | Bewaren bij Marc (roadmap onderwerp 9), pakketverzending, afhaalpunten per regio |
 | Contact | Knop "Vraag Marc", naar WhatsApp met de wijn ingevuld | Chat in de app, een bot, een boekingssysteem voor diners |
 | Meldingen | Nieuwe avond aangekondigd, de avond begint (voor wie "herinner mij" koos), één herinnering "nog beschikbaar" vóór het sluiten, de veiling begint, overboden, gewonnen. Een betaallink bij een bon namens een lid, en één herinnering om te betalen bij een bon namens een lid of een gewonnen fles. "Ik ben onderweg" aan wie Marc gaat brengen. Bij elke melding legt de app vast wanneer hij verstuurd is en hoeveel leden erop tikten | Marketingberichten en geplande campagnes (roadmap onderwerp 3) |
-| Toegang | Alleen op uitnodiging van Marc. Inloggen met een code per e-mail, daarna eventueel met een passkey ("Face ID") | Open aanmelding |
+| Toegang | Alleen op uitnodiging van Marc. Inloggen met een code per e-mail. Een passkey ("Face ID") komt pas met een eigen domein: zie [roadmap, onderwerp 22](docs/roadmap.md) | Open aanmelding |
 | Beheer | Zes schermen. De avond: wijnen op tafel zetten, iets tegen de tafel zeggen, de veiling eerder starten, het overzicht "nog beschikbaar" met één tik in WhatsApp delen en de avond sluiten, met tellers. Nieuwe fles: fotograferen, het etiket en het WhatsApp-bericht laten herkennen, nakijken, steekwoorden geven en een tekstvoorstel kiezen, en kiezen tussen lijst en veiling. Afleveren: wat Marc brengt en wat er gehaald wordt, afvinken, een betaallink sturen en laten weten dat hij onderweg is. Leden: uitnodigen, het afleveradres bijhouden en een lid verwijderen. Een avond plannen, met brengen en halen. Namens een lid: een bon invoeren met letters en aantallen | Boekhouding, facturen |
 
 De stijl volgt marckookt.com: de avond op één scherm, een bijzondere fles met een grote foto, korte tekst in de je-vorm.
@@ -155,7 +155,7 @@ De stijl volgt marckookt.com: de avond op één scherm, een bijzondere fles met 
 
 ### Voor een lid
 
-1. Het lid krijgt een uitnodiging van Marc per e-mail en logt eenmalig in met een code per e-mail. Het bevestigt dat het 18 jaar of ouder is; met Ja gaat het akkoord met de voorwaarden. Zegt het nee, dan kan het niet bestellen of bieden. Daarna kan het een passkey kiezen ("Face ID"): dan komt het de volgende keer met één tik binnen. Het blijft ingelogd op die telefoon.
+1. Het lid krijgt een uitnodiging van Marc per e-mail en logt eenmalig in met een code per e-mail. Het bevestigt dat het 18 jaar of ouder is; met Ja gaat het akkoord met de voorwaarden. Zegt het nee, dan kan het niet bestellen of bieden. Daarna komt het op het aanbod en blijft het ingelogd op die telefoon.
 2. Het zet de app op het beginscherm van de telefoon en staat meldingen toe.
 3. Op de avond tikt het per wijn aan hoeveel flessen het wil, en ziet het de bon: de wijnen, het totaal en brengen of halen met het moment.
 4. Het kiest brengen of halen en betaalt meteen met iDEAL. Kiest het brengen zonder afleveradres, dan vult het eerst een adres in. Marc houdt de flessen 15 minuten vast; mislukt het betalen, dan kan het binnen die tijd opnieuw. Daarna vervalt de bon en komen de flessen terug in de voorraad. Bijbestellen kan tot de avond sluit, met een nieuwe bon.
@@ -202,7 +202,7 @@ Het lid heeft één startpagina, het aanbod: de aankondiging vóór de avond, de
 
 | Scherm | Getekend | Wat erop staat | Hoofdknop |
 | --- | --- | --- | --- |
-| Inloggen | V4 01 tot en met 05 | Het e-mailadres, de code uit de mail, de vraag of je 18 jaar of ouder bent (met Ja ga je akkoord met de voorwaarden), en daarna eventueel een passkey ("Face ID"). Wie Face ID koos, ziet de volgende keer "Welkom terug" en komt met één tik binnen. Nee bij 18 jaar: nog niet getekend | Stuur mij een code, daarna Ja, kom binnen |
+| Inloggen | V4 01 tot en met 03 | Het e-mailadres, de code uit de mail en de vraag of je 18 jaar of ouder bent (met Ja ga je akkoord met de voorwaarden). Daarna sta je op het aanbod. V4 04 en 05 (Face ID en terugkomen) vallen buiten de pilot. Nee bij 18 jaar: nog niet getekend | Stuur mij een code, daarna Ja, kom binnen |
 | Aanbod: aankondiging | V4 06 | Vóór de begintijd: datum, Marcs aankondiging en wat er op tafel komt, met de veiling als laatste regel. Een wijn is alvast te bekijken | Herinner mij op de begintijd |
 | Aanbod: de avond | V4 07 | Tijdens de avond: de live feed met Marcs berichten, de wijnen die hij op tafel zette (foto, naam, kleur en land, tekst, prijs, voorraad en een aantal dat je aantikt) en wat er gebeurt, zonder namen van leden. Daaronder wanneer de veiling begint | Bestel, zodra er iets is aangetikt |
 | Aanbod: terugblik | Nog niet als eigen scherm; V4 14 tekent hem onder de hamerslag | Na de avond: wat er verkocht is, de uitkomst van de veiling als er een was, en de weg naar Je bestellingen | Naar je bestellingen |
@@ -274,7 +274,7 @@ flowchart LR
         cf["CloudFront"]
         web["S3: web-app"]
         foto["S3: foto's en spraak"]
-        cog["Cognito<br/>code per e-mail, passkey"]
+        cog["Cognito<br/>code per e-mail"]
         api["API Gateway<br/>HTTP API"]
         fn["Lambda in Python<br/>één functie per taak"]
         db[("DynamoDB")]
@@ -309,7 +309,7 @@ flowchart LR
 | Onderdeel | Dienst | Toelichting |
 | --- | --- | --- |
 | Web-app | S3 + CloudFront | Statische bestanden, gebouwd met React en Vite in TypeScript. Eén pagina met adressen achter een hekje, zoals `#/wijn/…`. Installeerbaar op het beginscherm met een manifest |
-| Inloggen | Cognito | Code per e-mail of passkey, geen wachtwoorden. Alleen op uitnodiging. Eén groep `beheer` voor Marc en de bouwer; elk ander is lid |
+| Inloggen | Cognito | Code per e-mail, geen wachtwoorden. Alleen op uitnodiging. Eén groep `beheer` voor Marc en de bouwer; elk ander is lid |
 | Toegang tot gegevens | API Gateway (HTTP API) + Lambda in Python | Onder `/api/*` op hetzelfde adres als de web-app, via CloudFront. Eén functie per taak. Lambda-runtime `python3.14` |
 | Opslag | DynamoDB | Elf tabellen met betalen naar gebruik, zie Gegevensmodel |
 | Foto's en spraakberichten | S3 achter CloudFront | Niet publiek toegankelijk buiten CloudFront om. Uploaden via een tijdelijke uploadlink |
@@ -326,7 +326,7 @@ flowchart LR
 
 Dit is hoe het moet zijn. Wat nog niet zo staat, staat in [docs/beveiliging.md](docs/beveiliging.md).
 
-- Inloggen gaat via Cognito en wordt niet zelf gebouwd. Zelf aanmelden staat uit; alleen Marc nodigt uit. In productie kan niemand met een wachtwoord inloggen. De groep `beheer` logt in met een passkey.
+- Inloggen gaat via Cognito en wordt niet zelf gebouwd. Zelf aanmelden staat uit; alleen Marc nodigt uit. In productie kan niemand met een wachtwoord inloggen. Ook de groep `beheer` logt in de pilot in met de code per e-mail; een passkey komt pas met een eigen domein (zie [roadmap, onderwerp 22](docs/roadmap.md) en punt B3 in [beveiliging.md](docs/beveiliging.md)).
 - Elke aanroep controleert wie er is ingelogd. Een lid ziet alleen zijn eigen biedingen en bestellingen; het lid komt altijd uit het token. Elke functie onder `/api/beheer` controleert als eerste de groep `beheer`.
 - Uploads zijn een risico. Alleen Marc mag uploaden, alleen afbeeldingen en geluid, met een maximale grootte, via een tijdelijke uploadlink. Het type wordt aan de inhoud gecontroleerd, niet aan de naam.
 - De melding van Mollie is de enige aanroep zonder token. De app vertrouwt de inhoud nooit en haalt de status zelf op.
@@ -510,7 +510,7 @@ Elke ruit is een voorwaarde om door te gaan; de punten staan onder Voorwaarden.
 | Week | Oplevering |
 | --- | --- |
 | 1 en 2 | Voorwaarden voor week 5 rond, nulmeting gedaan, Mollie-account en AWS-account aangemaakt |
-| 3 | Omgeving als code met AWS CDK, pipeline met teststack, inloggen op uitnodiging met een code per e-mail en een passkey, lege web-app online op het adres dat CloudFront geeft |
+| 3 | Omgeving als code met AWS CDK, pipeline met teststack, inloggen op uitnodiging met een code per e-mail, lege web-app online op het adres dat CloudFront geeft |
 | 4 | Beheer: een avond plannen met brengen en halen, leden uitnodigen met hun afleveradres. Nieuwe fles: de fles fotograferen, het etiket lezen, het WhatsApp-bericht plakken en herkennen, nakijken met kleur en land, tekstvoorstellen uit steekwoorden (twee tot drie dagen extra), lijst of veiling, klaarzetten. Voor leden de aankondiging en de wijnpagina |
 | 5 | De avond: aankondigen, vanzelf beginnen, wijnen op tafel zetten, berichten van Marc, de feed, en pollen elke 3 seconden. Bestellen met brengen of halen, voorraad en 15 minuten houdtijd, meteen betalen via Mollie in testmodus, een onbetaalde bon laten vervallen, bijbestellen als nieuwe bon. De avond sluiten en de terugblik. Je bestellingen |
 | 6 | Veiling: de bijzondere fles, de zaal met biedlog en bijnamen, bieden, verlengen, de hamer, betalen binnen 48 uur, daarna brengen of halen kiezen. Vastleggen wie een veiling opent en welk bod de eindtijd verlengt |
@@ -533,7 +533,7 @@ De lopende kosten blijven naar verwachting onder €10 per maand; de echte inves
 | Domeinnaam | Ongeveer €10 tot €15 per jaar, plus ongeveer een halve euro per maand als de DNS in Route 53 komt | Vóór de eerste uitnodiging, week 8 |
 | Beveiliging uit de scan | Nog niet geschat | WAF op CloudFront, een CloudTrail-spoor, GuardDuty en een eigen sleutel in KMS (punt B4, E3 en E8 in [docs/beveiliging.md](docs/beveiliging.md)) zitten niet in de €10. Schat ze in week 8 |
 | Mollie | Geen vaste kosten, ongeveer €0,30 per iDEAL-betaling | Marc betaalt dit als verkoper. Het is één betaling per bon, niet per fles |
-| Inloggen | Gratis op deze schaal | Met een code per e-mail of een passkey. Een code per sms kost per bericht en is niet nodig |
+| Inloggen | Gratis op deze schaal | Met een code per e-mail. Een code per sms kost per bericht en is niet nodig |
 | Bedrock: bericht en etiket herkennen, tekst voorstellen | Onder €1 per maand met een klein model, €2 tot €3 met een middelgroot model | Zie "Kosten van het taalmodel" hieronder |
 | Juridische check | Eenmalig, bedrag onbekend | Offerte vragen |
 | Bouw en beheer | Eigen uren | Geen licentiekosten |

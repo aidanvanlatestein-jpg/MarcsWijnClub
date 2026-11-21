@@ -1,4 +1,4 @@
-import { ArrowUpRight, CircleCheck, ScanFace } from 'lucide-react'
+import { ArrowUpRight, CircleCheck } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Hoofdknop } from '../onderdelen/Knoppen'
 import { Woordmerk } from '../onderdelen/Kop'
@@ -12,27 +12,25 @@ const LENGTE = 6
 /** De code die "Open mail" in het voorbeeld invult. Elke code van zes cijfers werkt. */
 const VOORBEELDCODE = '482917'
 
-type Stap = 'email' | 'code' | 'achttien' | 'faceid'
+type Stap = 'email' | 'code' | 'achttien'
 
 /**
- * Inloggen (design-v4): e-mailadres, de code uit de mail, 18 of ouder, en daarna eventueel Face ID.
- * Wie Face ID koos, ziet de volgende keer "Welkom terug". In de echte app doet Cognito dit met een
- * eenmalige code per e-mail en een passkey; inloggen wordt niet zelf gebouwd.
+ * Inloggen (design-v4, schermen 01 tot en met 03): e-mailadres, de code uit de mail, 18 of ouder.
+ * In de echte app doet Cognito dit met een eenmalige code per e-mail; inloggen wordt niet zelf
+ * gebouwd. Een passkey ("Face ID") valt buiten de pilot: zie onderwerp 22 in docs/roadmap.md.
  */
 export function Welkom({ ga }: { ga: Ga }) {
-  const [staat, dispatch] = useStaat()
-  const [stap, setStap] = useState<Stap | null>(staat.faceId ? null : 'email')
+  const [, dispatch] = useStaat()
+  const [stap, setStap] = useState<Stap>('email')
   const [email, setEmail] = useState(voorbeeldLid.email ?? '')
   const [code, setCode] = useState('')
   const [nee, setNee] = useState(false)
   const [pagina, setPagina] = useState<Pagina | null>(null)
   const invoer = useRef<HTMLInputElement>(null)
-  const binnen = (faceId?: boolean) => {
-    dispatch({ type: 'inloggen', faceId })
+  const binnen = () => {
+    dispatch({ type: 'inloggen' })
     ga({ scherm: 'aanbod' })
   }
-
-  if (stap === null) return <Terugkomen onBinnen={() => binnen()} onAnder={() => setStap('email')} />
 
   const voortgang = stap === 'email' ? 1 : stap === 'code' ? 2 : 3
   const zetCode = (waarde: string) => {
@@ -46,11 +44,9 @@ export function Welkom({ ga }: { ga: Ga }) {
     <main className="login">
       <div className="login-kop">
         <Woordmerk />
-        {stap !== 'faceid' && (
-          <div className="login-voortgang" role="progressbar" aria-label="Stap" aria-valuemin={1} aria-valuemax={3} aria-valuenow={voortgang}>
-            {[1, 2, 3].map((i) => <span key={i} className={i <= voortgang ? 'klaar' : undefined} />)}
-          </div>
-        )}
+        <div className="login-voortgang" role="progressbar" aria-label="Stap" aria-valuemin={1} aria-valuemax={3} aria-valuenow={voortgang}>
+          {[1, 2, 3].map((i) => <span key={i} className={i <= voortgang ? 'klaar' : undefined} />)}
+        </div>
       </div>
 
       {stap === 'email' && (
@@ -115,7 +111,7 @@ export function Welkom({ ga }: { ga: Ga }) {
           <p className="login-vraag">Ben je 18 of ouder?</p>
           {nee && <p className="tekst goud" role="alert">Dan kan ik je helaas geen wijn verkopen. Tot over een paar jaar!</p>}
           <div className="login-onder">
-            <Hoofdknop onClick={() => setStap('faceid')}>Ja, kom binnen</Hoofdknop>
+            <Hoofdknop onClick={binnen}>Ja, kom binnen</Hoofdknop>
             <button type="button" className="knop-grijs midden" onClick={() => setNee(true)}>Nee</button>
             <p className="login-voet">
               Met ‘Ja’ ga je akkoord met de{' '}
@@ -126,49 +122,7 @@ export function Welkom({ ga }: { ga: Ga }) {
         </div>
       )}
 
-      {stap === 'faceid' && (
-        <div className="login-stap vol">
-          <div className="login-faceid">
-            <span className="faceid-vak" aria-hidden><ScanFace size={64} strokeWidth={1.5} /></span>
-            <h1 className="login-vraag" style={{ textAlign: 'center' }}>Voortaan zonder code?</h1>
-            <p className="tekst" style={{ textAlign: 'center' }}>
-              Dan kom je de volgende keer binnen met Face ID, net als bij je bank. Werkt alleen op deze telefoon.
-            </p>
-          </div>
-          <div className="login-onder">
-            <Hoofdknop icoon={<ScanFace size={26} aria-hidden />} onClick={() => binnen(true)}>Ja, gebruik Face ID</Hoofdknop>
-            <button type="button" className="tekstlink zonder-lijn gedempt midden" onClick={() => binnen(false)}>Niet nu</button>
-            <p className="uitleg-voorbeeld" style={{ textAlign: 'center' }}>In de echte app een passkey via Cognito; op Android heet het ontgrendelen met je vingerafdruk of gezicht.</p>
-          </div>
-        </div>
-      )}
       {pagina && <ClubBlad pagina={pagina} onSluit={() => setPagina(null)} />}
-    </main>
-  )
-}
-
-/** Terugkomen met Face ID: één tik. */
-function Terugkomen({ onBinnen, onAnder }: { onBinnen: () => void; onAnder: () => void }) {
-  const [staat] = useStaat()
-  const { lijst } = staat
-  const veiling = staat.biedingen.some((b) => b.biedingStatus === 'open')
-  let zin = 'Er is nu niets open. Je krijgt een melding bij de volgende avond.'
-  if (lijst.status === 'open') zin = `Vanavond bij Marc: ${lijst.wijnen.length} wijnen${veiling ? ' en een veiling' : ''}.`
-  return (
-    <main className="terugkomen">
-      <div className="terugkomen-foto">
-        <img src="/marc/sfeer.jpg" alt="" />
-        <span className="verloop" aria-hidden />
-      </div>
-      <div className="login-stap vol" style={{ paddingTop: 0 }}>
-        <Woordmerk />
-        <h1 className="login-groot">Welkom terug, {voorbeeldLid.naam}.</h1>
-        <p className="tekst gedempt">{zin}</p>
-        <div className="login-onder">
-          <Hoofdknop icoon={<ScanFace size={26} aria-hidden />} onClick={onBinnen}>Kom binnen</Hoofdknop>
-          <button type="button" className="tekstlink zonder-lijn gedempt midden" onClick={onAnder}>Niet {voorbeeldLid.naam}? Log in met e-mail</button>
-        </div>
-      </div>
     </main>
   )
 }

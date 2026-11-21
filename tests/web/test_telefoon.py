@@ -21,8 +21,8 @@ FOTO = Path(__file__).resolve().parents[2] / "app" / "public" / "voorbeeld" / "c
 SCHERMEN = ["#/", "avond", "#/mijn-bestelling", "#/marc", "#/beheer", "#/beheer/nieuw", "#/beheer/afleveren", "#/beheer/namens"]
 
 
-def inloggen(pagina, face_id=False):
-    """De eerste login zoals een lid hem doet (design-v4): e-mailadres, de code, 18 of ouder, en Face ID of niet."""
+def inloggen(pagina):
+    """De eerste login zoals een lid hem doet (design-v4, 01 tot en met 03): e-mailadres, de code, 18 of ouder."""
     pagina.goto(pagina.adres + "/#/welkom")
     # Opnieuw laden: stond het inloggen al open op een latere stap, dan begint het weer bij het e-mailadres.
     pagina.reload()
@@ -30,10 +30,6 @@ def inloggen(pagina, face_id=False):
     pagina.get_by_role("button", name=re.compile("Stuur mij een code", re.I)).click()
     pagina.locator("#code").fill("123456")
     pagina.get_by_role("button", name=re.compile("Ja, kom binnen", re.I)).click()
-    if face_id:
-        pagina.get_by_role("button", name=re.compile("Gebruik Face ID", re.I)).click()
-    else:
-        pagina.get_by_role("button", name=re.compile("Niet nu", re.I)).click()
     expect(pagina).not_to_have_url(re.compile(r"#/welkom$"))
 
 
@@ -311,16 +307,14 @@ def test_mijn_bestelling(telefoon):
     expect(telefoon).to_have_url(re.compile(r"#/bon/"))
 
 
-def test_terugkomen_met_face_id(gewone_telefoon):
-    """Wie Face ID koos, komt de volgende keer met één tik binnen."""
+def test_uitloggen_begint_opnieuw(gewone_telefoon):
+    """Na uitloggen begint het inloggen weer bij het e-mailadres. Een passkey valt buiten de pilot (roadmap 22)."""
     pagina = gewone_telefoon
-    inloggen(pagina, face_id=True)
+    inloggen(pagina)
     pagina.locator(".voorbeeld").click()
-    pagina.get_by_role("dialog").get_by_role("button", name=re.compile("Kom later terug", re.I)).click()
-    expect(pagina.locator("h1")).to_contain_text(re.compile("Welkom terug", re.I))
+    pagina.get_by_role("dialog").get_by_role("button", name=re.compile("^Log uit", re.I)).click()
+    expect(pagina.locator("#email")).to_be_visible()
     assert geen_overtredingen(scherm_klopt(pagina)) == {}
-    pagina.get_by_role("button", name=re.compile("^Kom binnen", re.I)).click()
-    expect(pagina).not_to_have_url(re.compile(r"#/welkom$"))
 
 
 def test_terugknop_sluit_paneel(telefoon):
