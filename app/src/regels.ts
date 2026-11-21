@@ -58,10 +58,50 @@ export function herkenBericht(bericht: string): Herkend {
   return uit
 }
 
-/** "11,50", "11.5" of "€ 11" naar hele centen. Geen geldig bedrag: null. */
+/** "11,50", "11.5", "€ 11" of "10,-" naar hele centen. Geen geldig bedrag: null. Zoals lees_euro in domein/geld.py. */
 export function leesEuro(invoer: string): number | null {
-  const m = /^\s*€?\s*(\d{1,5})(?:[.,](\d{1,2}))?\s*$/.exec(invoer)
-  return m ? centen(m[1], m[2]) : null
+  const m = /^\s*€?\s*(\d{1,5})(?:[.,](\d{1,2}|-))?\s*$/.exec(invoer)
+  if (!m) return null
+  return centen(m[1], m[2] === '-' ? undefined : m[2])
+}
+
+// ---- Regels die ook in functions/wijnclub/domein staan ----
+// Het prototype speelt de server na. Deze regels moeten daarom precies doen wat het domein doet;
+// tests/gedeeld/regels.json bevat de gevallen die beide kanten moeten halen.
+
+const MINUUT = 60_000
+
+/** Zo lang houdt Marc de flessen vast terwijl het lid betaalt (domein/bestelling.py: HOUDTIJD). */
+export const HOUDTIJD = 15 * MINUUT
+/** Namens een lid en na een gewonnen bieding (domein/bestelling.py: BETAALTERMIJN). */
+export const BETAALTERMIJN = 48 * 60 * MINUUT
+/** Een bod in de laatste twee minuten verlengt de eindtijd met twee minuten (domein/bieding.py: VERLENGING). */
+export const VERLENGING = 2 * MINUUT
+/** Een bod is hoogstens drie keer het minimum (domein/bieding.py: HOOGSTE_FACTOR). */
+export const HOOGSTE_FACTOR = 3
+
+export function plus(utc: string, ms: number): string {
+  return new Date(new Date(utc).getTime() + ms).toISOString().replace(/\.\d{3}Z$/, 'Z')
+}
+
+/** Het totaal van een bestelling in hele centen (domein/geld.py: totaal). */
+export function totaal(regels: readonly { prijs: number; aantal: number }[]): number {
+  return regels.reduce((som, r) => som + r.prijs * r.aantal, 0)
+}
+
+/** Het hoogste bod dat nog doorgaat (domein/bieding.py: hoogste_toegestane_bod). */
+export function hoogsteToegestaneBod(minimaalVolgendBod: number): number {
+  return minimaalVolgendBod * HOOGSTE_FACTOR
+}
+
+/** De eindtijd na een bod: verlengd als het bod in de laatste twee minuten valt (domein/bieding.py: nieuwe_eindtijd). */
+export function nieuweEindtijd(eindtijd: string, nu: string): string {
+  return new Date(eindtijd).getTime() - new Date(nu).getTime() <= VERLENGING ? plus(nu, VERLENGING) : eindtijd
+}
+
+/** Tot wanneer betaald kan worden (domein/bestelling.py: betaal_voor). */
+export function betaalVoor(soort: 'lijst' | 'namens' | 'bieding', aangemaakt: string): string {
+  return plus(aangemaakt, soort === 'lijst' ? HOUDTIJD : BETAALTERMIJN)
 }
 
 export interface LetterRegel {

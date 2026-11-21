@@ -8,9 +8,10 @@ import { Blad } from '../onderdelen/Blad'
 import { GrootBedrag, Hoofdknop, Onderkant, Stippellijn } from '../onderdelen/Knoppen'
 import { Kop, ZwevendeNav } from '../onderdelen/Kop'
 import { dagEnTijd, euro, geleden, heelBedrag, klok, kortJaar, naamMetJaar, nuUtc, tijd, weekdag } from '../opmaak'
+import { hoogsteToegestaneBod } from '../regels'
 import { terug, type Ga } from '../route'
 import {
-  eersteWoord, plus, HOOGSTE_FACTOR, LAATSTE_MINUTEN, mijnBiedingBestelling, useNu, useStaat, zoekBieding,
+  eersteWoord, plus, LAATSTE_MINUTEN, mijnBiedingBestelling, useNu, useStaat, zoekBieding,
   type BiedingStaat,
 } from '../staat'
 import { voorbeeldBerichten, voorbeeldLedenKijken } from '../voorbeeld'
@@ -197,7 +198,7 @@ function BiedKnoppen({ bieding: b, onBied }: { bieding: BiedingStaat; onBied: (b
       <Hoofdknop icoon={<Gavel size={26} aria-hidden />} onClick={() => onBied(b.minimaalVolgendBod)}>
         Bied {euro(b.minimaalVolgendBod, { heel: true })}
       </Hoofdknop>
-      {hoger <= b.minimaalVolgendBod * HOOGSTE_FACTOR && (
+      {hoger <= hoogsteToegestaneBod(b.minimaalVolgendBod) && (
         <button type="button" className="knop-hoger" aria-label={`Bied ${euro(hoger, { heel: true })}`} onClick={() => onBied(hoger)}>
           {euro(hoger, { heel: true })}
         </button>
@@ -465,7 +466,7 @@ function Bieden({ bieding, begin, onSluit }: { bieding: BiedingStaat; begin: num
   const versleept = useRef(false)
   // Het minimum, de hogere stap en nog een stap daarboven. Boven het hoogste toegestane bod valt weg.
   const hoger = hogereStap(minimum)
-  const bedragen = [...new Set([minimum, hoger, hoger + 5000])].filter((x) => x <= minimum * HOOGSTE_FACTOR)
+  const bedragen = [...new Set([minimum, hoger, hoger + 5000])].filter((x) => x <= hoogsteToegestaneBod(minimum))
   const [stap, setStap] = useState(() => Math.max(0, bedragen.indexOf(begin)))
   const gekozen = bedragen[Math.min(stap, bedragen.length - 1)]
   const hoogste = bieding.hoogsteBod ?? bieding.startbod

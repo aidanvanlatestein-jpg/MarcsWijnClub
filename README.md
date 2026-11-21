@@ -46,7 +46,15 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-De tests draaien lokaal en raken AWS niet. Ze controleren de regels voor bestellen en bieden, de eerste API-functie, en wat de vier stacks opleveren.
+De tests draaien lokaal en raken AWS niet. Ze controleren de regels voor bestellen en bieden, de eerste API-functie, en wat de vier stacks opleveren. De integratietests in `tests/integratie` voeren de transacties uit tegen DynamoDB in het geheugen (moto); die vragen Python 3.10 of hoger en slaan zich op 3.9 over. Op 3.10 of hoger controleert `mypy` ook de typen van de functies.
+
+De web-app heeft eigen unit-tests (vitest), naast de code in `app/src`:
+
+```bash
+cd app && npm test
+```
+
+Een paar regels staan zowel in `functions/wijnclub/domein` als in `app/src/regels.ts`. De gevallen in `tests/gedeeld/regels.json` toetsen beide kanten; verandert zo'n regel, voeg dan eerst daar een geval toe.
 
 De browsertests in `tests/web` lopen de web-app door op een telefoonscherm van 375 × 667 en 320 × 568 px, in Chromium en in WebKit, de motor van Safari op de iPhone. `test_telefoon.py` meet de eisen uit hoofdstuk 10 van de bouwspecificatie; `test_uitkomsten.py` controleert wat er op het scherm staat: het totaal op de bon, de voorraad en het bod. Ze testen de gebouwde app in `app/dist` en slaan zich over als die of een browser ontbreekt. Is `app/dist` ouder dan de broncode van de web-app, dan falen ze: bouw dan opnieuw. Eenmalig de browsers installeren:
 
@@ -143,7 +151,7 @@ De pipeline draait in GitHub Actions. De workflows staan in `.github/workflows`.
 
 | Workflow | Wanneer | Wat |
 | --- | --- | --- |
-| `controles.yml` | Vanuit de andere workflows | ruff, pip-audit en pytest met de dekking van de functies (ondergrens 95%); npm audit en het bouwen van de web-app; de browsertests in Chromium en WebKit; `cdk synth` voor test en productie. Raakt AWS niet |
+| `controles.yml` | Vanuit de andere workflows | ruff, pip-audit, mypy en pytest met de integratietests en de dekking van de functies (ondergrens 95%); npm audit, vitest en het bouwen van de web-app; de browsertests in Chromium en WebKit; `cdk synth` voor test en productie. Raakt AWS niet |
 | `pull-request.yml` | Elke pull request naar `main` | De controles, en `cdk diff` tegen productie in de samenvatting. Een pull request uit een fork krijgt geen toegang tot AWS |
 | `test.yml` | Elke push naar `main` | De controles, uitrol van `Wijnclub-test-*` en de rooktest uit `tests/smoke` |
 | `productie.yml` | Elke tag die met `v` begint | De controles, jouw goedkeuring, uitrol van `Wijnclub-prod-*` en de rooktest. Bij een fout zet hij de vorige tag terug |
