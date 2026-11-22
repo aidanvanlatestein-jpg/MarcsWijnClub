@@ -29,6 +29,28 @@ JAARGANG_TOT = 2100
 
 VELDEN = ("naam", "producent", "jaargang", "aantal", "prijs", "tekst")
 
+
+def _of_leeg(soort: str) -> dict:
+    return {"anyOf": [{"type": soort}, {"type": "null"}]}
+
+
+# Het vaste JSON-schema voor het antwoord van het model (output_config.format): de velden van Herkend,
+# elk mag leeg zijn. De prijs is tekst, zoals Marc hem schreef. Het schema kent geen maximale lengte;
+# die grenzen en de controle tegen het bericht blijven in lees_antwoord.
+SCHEMA = {
+    "type": "object",
+    "properties": {
+        "naam": _of_leeg("string"),
+        "producent": _of_leeg("string"),
+        "jaargang": _of_leeg("integer"),
+        "aantal": _of_leeg("integer"),
+        "prijs": _of_leeg("string"),
+        "tekst": _of_leeg("string"),
+    },
+    "required": list(VELDEN),
+    "additionalProperties": False,
+}
+
 INSTRUCTIE = """Je leest een aanbieding van één wijn uit een WhatsApp-groep.
 Geef alleen een JSON-object terug met precies deze sleutels:
 - "naam": de naam van de wijn, zonder jaargang en zonder "Wijn A" ervoor

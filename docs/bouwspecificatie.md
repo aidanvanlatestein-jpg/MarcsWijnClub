@@ -66,7 +66,7 @@ Elk scherm heeft een eigen adres achter een hekje. Een link uit een melding krij
 
 ## 2. Tabellen en sleutels
 
-Elf tabellen, alle met betalen naar gebruik en herstel naar een tijdstip. `betalingen` is erbij gekomen om een melding van Mollie aan een bestelling te koppelen, `weergaven`, `berichten` en `tikken` voor de tellingen in hoofdstuk 5, `feed` voor de avond, en `tijdlijn` voor het volgen van een bestelling (sinds 21 november 2026, zie Tijdlijn en signalen in hoofdstuk 3). Zes zijn gebouwd; `feed`, `weergaven`, `berichten`, `tikken` en `tijdlijn` nog niet. De tabel `oordelen` is op 19 november 2026 vervallen: de eigen collectie van een lid is uit de pilot gehaald en staat als onderwerp 14 op de [roadmap](roadmap.md).
+Twaalf tabellen, alle met betalen naar gebruik en herstel naar een tijdstip. `betalingen` is erbij gekomen om een melding van Mollie aan een bestelling te koppelen, `tellers` voor de grens op het taalmodel (sinds 21 november 2026, zie Kosten en grenzen van het model in hoofdstuk 5), `weergaven`, `berichten` en `tikken` voor de tellingen in hoofdstuk 5, `feed` voor de avond, en `tijdlijn` voor het volgen van een bestelling (sinds 21 november 2026, zie Tijdlijn en signalen in hoofdstuk 3). Zeven zijn gebouwd; `feed`, `weergaven`, `berichten`, `tikken` en `tijdlijn` nog niet. De tabel `oordelen` is op 19 november 2026 vervallen: de eigen collectie van een lid is uit de pilot gehaald en staat als onderwerp 14 op de [roadmap](roadmap.md).
 
 | Tabel | Sleutel | Extra index | Waarvoor de index dient |
 | --- | --- | --- | --- |
@@ -86,6 +86,7 @@ Elf tabellen, alle met betalen naar gebruik en herstel naar een tijdstip. `betal
 | `tikken` | `berichtId` + `lidId` | geen | Per melding tellen hoeveel leden erop tikten |
 | `feed` | `lijstId` + `tijdstipId` | geen | De feed van één avond, op volgorde. Met `sinds` alleen wat nieuw is |
 | `tijdlijn` | `bestellingId` + `tijdstipId` | geen | De stappen van één bestelling, op volgorde |
+| `tellers` | `tellerId` | geen | De aanroepen van het taalmodel per dag, voor de grens van 100 |
 
 `lidId` is de `sub` uit Cognito. Abonnementen op meldingen staan als lijst op het lid; bij 120 leden is alle leden doorlopen voor een melding geen probleem.
 
@@ -112,6 +113,7 @@ Elf tabellen, alle met betalen naar gebruik en herstel naar een tijdstip. `betal
 - **`tikken`**: `berichtId`, `lidId`, `eerst`, `vervaltOp`. Eén rij per lid per bericht, alleen voor de tellingen.
 - **`feed`**: `lijstId`, `tijdstipId` (`<tijdstip>#<korte willekeurige tekst>`, zodat twee rijen in dezelfde seconde niet botsen), `tijdstip`, `soort` (`wijn`: Marc zette een wijn op tafel; `bericht`: Marc zei iets; `gebeurtenis`: iets wat gebeurde), en `wijnId` of `tekst`. Gebeurtenissen zijn "een lid nam 2 × Janasse", "de Verdejo is op", "de veiling begint", "de Barolo ging voor € 380" en "Marc sloot de avond". Een rij bevat nooit een `lidId` of een naam. Wie schrijft wat: `wijn` bij het op tafel zetten; `bericht` bij `POST /api/beheer/lijsten/{lijstId}/feed`; "een lid nam" bij de melding van Mollie die de bestelling op `betaald` zet, zodat een bon die vervalt niet in de feed komt; "is op" in de bestel-transactie als de voorraad 0 wordt, samen met `opSinds`. Komt er door een vervallen bon weer voorraad, dan wist de taak voor verlopen `opSinds` en schrijft hij "de … is weer te bestellen". De veiling schrijft bij openen en sluiten, en "Marc sloot de avond" komt bij eerder sluiten.
 - **`tijdlijn`**: `bestellingId`, `tijdstipId` (zoals bij `feed`), `tijdstip`, `stap`, bij `betaling-gestart` de `poging` (1, 2, 3), bij `melding-mollie` de `mollieStatus`, en `vervaltOp` (180 dagen na `tijdstip`, in seconden sinds 1970, zoals bij `weergaven`). Een rij bevat nooit een `lidId`, een naam, een adres of een bedrag. De stappen staan onder Tijdlijn en signalen in hoofdstuk 3.
+- **`tellers`**: `tellerId` (`model#<dag>`, bijvoorbeeld `model#2026-11-21`; de dag in UTC), `aantal` en `vervaltOp` (drie dagen na het eerste tellen, in seconden sinds 1970). Herkennen, teksten en straks het etiket tellen in dezelfde rij. Er staat geen `lidId` in en niets van de invoer.
 
 `minimaalVolgendBod` bestaat omdat DynamoDB in een voorwaarde niet kan rekenen. Bij het klaarzetten is het `startbod`; na elk bod wordt het `bod + minimaleVerhoging`.
 
@@ -331,10 +333,10 @@ Alle paden beginnen met `/api`. Elke aanroep vraagt een geldig token van Cognito
 | `POST` en `DELETE /api/mijn/meldingen` | Abonnement op meldingen | `200` |
 | `POST /api/mijn/herinneringen` | "Herinner mij": `lijstId` van een aangekondigde avond. Zet hem in `herinneren` op het lid | `200`, `409` als de avond niet aangekondigd is |
 | `POST /api/mijn/tikken` | Een tik op een melding: `berichtId`. Telt één keer per lid, zie Tellingen voor de roadmap | altijd `200` |
-| `POST /api/beheer/herken` | Velden uit Marcs WhatsApp-bericht: `naam`, `producent`, `jaargang`, `aantal`, `prijs` in centen, `tekst` en `ontbreekt`. Zie "Een bericht herkennen" | `200`, `400` |
+| `POST /api/beheer/herken` | Velden uit Marcs WhatsApp-bericht: `bericht` erin; `naam`, `producent`, `jaargang`, `aantal`, `prijs` in centen, `tekst` en `ontbreekt` eruit. Zie "Een bericht herkennen" | `200`, `400` met `ongeldig_bericht`, `429` met `te_veel`, `503` met `model_niet_beschikbaar` |
 | `POST /api/beheer/uploads` | Tijdelijke uploadlink voor foto of spraakbericht, met een `uploadId` | `200` |
 | `POST /api/beheer/etiket` | Velden van de foto van het etiket: `uploadId` erin; `naam`, `producent`, `jaargang`, `streek`, `kleur`, `land`, `volheid` en `ontbreekt` eruit. Zie "Een etiket lezen" en "Kenmerken voorstellen" | `200`, `400` |
-| `POST /api/beheer/teksten` | Drie tekstvoorstellen: `notitie` en de velden van de wijn erin; `voorstellen` eruit, elk met `tekst` en `nieuw`. Zie "Een tekst voorstellen" | `200`, `400` |
+| `POST /api/beheer/teksten` | Drie tekstvoorstellen: `notitie` en, ernaast, de velden van de wijn (`naam`, `producent`, `jaargang`, `streek`, `druif`) erin; `voorstellen` eruit, elk met `tekst` en `nieuw`. Zie "Een tekst voorstellen" | `200`, `400` met `ongeldige_notitie`, `429` met `te_veel`, `503` met `model_niet_beschikbaar` |
 | `GET /api/beheer/lijsten` en `GET /api/beheer/lijsten/{lijstId}` | De avonden, ook in `concept`; per avond de wijnen, ook die klaarstaan, en de tellers: flessen verkocht, bonnen en betaald bedrag | `200`, `404` |
 | `POST /api/beheer/lijsten` en `PUT /api/beheer/lijsten/{lijstId}` | Een avond aanmaken of wijzigen met titel, inleiding (de aankondiging), begintijd, eindtijd en `levering` (brengen, halen of beide, met `van` en `tot`, en bij halen `waar`); aankondigen (`status` `aangekondigd`) en eerder sluiten (`status` `gesloten`). Zie Een avond in hoofdstuk 3 | `200`, `201`, `400` met `geen_levering_aangeboden`, `ongeldige_levering`, `ongeldig_moment` of `geen_ophaalplek`, `409` als er al een avond aangekondigd of open is, of `veiling_loopt` bij eerder sluiten |
 | `POST /api/beheer/lijsten/{lijstId}/feed` | Iets tegen de tafel zeggen: `tekst`, hoogstens 280 tekens. Komt als `bericht` in de feed, en in de biedlog als de veiling loopt | `201`, `409` als de avond niet open is |
@@ -406,7 +408,7 @@ Details staan in het logboek, zonder namen, adressen of bedragen per persoon.
 - Alleen wat in het bericht staat, wordt overgenomen. Naam en producent staan er woord voor woord in. Elk woord van de tekst staat in het bericht, dus geen verzonnen smaken. Jaargang, aantal en prijs staan er als los getal in: 18 telt niet als het alleen in 2018 voorkomt.
 - Daarnaast gelden grenzen: naam en producent hoogstens 120 tekens, de tekst hoogstens 1000 tekens, jaargang 1900 tot 2100, aantal 1 tot 999, prijs boven nul en hoogstens € 1000.
 - Opmaak van WhatsApp om een veld, zoals sterretjes voor vet, valt weg. Geeft het model de JSON in een codeblok terug, dan wordt die ook gelezen.
-- Klopt een veld niet, of is het antwoord geen leesbare JSON, dan blijft dat veld leeg en staat het in `ontbreekt`. Marc vult het dan zelf in. Een fout van het model zelf geeft de algemene fout; Marc kan dan alles zelf invullen.
+- Klopt een veld niet, of is het antwoord geen leesbare JSON, dan blijft dat veld leeg en staat het in `ontbreekt`. Marc vult het dan zelf in. Geeft het model zelf geen antwoord, dan volgt `503` met `model_niet_beschikbaar` (zie Kosten en grenzen van het model); Marc kan dan alles zelf invullen.
 - De letter wordt niet herkend: de app geeft de volgende letter van de lijst.
 - Het bericht en het antwoord komen niet in het logboek, alleen of het lukte en welke velden ontbraken.
 
@@ -436,7 +438,17 @@ Details staan in het logboek, zonder namen, adressen of bedragen per persoon.
 - Marc kiest een voorstel, past het aan of schrijft zelf. De web-app zet `tekstBron` op de wijn; zie Tellingen voor de roadmap.
 - De notitie, de foto en het antwoord komen niet in het logboek, alleen of het lukte en welke velden ontbraken.
 
-**Kosten en grenzen van het model.** Per wijn kost herkennen, het etiket lezen en drie voorstellen samen ongeveer $0,002 met Claude Haiku 5.5 en ongeveer $0,03 met Claude Sonnet 5.5, naar de prijzen van Anthropic op 20 november 2026. De berekening staat in het plan onder Kosten. `etiket` en `teksten` tellen samen met `herken` mee in een limiet van 100 aanroepen per dag voor de groep `beheer`; daarboven geeft de API `429` en vult Marc zelf in.
+**Kosten en grenzen van het model.** Per wijn kost herkennen, het etiket lezen en drie voorstellen samen ongeveer $0,002 met Claude Haiku 5.5 en ongeveer $0,03 met Claude Sonnet 5.5, naar de prijzen van Anthropic op 20 november 2026. De berekening staat in het plan onder Kosten. `etiket` en `teksten` tellen samen met `herken` mee in een limiet van 100 aanroepen per dag voor de groep `beheer`; daarboven geeft de API `429` met `te_veel` en vult Marc zelf in.
+
+**De route naar het model.** Gebouwd op 21 november 2026, variant B van onderwerp 1 op de [roadmap](roadmap.md).
+
+- `functions/wijnclub/model.py` geeft een functie met de vorm `(instructie, vraag) -> str`, die de handler als `vraag_model` meegeeft aan de regels in `domein/`. Ze vraagt het model om JSON in een vast schema (`output_config.format`): `SCHEMA` in `domein/tekst.py` en `domein/herkennen.py`. Het schema kent geen maximale lengte en geen maximaal aantal; die grenzen blijven in `lees_antwoord`.
+- Het model staat in de omgevingsvariabele `TAALMODEL` en begint op `claude-haiku-5-5`. De keuze tussen Haiku, Sonnet en Opus volgt uit de test met het echte model (`tests/model/`).
+- De sleutel staat in Secrets Manager, als platte tekst onder `wijnclub/<omgeving>/anthropic-api-sleutel`. De functie krijgt alleen die naam (`GEHEIM_ANTHROPIC`) en leest de waarde één keer per opstart.
+- Elke poging wacht hoogstens 20 seconden (5 om verbinding te maken); de functie heeft er 30. Na een snelle fout (`429`, een fout bij Anthropic, geen verbinding) volgt na een seconde hoogstens één herhaling; na een time-out niet, want dan past een tweede poging niet meer.
+- Weigert het model (`refusal`), stopt het op de tokengrens, ontbreekt de sleutel of is de API niet bereikbaar, dan antwoordt de functie `503` met `model_niet_beschikbaar` en "Vul zelf in". Een fout in de invoer geeft `400` zonder aanroep van het model en telt niet mee.
+- De grens telt vóór de aanroep, met één voorwaardelijke `UpdateItem` op de rij van de dag in `tellers`: `ADD aantal`, zolang `aantal` onder de 100 is. De regel staat in `domein/teller.py`.
+- In het logboek staat alleen de soort fout, hoeveel voorstellen overbleven en welke velden ontbraken.
 
 **Uploads zijn een risico.** De uploadlink is alleen voor de groep `beheer`, geldt enkele minuten, staat alleen afbeeldingen en geluid toe en heeft een maximale grootte. Bestanden komen in een eigen map van de bucket en worden nooit uitgevoerd. Voor een foto van een fles:
 
@@ -510,8 +522,11 @@ wine/
 ├── functions/wijnclub/
 │   ├── domein/                      regels zonder AWS: geld, bestelling en levering, bieding, herkennen, etiket, tekst
 │   ├── handlers/                    één bestand per Lambda-functie
+│   ├── model.py                     de route naar het taalmodel van Anthropic
+│   ├── modelaanroep.py              beheer, grens per dag en fouten voor de aanroepen naar het model
 │   ├── opslag.py                    lezen en schrijven in DynamoDB
 │   └── antwoord.py                  antwoorden en gegevens uit het token
+├── functions/laag/requirements.txt  de Lambda-laag met het pakket anthropic, vast met hashes
 ├── promo/                           een teaserfilmpje voor de groep; geen deel van de app
 ├── infra/
 │   ├── app.py                       de CDK-app
@@ -543,7 +558,7 @@ In `test` worden tabellen en bucket weggegooid als je de stack verwijdert. In `p
 
 ### Afhankelijkheden
 
-Alle versies staan vast. De Lambda-functies gebruiken alleen `boto3`, dat in de runtime zit; er is dus geen Docker nodig om uit te rollen.
+Alle versies staan vast. De Lambda-functies gebruiken `boto3`, dat in de runtime zit. De functies die het taalmodel aanroepen, krijgen daarnaast een Lambda-laag met het pakket `anthropic` (`functions/laag/requirements.txt`, met hashes). CDK bouwt die laag bij `cdk synth` met `pip install --platform manylinux2014_aarch64 --python-version 3.14 --only-binary=:all:`, uit kant-en-klare wielen voor ARM64; er is dus geen Docker nodig om uit te rollen. De stacktests bouwen de laag niet.
 
 | Pakket | Versie | Waarvoor |
 | --- | --- | --- |
@@ -567,16 +582,17 @@ Alle versies staan vast. De Lambda-functies gebruiken alleen `boto3`, dat in de 
 | `pip-audit` | 2.10.1 (2.9.0 op Python 3.9) | Bekende kwetsbaarheden in de pipeline |
 | Node | 24 | Bouwen van de web-app en het programma `cdk`, vastgezet in de workflows |
 | `boto3` | 1.44.6 (1.42.97 op Python 3.9) | Alleen lokaal, voor tests |
+| `anthropic` | 2.6.0 | De API van Anthropic, in de Lambda-laag. Vraagt Python 3.10 of hoger. Met alles eronder vast: `anyio` 4.16.0, `httpx2` en `httpcore2` 2.16.0, `pydantic` 2.14.3, `pydantic-core` 2.50.4, `jiter` 0.19.0, `opentelemetry-api` 1.45.2 en kleinere |
 
 Van de web-app is steeds de nieuwste versie gekozen die minstens twee weken oud was. `npm audit` meldde bij het vastleggen geen kwetsbaarheden.
 
-Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan gaat dat als Lambda-laag mee.
+Van `anthropic` en alles eronder is de nieuwste versie gekozen die op 21 november 2026 minstens twee weken oud was. PyPI en OSV meldden toen geen bekende kwetsbaarheden; `pip-audit` controleert de laag in de pipeline. Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan gaat dat ook als Lambda-laag mee.
 
 ## 8. Wat de opzet bevat
 
 | Onderdeel | Staat | Hoort bij |
 | --- | --- | --- |
-| Zes tabellen met indexen | Gebouwd | Week 3 |
+| Zeven tabellen met indexen, met `tellers` voor de grens op het taalmodel | Gebouwd | Week 3 en 4 |
 | Gebruikerspool met code per e-mail | Gebouwd | Week 3 |
 | HTTP API met `GET /api/aanbod`, in de vorm van vóór de avond: `{ "lijsten": […], "biedingen": […] }`, alleen voor lijsten met status `open`, en met `letter` en `volgorde` per wijn. `kleur`, `land` en `volheid` gaan al mee als ze op de wijn staan. De vorm uit hoofdstuk 5 (`avond`, `wijnen`, `veiling`, `feed`, zonder letter, met `korteNaam`, `partij`, `opTafelSinds` en `opSinds`) is er nog niet; `tests/functions/test_aanbod.py` legt nog de oude vorm vast en moet mee veranderen | Gebouwd, oude vorm | Week 3 en 4 |
 | Configuratie van de web-app (`config.json`): regio, gebruikerspool, client en het adres van de API. Marcs WhatsApp-nummer en de instellingen Rust en Wie bood staan er nog niet in | Deels | Week 3 en 7 |
@@ -584,10 +600,11 @@ Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan g
 | Regels voor geld, bestelling en bieding, met tests | Gebouwd | Week 5 en 6 |
 | Regels voor betalen bij het bestellen en levering (V4), met tests in `domein/bestelling.py`: 15 minuten houdtijd voor een bestelling van de lijst en 48 uur namens een lid of na een bieding, één betaling per bestelling, bijbestellen als nieuwe bestelling, verlopen met de voorraad terug, brengen of halen controleren tegen wat de lijst aanbiedt en of het lid een adres heeft, de levering van een lijst controleren, en levering kiezen na een gewonnen bieding. `GET /api/aanbod` geeft de levering van de lijst mee. Deze regels vervangen die voor afhaalpunten en één betaling per lid per lijst | Gebouwd | Week 5 |
 | Regels na de review van 19 november: dubbele betaling herkennen, alle betalingen meewegen op de termijn, een herhaalde bestelpoging herkennen, een botsing in de tijd onderscheiden van uitverkocht, bovengrens op een bod, niet jezelf overbieden, bieding sluiten en bestelling schrijven in één transactie. Met tests; de handlers die ze uitvoeren zijn er nog niet | Gebouwd | Week 5 en 6 |
-| Regels voor het herkennen van een bericht (`domein/herkennen.py`): vraag aan het model en controle van het antwoord, met tests op een nagebootst model. De handler, de koppeling met het model en de test met twintig echte berichten zijn er nog niet | Gebouwd | Week 4 |
+| Regels voor het herkennen van een bericht (`domein/herkennen.py`): vraag aan het model en controle van het antwoord, met tests op een nagebootst model. De test met twintig echte berichten is er nog niet | Gebouwd | Week 4 |
 | Regels voor tekstvoorstellen (`domein/tekst.py`): de instructie met Marcs stijl, de vraag aan het model en de controle van het antwoord, met tests op een nagebootst model | Gebouwd | Week 4 |
+| De route naar het taalmodel (variant B van onderwerp 1): de laag met `anthropic`, `model.py` met het vaste JSON-schema, `POST /api/beheer/herken` en `POST /api/beheer/teksten`, de grens van 100 per dag in `tellers`, leesrecht op alleen het geheim van Anthropic en schrijfrecht op alleen `tellers`. Met tests op een nagebootst model en een nagebootst pakket. De test met het echte model (`tests/model/`, tien sets steekwoorden op drie modellen) is geschreven maar nog niet gedraaid. Het geheim en de werkruimte maakt Aidan zelf; zonder geheim antwoorden beide aanroepen `503`. De web-app gebruikt de aanroepen nog niet | Gebouwd | Week 4 |
 | Kenmerken per wijn, stap A van roadmap onderwerp 16 (`domein/kenmerken.py`): de vraag aan het model, de controle van het antwoord, aanvullen wat het etiket niet gaf, controleren bij het bewaren en `kenmerkenBron`, met tests op een nagebootst model. `GET /api/aanbod` geeft `kleur`, `land` en `volheid` mee. In het prototype: Kleur, Land en Licht tot vol op het nakijkscherm van een nieuwe fles, en de regel "ROOD · ITALIË · VOL" bij de wijn. Licht tot vol staat achter de schakelaar `VITE_KENMERKEN`, standaard uit. De aanroep van het model komt met het etiket in week 4 | Gebouwd, staat uit | Week 4 |
-| Een etiket lezen en een tekst voorstellen: `domein/etiket.py` met tests op een nagebootst model, `POST /api/beheer/etiket` en `POST /api/beheer/teksten`, de uploadlink voor foto's, het veld `tekstBron`, de rechten op het geheim van Anthropic en de map met uploads, en de test met twintig etiketten en tien sets steekwoorden | Nog niet | Week 4 |
+| Een etiket lezen: `domein/etiket.py` met tests op een nagebootst model, `POST /api/beheer/etiket`, de uploadlink voor foto's, het veld `tekstBron`, de map met uploads, en de test met twintig etiketten | Nog niet | Week 4 |
 | Lijst sluiten, de taak die onbetaalde bestellingen laat verlopen, herinnering na 24 uur bij een bestelling namens een lid of een gewonnen bieding | Nog niet | Week 5 en 7 |
 | Brengen en halen per lijst in beheer, afleveradres van een lid, afleverlijst, herinnering "nog beschikbaar" | Nog niet | Week 4 en 7 |
 | De avond, voorlopige bouwkeuze van 21 november 2026: de statussen `aangekondigd` en `open`, wijnen op tafel, de tabel `feed`, pollen met `GET /api/aanbod?sinds=`, de veiling bij een avond met `veilingBegin` en `bieder`, en de aanroepen uit hoofdstuk 5 die daarbij horen. `domein/bestelling.py` controleert de levering na een gewonnen bieding nog niet tegen wat de avond aanbiedt | Nog niet | Week 5 en 6 |
@@ -622,7 +639,7 @@ Komt er later een pakket bij dat niet in de runtime zit, zoals Powertools, dan g
 - **Wie niet betaalt.** Een bon van de lijst vervalt na 15 minuten en de flessen zijn meteen weer te bestellen; Marc krijgt geen bericht. Een bestelling namens een lid en een gewonnen fles vervallen na 48 uur, met bericht aan Marc. Of Marc dat wil, of liever zelf beslist per lid, moet hij aangeven. Sinds 21 november 2026 krijgt hij als voorlopige bouwkeuze wel een signaal als een bon van de lijst vervalt na een betaalpoging; zie Tijdlijn en signalen in hoofdstuk 3.
 - **Volgen en ingrijpen.** "Vraagt aandacht" en het paneel met de tijdlijn zijn niet getekend in design-v4; Aidan levert een tekening. Of een `bestellingId` in het logboek mag staan, is open: het is via de tabel te herleiden tot een lid. Tot dat beslist is, noemt het logboek bij een signaal voor Aidan alleen de soort en het tijdstip, en zoekt Aidan de bestelling op via `GET /api/beheer/signalen`.
 - **Meldingen op de iPhone.** Werken alleen als de app op het beginscherm staat. De precieze eisen moeten in week 7 nagezocht worden.
-- **Route naar het model.** Gekozen op 21 november 2026: de API van Anthropic, variant B van onderwerp 1 op de [roadmap](roadmap.md). Uitgewerkt in [bouwplannen/1b-claude-api.md](bouwplannen/1b-claude-api.md). Het model hoeft niet in de EU te draaien. Het moet ook een foto kunnen lezen en goed Nederlands schrijven. Begin met Claude Haiku 5.5 en stap alleen over als de test met twintig etiketten en tien sets steekwoorden tegenvalt. Aidan maakt de sleutels zelf aan, per omgeving in een eigen werkruimte met een bestedingslimiet.
+- **Route naar het model.** Gekozen op 21 november 2026: de API van Anthropic, variant B van onderwerp 1 op de [roadmap](roadmap.md). Gebouwd; zie De route naar het model in hoofdstuk 5. Het model hoeft niet in de EU te draaien. Het moet ook een foto kunnen lezen en goed Nederlands schrijven. Begin met Claude Haiku 5.5 en stap alleen over als de test met twintig etiketten en tien sets steekwoorden tegenvalt. Aidan maakt de sleutels zelf aan, per omgeving in een eigen werkruimte met een bestedingslimiet.
 - **Stijl van de tekstvoorstellen.** Aangeleverd op 21 november 2026 en beschreven in `domein/tekst.py`, met zeven echte omschrijvingen van Marc als voorbeeld (21 november 2026). Aidan levert er meer aan: er zijn al meer omschrijvingen van Marc uit de WhatsApp-groep beschikbaar, maar die staan nog niet in de repository. Marc moet elke extra tekst eerst als openbaar voorbeeld goedkeuren, en de uitlezing van de groep is nog niet compleet. Of de voorbeelden genoeg zijn, moet de test met tien sets steekwoorden laten zien. Let daarbij op dat het model geen aroma's of gerechten uit de voorbeelden overneemt.
 - **Nieuwe woorden markeren.** Of het markeren van woorden die niet van Marc komen in het Nederlands goed genoeg werkt, bijvoorbeeld bij "fris" en "frisse", moet de test met tien sets steekwoorden uitwijzen. Werkt het niet, vergelijk dan op de stam van een woord.
 - **Tekstvoorstellen in het ontwerp.** Design-v4 tekent nog niet waar Marc steekwoorden geeft en uit drie voorstellen kiest. Het hoort bij scherm 16, nakijken. Aidan levert het ontwerp.

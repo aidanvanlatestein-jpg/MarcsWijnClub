@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, Mapping
+from typing import Dict, Mapping, Optional, Sequence
 
 from aws_cdk import Duration, RemovalPolicy, Stack
 from aws_cdk import aws_apigatewayv2 as apigwv2
@@ -10,11 +10,13 @@ from aws_cdk import aws_cognito as cognito
 from aws_cdk import aws_dynamodb as dynamodb
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_logs as logs
+from aws_cdk import aws_secretsmanager as secretsmanager
 from aws_cdk.aws_apigatewayv2_authorizers import HttpUserPoolAuthorizer
 from aws_cdk.aws_apigatewayv2_integrations import HttpLambdaIntegration
 from constructs import Construct
 
 from .config import Omgeving
+from .laag import anthropic_laag
 
 FUNCTIES = Path(__file__).resolve().parents[2] / "functions"
 
@@ -33,8 +35,9 @@ class ApiStack(Stack):
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # Alle functies delen dezelfde code. Ze gebruiken alleen boto3, dat in de runtime zit.
-        self._code = lambda_.Code.from_asset(str(FUNCTIES), exclude=["**/__pycache__", "**/*.pyc"])
+        # Alle functies delen dezelfde code. Die gebruikt boto3 uit de runtime; het pakket anthropic
+        # zit in een eigen laag (functions/laag) en hoort niet bij de code zelf.
+        self._code = lambda_.Code.from_asset(str(FUNCTIES), exclude=["**/__pycache__", "**/*.pyc", "laag"])
 
         # Elke aanroep vraagt een geldig token, tenzij een route dat uitdrukkelijk anders zegt.
         leden = HttpUserPoolAuthorizer("Leden", user_pool, user_pool_clients=[user_pool_client])
@@ -73,7 +76,38 @@ class ApiStack(Stack):
             integration=HttpLambdaIntegration("AanbodIntegratie", aanbod),
         )
 
-    def _functie(self, naam: str, handler: str, omgevingsvariabelen: Dict[str, str]) -> lambda_.Function:
+        # Het taalmodel: herkennen en teksten. Alleen de naam van het geheim gaat mee, nooit de waarde.
+        # Elke functie mag alleen dat ene geheim lezen en alleen de teller in `tellers` ophogen.
+        laag = anthropic_laag(self, "AnthropicLaag")
+        geheim = secretsmanager.Secret.from_secret_name_v2(self, "AnthropicGeheim", omgeving.anthropic_geheim)
+        for naam, handler, pad in (
+            ("Herken", "wijnclub.handlers.herken.handler", "/api/beheer/herken"),
+            ("Teksten", "wijnclub.handlers.teksten.handler", "/api/beheer/teksten"),
+        ):
+            functie = self._functie(
+                naam,
+                handler,
+                {"TABEL_TELLERS": tabellen["tellers"].table_name, "GEHEIM_ANTHROPIC": omgeving.anthropic_geheim},
+                tijdslimiet=Duration.seconds(30),
+                lagen=[laag],
+            )
+            geheim.grant_read(functie)
+            tabellen["tellers"].grant(functie, "dynamodb:UpdateItem")
+            self.api.add_routes(
+                path=pad,
+                methods=[apigwv2.HttpMethod.POST],
+                integration=HttpLambdaIntegration("{}Integratie".format(naam), functie),
+            )
+
+    def _functie(
+        self,
+        naam: str,
+        handler: str,
+        omgevingsvariabelen: Dict[str, str],
+        *,
+        tijdslimiet: Optional[Duration] = None,
+        lagen: Optional[Sequence[lambda_.ILayerVersion]] = None,
+    ) -> lambda_.Function:
         return lambda_.Function(
             self,
             naam,
@@ -82,7 +116,8 @@ class ApiStack(Stack):
             handler=handler,
             code=self._code,
             memory_size=256,
-            timeout=Duration.seconds(10),
+            timeout=tijdslimiet or Duration.seconds(10),
+            layers=list(lagen) if lagen else None,
             environment=omgevingsvariabelen,
             log_group=logs.LogGroup(
                 self,

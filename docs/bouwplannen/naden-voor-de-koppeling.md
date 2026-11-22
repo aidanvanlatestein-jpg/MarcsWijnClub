@@ -203,6 +203,6 @@ Het raakt geen bestanden in `infra/`.
   - ander werk aan bestellen, betalen of bieden in de app;
   - het begin van de koppeling in week 4 en 5. Dit plan gaat daaraan vooraf.
 - **Wel tegelijk met:**
-  - [1B, de API van Anthropic](1b-claude-api.md), dat `infra/`, de workflow en de functies voor het taalmodel raakt, maar niets in `app/`. Beide lezen `antwoord.py`; dit plan verandert het niet;
+  - 1B, de API van Anthropic (gebouwd; zie De route naar het model in hoofdstuk 5 van de [bouwspecificatie](../bouwspecificatie.md)), dat `infra/`, de workflow en de functies voor het taalmodel raakt, maar niets in `app/`. Beide lezen `antwoord.py`; dit plan verandert het niet;
   - werk in `functions/wijnclub/domein/` met een eigen bestand;
   - onderwerp 20.

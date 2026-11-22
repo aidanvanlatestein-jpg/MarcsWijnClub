@@ -249,3 +249,25 @@ def test_een_veld_van_precies_honderdtwintig_tekens_gaat_naar_het_model():
 def test_er_zijn_vijf_kleuren_en_drie_volheden():
     assert kenmerken.KLEUREN == ("rood", "wit", "rosé", "bubbels", "zoet")
     assert kenmerken.VOLHEDEN == ("licht", "midden", "vol")
+
+
+# ---- De grens op het taalmodel ----
+
+def test_honderd_aanroepen_van_het_model_per_dag_mag_nog():
+    """De voorwaarde staat in DynamoDB. Deze nagebootste tabel voert precies die voorwaarde uit."""
+    from wijnclub.domein import teller
+
+    argumenten = teller.tel_op(NU)
+    assert argumenten["ExpressionAttributeValues"][":grens"] == 100
+    assert argumenten["ConditionExpression"] == "attribute_not_exists(aantal) OR aantal < :grens"
+    assert argumenten["UpdateExpression"].startswith("ADD aantal :een ")
+
+    aantal = None
+    gelukt = 0
+    for _ in range(101):
+        waarden = argumenten["ExpressionAttributeValues"]
+        if aantal is None or aantal < waarden[":grens"]:
+            aantal = (aantal or 0) + waarden[":een"]
+            gelukt += 1
+    assert gelukt == 100
+    assert aantal == 100

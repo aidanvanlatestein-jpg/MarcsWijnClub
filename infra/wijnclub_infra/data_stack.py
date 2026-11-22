@@ -1,4 +1,4 @@
-"""De zes tabellen. Zie docs/bouwspecificatie.md, hoofdstuk 2."""
+"""De zeven tabellen. Zie docs/bouwspecificatie.md, hoofdstuk 2."""
 from __future__ import annotations
 
 from typing import Dict, Optional
@@ -56,8 +56,12 @@ class DataStack(Stack):
             index_name="betaal-index", partition_key=_veld("status"), sort_key=_veld("betaalVoor")
         )
         self._tabel("betalingen", "mollieBetalingId")
+        # De grens op het taalmodel: één teller per dag, die DynamoDB na een paar dagen verwijdert.
+        self._tabel("tellers", "tellerId", vervalt="vervaltOp")
 
-    def _tabel(self, naam: str, sleutel: str, sorteer: Optional[str] = None) -> dynamodb.Table:
+    def _tabel(
+        self, naam: str, sleutel: str, sorteer: Optional[str] = None, vervalt: Optional[str] = None
+    ) -> dynamodb.Table:
         prod = self._omgeving.is_prod
         tabel = dynamodb.Table(
             self,
@@ -69,6 +73,7 @@ class DataStack(Stack):
                 point_in_time_recovery_enabled=True
             ),
             deletion_protection=prod,
+            time_to_live_attribute=vervalt,
             # In test verdwijnen de tabellen met de stack; in prod blijven ze staan.
             removal_policy=RemovalPolicy.RETAIN if prod else RemovalPolicy.DESTROY,
         )

@@ -143,7 +143,7 @@ Verhuis het liefst vóór de eerste uitrol naar productie. Er staan dan nog geen
 5. Rol test uit en draai de rooktest. Het adres van CloudFront is nieuw.
 6. Verwijder pas daarna in het oude account de stacks `Wijnclub-test-*`, met het profiel van het oude account. Verwijder `CDKToolkit` in die regio alleen als geen ander project hem gebruikt; de bucket met bouwbestanden blijft dan staan en leeg je zelf.
 
-Sleutels in Secrets Manager, zoals die van Mollie, zet je in het nieuwe account opnieuw. Ze verhuizen niet mee.
+Sleutels in Secrets Manager, zoals die van Mollie en Anthropic, zet je in het nieuwe account opnieuw. Ze verhuizen niet mee.
 
 ## Pipeline
 
@@ -201,6 +201,7 @@ De workflow wacht daarna op jouw goedkeuring in GitHub.
 ## Afspraken
 
 - **Geen geheimen in de code.** De sleutel van Mollie komt in AWS Secrets Manager onder `wijnclub/<omgeving>/mollie-api-sleutel`. Gebruik in test de testsleutel van Mollie.
+- **De sleutel van Anthropic** komt in Secrets Manager onder `wijnclub/<omgeving>/anthropic-api-sleutel`, als platte tekst. Maak per omgeving een eigen werkruimte in de Console van Anthropic met een bestedingslimiet, en een sleutel in die werkruimte. Zonder geheim antwoorden `herken` en `teksten` met `503` en vult Marc zelf in. De test met het echte model (`tests/model/`) kost geld en draait alleen met `WIJNCLUB_ECHT_MODEL=ja` en `ANTHROPIC_API_KEY`, op Python 3.10 of hoger.
 - **Vaste versies.** Elke afhankelijkheid staat op een exacte versie in `infra/requirements.txt` en `requirements-dev.txt`.
 - **Bedragen in hele centen**, tijden als UTC-tekst.
 - **Het lid komt uit het token**, nooit uit de aanvraag.
